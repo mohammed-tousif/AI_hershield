@@ -1,0 +1,12 @@
+rules_version = '2';
+
+// Her Shield: all API persistence goes through the Node server (Firebase Admin SDK),
+// which bypasses these rules. Keep client SDK access denied unless you add explicit
+// paths and Firebase Auth checks (e.g. request.auth != null).
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

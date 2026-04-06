@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Safety Map | Women Safety App</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <script>
+        function initMap() {
+            // Map initialization will be handled in the script below
+        }
+    </script>
+    <style>
+        :root {
+            --gradient-start: #FF9A8B;
+            --gradient-middle: #FF6B6B;
+            --gradient-end: #FFA07A;
+            --text-dark: #2D3436;
+            --text-light: #ffffff;
+            --sidebar-width: 280px;
+            --header-height: 70px;
+            --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            color: var(--text-dark);
+            line-height: 1.6;
+            background: #f8fafc;
+            overflow-x: hidden;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Gradient Background Effects */
+        .gradient-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: linear-gradient(-45deg, var(--gradient-start), var(--gradient-middle), var(--gradient-end));
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+            opacity: 0.05;
+        }
+
+        .gradient-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+                    rgba(255, 255, 255, 0.1) 0%,
+                    rgba(255, 255, 255, 0.05) 25%,
+                    transparent 50%);
+            pointer-events: none;
+        }
+
+        @keyframes gradient {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        /* Dashboard Layout */
+        .dashboard-container {
+            display: flex;
+            width: 100%;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            border-right: 1px solid rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            transition: transform 0.3s var(--transition-smooth);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            padding: 0 0 1.5rem 0;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .sidebar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-middle));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            overflow-y: auto;
+        }
+
+        .sidebar-menu-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.25rem;
+            border-radius: 12px;
+            color: var(--text-dark);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            font-weight: 500;
+            gap: 1rem;
+        }
+
+        .nav-link:hover {
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-middle));
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .nav-link.active {
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-middle));
+            color: white;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 2rem;
+            transition: margin-left 0.3s var(--transition-smooth);
+        }
+
+        /* Map Container */
+        #googleMap {
+            width: 100%;
+            height: 600px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        /* Custom control styles */
+        .map-type-control {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 1000;
+            background: white;
+            padding: 8px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .time-slider-container {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .time-slider-container label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .time-display {
+            text-align: center;
+            margin-top: 5px;
+            font-weight: 500;
+        }
+
+        .risk-level-indicator {
+            display: flex;
+            align-items: center;
+            margin-top: 1rem;
+        }
+
+        .risk-dot {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .risk-high {
+            background-color: #FF4136;
+        }
+
+        .risk-medium {
+            background-color: #FF851B;
+        }
+
+        .risk-low {
+            background-color: #2ECC40;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 991px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .fixed-sidebar-toggle,
+            .fixed-actions-toggle {
+                display: flex !important;
+            }
+        }
+
+        /* Fixed Navigation Buttons */
+        .fixed-sidebar-toggle,
+        .fixed-actions-toggle {
+            position: fixed;
+            z-index: 10001;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-middle));
+            color: white;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+            cursor: pointer;
+            border: none;
+        }
+
+        .fixed-sidebar-toggle {
+            top: 20px;
+            left: 20px;
+        }
+
+        .fixed-actions-toggle {
+            top: 20px;
+            right: 20px;
+        }
+
+        /* Quick Actions Panel */
+        .quick-actions-panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 300px;
+            height: 100vh;
+            background: white;
+            box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            padding: 2rem;
+            transform: translateX(100%);
+            transition: transform 0.3s var(--transition-smooth);
+        }
+
+        .quick-actions-panel.active {
+            transform: translateX(0);
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            display: none;
+        }
+
+        .overlay.active {
+            display: block;
+        }
+
+        /* Glass Card */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-right: 1rem;
+            object-fit: cover;
+            border: 2px solid var(--gradient-middle);
+        }
+
+        .user-info h6 {
+            margin: 0;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .user-info small {
+            color: var(--gradient-middle);
+            font-weight: 500;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="gradient-background"></div>
+    <div class="gradient-overlay"></div>
+
+    <!-- Firebase SDK and Unified Navigation -->
+    <script type="module">
+        import './firebase-config.js';
+        import './firebase-auth.js';
+        import './navigation.js';
+    </script>
+
+    <div class="dashboard-container">
+        <!-- Sidebar is now handled by navigation.js -->
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">Safety Map</h2>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="glass-card mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h5 class="mb-0">Safety Heatmap</h5>
+                            <div class="d-flex">
+                                <div class="form-check form-switch me-3">
+                                    <input class="form-check-input" type="checkbox" id="showHeatmap" checked>
+                                    <label class="form-check-label" for="showHeatmap">Show Heatmap</label>
+                                </div>
+                                <div class="form-check form-switch me-3">
+                                    <input class="form-check-input" type="checkbox" id="showMarkers" checked>
+                                    <label class="form-check-label" for="showMarkers">Show Markers</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Map Container -->
+                        <div id="googleMap"></div>
+
+                        <!-- Time of Day Slider -->
+                        <div class="time-slider-container">
+                            <label for="timeSlider">Time of Day (Affects Risk Levels)</label>
+                            <input type="range" class="form-range" id="timeSlider" min="0" max="23" value="12">
+                            <div class="time-display" id="timeDisplay">12:00 (Daytime)</div>
+                        </div>
+
+                        <!-- Risk Level Legend -->
+                        <div class="d-flex justify-content-center mt-3">
+                            <div class="risk-level-indicator me-4">
+                                <div class="risk-dot risk-high"></div>
+                                <span>High Risk</span>
+                            </div>
+                            <div class="risk-level-indicator me-4">
+                                <div class="risk-dot risk-medium"></div>
+                                <span>Medium Risk</span>
+                            </div>
+                            <div class="risk-level-indicator">
+                                <div class="risk-dot risk-low"></div>
+                                <span>Low Risk</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="glass-card mb-4">
+                        <h5 class="mb-3">Route Planning</h5>
+                        <div class="mb-3">
+                            <label for="startLocation" class="form-label">Start Location</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span>
+                                <input type="text" class="form-control" id="startLocation"
+                                    placeholder="Enter start location">
+                                <button class="btn btn-outline-secondary" type="button" id="useCurrentLocation">
+                                    <i class="fas fa-location-arrow"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="endLocation" class="form-label">Destination</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-map-pin"></i></span>
+                                <input type="text" class="form-control" id="endLocation"
+                                    placeholder="Enter destination">
+                            </div>
+                        </div>
+                        <button class="btn w-100" id="findSafeRoute"
+                            style="background: linear-gradient(135deg, var(--gradient-start), var(--gradient-middle)); color: white;">
+                            <i class="fas fa-route me-2"></i>Find Safest Route
+                        </button>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="glass-card mb-4">
+                        <h5 class="mb-3">Safety Statistics</h5>
+                        <div class="mb-3">
+                            <label for="locationFilter" class="form-label">Filter by Location</label>
+                            <select class="form-select" id="locationFilter">
+                                <option selected>All Locations</option>
+                                <option>Bangalore</option>
+                                <option>Delhi</option>
+                                <option>Mumbai</option>
+                                <option>Hubli</option>
+                                <option>Dharwad</option>
+                                <option>Haliyal</option>
+                                <option>Karwar</option>
+                            </select>
+                        </div>
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <div class="p-3">
+                                    <h3 class="mb-0" id="highRiskCount">24</h3>
+                                    <p class="text-danger mb-0">High Risk</p>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="p-3">
+                                    <h3 class="mb-0" id="mediumRiskCount">38</h3>
+                                    <p class="text-warning mb-0">Medium Risk</p>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="p-3">
+                                    <h3 class="mb-0" id="lowRiskCount">56</h3>
+                                    <p class="text-success mb-0">Low Risk</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions Panel -->
+        <div class="quick-actions-panel" id="quickActionsPanel">
+            <h5 class="mb-4">Quick Actions</h5>
+
+            <div class="mb-4">
+                <button class="btn btn-danger w-100 mb-3">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Emergency Alert
+                </button>
+                <button class="btn btn-primary w-100">
+                    <i class="fas fa-phone-alt me-2"></i>Call Emergency Contact
+                </button>
+            </div>
+
+            <div class="glass-card mb-3">
+                <h6>Share Location</h6>
+                <p class="small text-muted">Share your current location with trusted contacts</p>
+                <button class="btn btn-sm btn-outline-primary w-100">
+                    <i class="fas fa-share-alt me-2"></i>Share Now
+                </button>
+            </div>
+
+            <div class="glass-card">
+                <h6>Safety Tips</h6>
+                <ul class="small ps-3">
+                    <li>Stay in well-lit areas</li>
+                    <li>Keep emergency contacts handy</li>
+                    <li>Share your location with trusted contacts</li>
+                    <li>Avoid high-risk areas shown on the map</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Overlay -->
+        <div class="overlay" id="overlay"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/safety-stats.js"></script>
+    <script src="/route-planning-fix.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script>
+        // Load crime data
+        const crimeData = [
+            // Haliyal Town and Educational Areas
+            { latitude: 15.3227, longitude: 74.7549, risk_level: 1, location: "KLS VDI Institute of Technology" },
+            { latitude: 15.3329, longitude: 74.7547, risk_level: 1, location: "KLS VDI Campus Hostels" },
+            { latitude: 15.3280, longitude: 74.7550, risk_level: 1, location: "KLS VDI Sports Ground" },
+            { latitude: 15.3297, longitude: 74.7583, risk_level: 2, location: "Haliyal Bus Stand" },
+            // Haliyal Town Center and Markets
+            { latitude: 15.3294, longitude: 74.7566, risk_level: 2, location: "Haliyal Main Market" },
+            { latitude: 15.3289, longitude: 74.7571, risk_level: 2, location: "Gandhi Chowk" },
+            { latitude: 15.3287, longitude: 74.7568, risk_level: 1, location: "Municipal Office Area" },
+            // High Risk Areas in Haliyal
+            { latitude: 15.3310, longitude: 74.7585, risk_level: 3, location: "Isolated Industrial Zone" },
+            { latitude: 15.3325, longitude: 74.7540, risk_level: 3, location: "Remote Forest Path" },
+            { latitude: 15.3318, longitude: 74.7565, risk_level: 3, location: "Unmanned Railway Area" },
+            // Additional Haliyal Areas
+            { latitude: 15.3315, longitude: 74.7555, risk_level: 2, location: "Haliyal Railway Station" },
+            { latitude: 15.3305, longitude: 74.7575, risk_level: 2, location: "Old Market Area" },
+            { latitude: 15.3335, longitude: 74.7545, risk_level: 1, location: "Government Hospital" },
+            { latitude: 15.3275, longitude: 74.7560, risk_level: 1, location: "Town Hall Area" },
+            { latitude: 15.3320, longitude: 74.7580, risk_level: 2, location: "Industrial Complex" },
+            // Karnataka - Major Cities and Areas
+            { latitude: 12.9716, longitude: 77.5946, risk_level: 2, location: "Bangalore - MG Road" },
+            { latitude: 12.9850, longitude: 77.5533, risk_level: 1, location: "Bangalore - Malleshwaram" },
+            { latitude: 12.9302, longitude: 77.6853, risk_level: 3, location: "Bangalore - Electronic City" },
+            // Dharwad and Surrounding Areas
+            { latitude: 15.4589, longitude: 75.0078, risk_level: 2, location: "Dharwad - City Center" },
+            { latitude: 15.4553, longitude: 75.0070, risk_level: 1, location: "Dharwad - University Campus" },
+            { latitude: 15.4482, longitude: 75.0070, risk_level: 2, location: "Dharwad - Railway Station" },
+            { latitude: 15.4623, longitude: 75.0167, risk_level: 1, location: "Dharwad - Jubilee Circle" },
+            { latitude: 15.4515, longitude: 75.0073, risk_level: 2, location: "Dharwad - Old Bus Stand" },
+            { latitude: 15.4566, longitude: 75.0199, risk_level: 3, location: "Dharwad - Industrial Area" },
+
+            // Hubli - High Risk Areas
+            { latitude: 15.3463, longitude: 75.1167, risk_level: 3, location: "Hubli - Old Hubli Market (Night)" },
+            { latitude: 15.3524, longitude: 75.1415, risk_level: 3, location: "Hubli - Railway Station Area (Night)" },
+            { latitude: 15.3700, longitude: 75.1000, risk_level: 3, location: "Hubli - Industrial Estate" },
+            { latitude: 15.3300, longitude: 75.1500, risk_level: 3, location: "Hubli - Mantur Road" },
+
+            // Hubli - Medium Risk Areas
+            { latitude: 15.3647, longitude: 75.1240, risk_level: 2, location: "Hubli - CBT (Central Bus Terminus)" },
+            { latitude: 15.3500, longitude: 75.1300, risk_level: 2, location: "Hubli - Durgad Bail" },
+            { latitude: 15.3750, longitude: 75.0900, risk_level: 2, location: "Hubli - Gokul Road (Late Night)" },
+            { latitude: 15.3550, longitude: 75.1450, risk_level: 2, location: "Hubli - Koppikar Road" },
+
+            // Hubli - Low Risk Areas
+            { latitude: 15.3716, longitude: 75.1064, risk_level: 1, location: "Hubli - Vidyanagar" },
+            { latitude: 15.3800, longitude: 75.1100, risk_level: 1, location: "Hubli - Shirur Park" },
+            { latitude: 15.3600, longitude: 75.0800, risk_level: 1, location: "Hubli - Unkal Lake (Daytime)" },
+            { latitude: 15.3900, longitude: 75.0700, risk_level: 1, location: "Hubli - Airport Road" },
+            { latitude: 15.3518, longitude: 75.0812, risk_level: 1, location: "Hubli - KLE Tech Campus" },
+
+            // Hubli - Landmarks & Parks
+            { latitude: 15.3920, longitude: 75.1540, risk_level: 3, location: "Hubli - Nrupatunga Betta (Night)" },
+            { latitude: 15.3650, longitude: 75.1350, risk_level: 1, location: "Hubli - Indira Glass House" },
+            { latitude: 15.3620, longitude: 75.0820, risk_level: 1, location: "Hubli - Unkal Lake Park" },
+
+            // Hubli - Education Hubs
+            { latitude: 15.3700, longitude: 75.1230, risk_level: 1, location: "Hubli - BVB College" },
+            { latitude: 15.3580, longitude: 75.1380, risk_level: 1, location: "Hubli - KIMS Hospital & College" },
+            { latitude: 15.3750, longitude: 75.1150, risk_level: 1, location: "Hubli - PC Jabin College" },
+
+            // Hubli - Transport & Commercial
+            { latitude: 15.3530, longitude: 75.1400, risk_level: 2, location: "Hubli - Old Bus Stand" },
+            { latitude: 15.3780, longitude: 75.0950, risk_level: 2, location: "Hubli - New Bus Stand (Gokul Rd)" },
+            { latitude: 15.3480, longitude: 75.1350, risk_level: 2, location: "Hubli - Lamington Road" },
+            { latitude: 15.3510, longitude: 75.1320, risk_level: 2, location: "Hubli - Broadway" },
+            { latitude: 15.3540, longitude: 75.1360, risk_level: 2, location: "Hubli - Coen Road" },
+
+            // Hubli - Residential
+            { latitude: 15.3950, longitude: 75.0650, risk_level: 1, location: "Hubli - Navanagar" },
+            { latitude: 15.3850, longitude: 75.0950, risk_level: 1, location: "Hubli - Akshay Park" },
+            { latitude: 15.3620, longitude: 75.1280, risk_level: 1, location: "Hubli - Deshpande Nagar" },
+
+            // Dharwad - Additional Areas
+            { latitude: 15.4400, longitude: 74.9800, risk_level: 3, location: "Dharwad - Kelgeri Lake (Isolated)" },
+            { latitude: 15.4700, longitude: 75.0300, risk_level: 3, location: "Dharwad - High Court Area (Night)" },
+            { latitude: 15.4600, longitude: 75.0100, risk_level: 2, location: "Dharwad - Line Bazaar" },
+            { latitude: 15.4300, longitude: 75.0000, risk_level: 2, location: "Dharwad - Toll Naka" },
+            { latitude: 15.4500, longitude: 74.9900, risk_level: 1, location: "Dharwad - Saptapur" },
+            { latitude: 15.4650, longitude: 75.0050, risk_level: 1, location: "Dharwad - Kalyan Nagar" },
+            { latitude: 15.4450, longitude: 75.0150, risk_level: 1, location: "Dharwad - Malmaddi" },
+
+            // Dharwad - Education & Landmarks
+            { latitude: 15.4420, longitude: 74.9850, risk_level: 1, location: "Dharwad - Karnatak University Main Gate" },
+            { latitude: 15.4380, longitude: 74.9820, risk_level: 2, location: "Dharwad - KUD Isolated Areas" },
+            { latitude: 15.4680, longitude: 75.0250, risk_level: 1, location: "Dharwad - SDM College" },
+            { latitude: 15.4850, longitude: 74.9950, risk_level: 1, location: "Dharwad - Agricultural University" },
+            { latitude: 15.4550, longitude: 74.9750, risk_level: 2, location: "Dharwad - Sadhankeri" },
+            { latitude: 15.4620, longitude: 75.0350, risk_level: 1, location: "Dharwad - Murugha Math" },
+            { latitude: 15.4580, longitude: 75.0120, risk_level: 2, location: "Dharwad - New Bus Stand" }
+        ];
+
+        // Initialize Google Map - Load API dynamically
+        let map, heatmap, markers = [], directionsService, directionsRenderer;
+
+        function loadGoogleMapsAPI() {
+            // Load Google Maps API if not already loaded
+            if (!window.google) {
+                const script = document.createElement('script');
+                script.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyBGXF_WodaMeP10oziYhG0NdqHw2fJogxM&libraries=places,directions,visualization&callback=initMap';
+                script.async = true;
+                script.defer = true;
+                document.head.appendChild(script);
+                console.log("Loading Google Maps API...");
+            } else {
+                // If already loaded, initialize map
+                initMap();
+            }
+        }
+
+        function initMap() {
+            console.log("Initializing map...");
+            directionsService = new google.maps.DirectionsService();
+            directionsRenderer = new google.maps.DirectionsRenderer();
+
+            map = new google.maps.Map(document.getElementById("googleMap"), {
+                center: { lat: 15.351826, lng: 75.081279 }, // Default center (KLE Institute of Technology)
+                zoom: 16
+            });
+
+            directionsRenderer.setMap(map);
+
+            // Check if map is loaded
+            google.maps.event.addListenerOnce(map, "idle", function () {
+                console.log("Google Map Loaded Successfully!");
+            });
+
+            // Initialize Google Places Autocomplete
+            try {
+                new google.maps.places.Autocomplete(document.getElementById("startLocation"));
+                new google.maps.places.Autocomplete(document.getElementById("endLocation"));
+            } catch (e) {
+                console.warn("Google Places API not available:", e);
+            }
+
+            // Initialize heatmap layer
+            createHeatmap();
+
+            // Add markers
+            createMarkers();
+
+            // Initial update of statistics
+            updateStatistics();
+        }
+
+        // Load Google Maps when page is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadGoogleMapsAPI);
+        } else {
+            loadGoogleMapsAPI();
+        }
+
+        // Function to get color based on risk level
+        function getRiskColor(risk) {
+            return risk === 3 ? '#FF4136' : // High risk - Red
+                risk === 2 ? '#FF851B' : // Medium risk - Orange
+                    '#2ECC40'; // Low risk - Green
+        }
+
+        // Create markers for each point
+        function createMarkers() {
+            // Clear existing markers
+            markers.forEach(marker => marker.setMap(null));
+            markers = [];
+
+            crimeData.forEach(point => {
+                const adjustedRisk = getTimeBasedRiskLevel(point.risk_level, currentHour);
+                const marker = new google.maps.Marker({
+                    position: { lat: point.latitude, lng: point.longitude },
+                    map: document.getElementById('showMarkers').checked ? map : null,
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        fillColor: getRiskColor(adjustedRisk),
+                        fillOpacity: 0.8,
+                        strokeWeight: 1,
+                        strokeColor: '#ffffff',
+                        scale: 8
+                    },
+                    title: point.location
+                });
+
+                const infoWindow = new google.maps.InfoWindow({
+                    content: `<strong>${point.location}</strong><br>Risk Level: ${adjustedRisk === 3 ? 'High' : adjustedRisk === 2 ? 'Medium' : 'Low'}`
+                });
+
+                marker.addListener('click', () => {
+                    infoWindow.open(map, marker);
+                });
+
+                markers.push(marker);
+            });
+        }
+
+        // Create and update heatmap
+        function createHeatmap() {
+            const heatmapData = crimeData.map(point => {
+                const adjustedRisk = getTimeBasedRiskLevel(point.risk_level, currentHour);
+                return {
+                    location: new google.maps.LatLng(point.latitude, point.longitude),
+                    weight: adjustedRisk * 5 // Scale up for better visibility
+                };
+            });
+
+            heatmap = new google.maps.visualization.HeatmapLayer({
+                data: heatmapData,
+                map: document.getElementById('showHeatmap').checked ? map : null,
+                radius: 30,
+                opacity: 0.7,
+                gradient: [
+                    'rgba(0, 255, 0, 0)',
+                    'rgba(0, 255, 0, 1)',
+                    'rgba(255, 165, 0, 1)',
+                    'rgba(255, 0, 0, 1)'
+                ]
+            });
+        }
+
+        // Time-based risk modification
+        let currentHour = 12;
+
+        function getTimeBasedRiskLevel(baseRisk, hour) {
+            if (hour >= 20 || hour < 5) {
+                return Math.min(baseRisk + 1, 3);
+            }
+            return baseRisk;
+        }
+
+        // Update statistics
+        function updateStatistics() {
+            const timeAdjustedData = crimeData.map(point => ({
+                ...point,
+                adjusted_risk: getTimeBasedRiskLevel(point.risk_level, currentHour)
+            }));
+
+            document.getElementById('highRiskCount').textContent = timeAdjustedData.filter(point => point.adjusted_risk === 3).length;
+            document.getElementById('mediumRiskCount').textContent = timeAdjustedData.filter(point => point.adjusted_risk === 2).length;
+            document.getElementById('lowRiskCount').textContent = timeAdjustedData.filter(point => point.adjusted_risk === 1).length;
+        }
+
+        // Event Listeners
+        document.getElementById('showMarkers').addEventListener('change', function () {
+            markers.forEach(marker => marker.setMap(this.checked ? map : null));
+        });
+
+        document.getElementById('showHeatmap').addEventListener('change', function () {
+            heatmap.setMap(this.checked ? map : null);
+        });
+
+        document.getElementById('timeSlider').addEventListener('input', function () {
+            currentHour = parseInt(this.value);
+            const timeString = `${currentHour}:00 ${currentHour >= 6 && currentHour < 18 ? '(Daytime)' : '(Nighttime)'}`;
+            document.getElementById('timeDisplay').textContent = timeString;
+
+            createHeatmap();
+            createMarkers();
+            updateStatistics();
+        });
+
+        document.getElementById('locationFilter').addEventListener('change', function () {
+            const location = this.value;
+            let center, zoom;
+
+            switch (location) {
+                case 'Bangalore':
+                    center = { lat: 12.9716, lng: 77.5946 };
+                    zoom = 12;
+                    break;
+                case 'Delhi':
+                    center = { lat: 28.6139, lng: 77.2090 };
+                    zoom = 12;
+                    break;
+                case 'Mumbai':
+                    center = { lat: 19.0760, lng: 72.8777 };
+                    zoom = 12;
+                    break;
+                case 'Hubli':
+                    center = { lat: 15.3647, lng: 75.1240 };
+                    zoom = 13;
+                    break;
+                case 'Dharwad':
+                    center = { lat: 15.4553, lng: 75.0070 };
+                    zoom = 13;
+                    break;
+                case 'Haliyal':
+                    center = { lat: 15.3297, lng: 74.7566 };
+                    zoom = 14;
+                    break;
+                case 'Karwar':
+                    center = { lat: 14.8162, lng: 74.1341 };
+                    zoom = 13;
+                    break;
+                default:
+                    center = { lat: 22.0, lng: 82.0 };
+                    zoom = 5;
+            }
+
+            map.setCenter(center);
+            map.setZoom(zoom);
+
+            updateStatistics();
+        });
+
+        // Initialize map
+        window.onload = initMap;
+
+        // Find safe route functionality with actual implementation
+        document.getElementById('findSafeRoute').addEventListener('click', function () {
+            const startLocation = document.getElementById('startLocation').value;
+            const endLocation = document.getElementById('endLocation').value;
+
+            if (!startLocation || !endLocation) {
+                alert('Please enter both start and destination locations');
+                return;
+            }
+
+            // Convert locations to coordinates
+            const geocoder = new google.maps.Geocoder();
+
+            // First, geocode the start location if it's not current location
+            const geocodeStart = startLocation.includes(',') ?
+                Promise.resolve({ lat: parseFloat(startLocation.split(',')[0]), lng: parseFloat(startLocation.split(',')[1]) }) :
+                new Promise((resolve, reject) => {
+                    geocoder.geocode({ address: startLocation }, (results, status) => {
+                        if (status === 'OK') {
+                            resolve(results[0].geometry.location.toJSON());
+                        } else {
+                            reject('Could not find start location');
+                        }
+                    });
+                });
+
+            // Then, geocode the end location
+            const geocodeEnd = new Promise((resolve, reject) => {
+                geocoder.geocode({ address: endLocation }, (results, status) => {
+                    if (status === 'OK') {
+                        resolve(results[0].geometry.location.toJSON());
+                    } else {
+                        reject('Could not find destination');
+                    }
+                });
+            });
+
+            // When we have both coordinates, calculate the route
+            Promise.all([geocodeStart, geocodeEnd])
+                .then(([startCoords, endCoords]) => {
+                    // Calculate route with waypoints avoiding high-risk areas
+                    calculateSafeRoute(startCoords, endCoords);
+                })
+                .catch(error => {
+                    alert('Error: ' + error);
+                });
+        });
+
+        // Function to calculate safe route
+        function calculateSafeRoute(start, end) {
+            // Get high-risk areas for current time
+            const highRiskAreas = crimeData
+                .filter(point => getTimeBasedRiskLevel(point.risk_level, currentHour) === 3)
+                .map(point => new google.maps.LatLng(point.latitude, point.longitude));
+
+            // Calculate waypoints to avoid high-risk areas
+            const directWaypoint = new google.maps.LatLng(
+                (start.lat + end.lat) / 2,
+                (start.lng + end.lng) / 2
+            );
+
+            // Find safe waypoints by avoiding high-risk areas
+            const safeWaypoints = [];
+            if (highRiskAreas.length > 0) {
+                const offset = 0.01; // Approximately 1km offset
+                if (isNearHighRiskAreas(directWaypoint, highRiskAreas)) {
+                    safeWaypoints.push({
+                        location: new google.maps.LatLng(
+                            directWaypoint.lat() + offset,
+                            directWaypoint.lng() + offset
+                        ),
+                        stopover: true
+                    });
+                }
+            }
+
+            // Request route from Google Directions Service
+            const request = {
+                origin: start,
+                destination: end,
+                waypoints: safeWaypoints,
+                optimizeWaypoints: true,
+                travelMode: google.maps.TravelMode.DRIVING,
+                provideRouteAlternatives: true
+            };
+
+            directionsService.route(request, (result, status) => {
+                if (status === 'OK') {
+                    // Clear any existing route
+                    directionsRenderer.setDirections(result);
+
+                    // Show route information
+                    const route = result.routes[0];
+                    const distance = route.legs.reduce((total, leg) => total + leg.distance.value, 0) / 1000; // Convert to km
+                    const duration = route.legs.reduce((total, leg) => total + leg.duration.value, 0) / 60; // Convert to minutes
+
+                    // Create route info alert
+                    const routeAlert = document.createElement('div');
+                    routeAlert.className = 'alert alert-info alert-dismissible fade show mt-3';
+                    routeAlert.innerHTML = `
+                        <strong>Route Found!</strong><br>
+                        Distance: ${distance.toFixed(1)} km<br>
+                        Estimated Time: ${duration.toFixed(0)} minutes<br>
+                        High-risk areas avoided: ${highRiskAreas.length}<br>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    `;
+                    document.querySelector('.glass-card').appendChild(routeAlert);
+                } else {
+                    alert('Error: Could not calculate route. ' + status);
+                }
+            });
+        }
+
+        // Helper function to check if a point is near high-risk areas
+        function isNearHighRiskAreas(point, highRiskAreas, threshold = 0.01) {
+            return highRiskAreas.some(riskPoint =>
+                google.maps.geometry.spherical.computeDistanceBetween(point, riskPoint) < threshold * 1000
+            );
+        }
+
+        // Use current location with improved error handling
+        document.getElementById('useCurrentLocation').addEventListener('click', function () {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    // Success callback
+                    position => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+
+                        // Update the map view
+                        map.setCenter({ lat: lat, lng: lng });
+                        map.setZoom(15); // Zoom in closer to show the area better
+
+                        // Remove any existing current location marker
+                        if (window.currentLocationMarker) {
+                            window.currentLocationMarker.setMap(null);
+                        }
+
+                        // Add a marker for current location with custom icon
+                        window.currentLocationMarker = new google.maps.Marker({
+                            position: { lat: lat, lng: lng },
+                            map: map,
+                            title: 'Your Current Location',
+                            icon: {
+                                path: google.maps.SymbolPath.CIRCLE,
+                                fillColor: '#4285F4',
+                                fillOpacity: 1,
+                                strokeColor: '#ffffff',
+                                strokeWeight: 2,
+                                scale: 12
+                            },
+                            animation: google.maps.Animation.DROP
+                        });
+
+                        // Add info window for current location
+                        const infoWindow = new google.maps.InfoWindow({
+                            content: '<strong>Your Current Location</strong>'
+                        });
+
+                        window.currentLocationMarker.addListener('click', () => {
+                            infoWindow.open(map, window.currentLocationMarker);
+                        });
+
+                        // Set the input field with formatted coordinates
+                        document.getElementById('startLocation').value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
+                        // Show success message
+                        const successAlert = document.createElement('div');
+                        successAlert.className = 'alert alert-success alert-dismissible fade show';
+                        successAlert.innerHTML = `
+                            <strong>Location found!</strong> Your current location has been set.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        `;
+                        document.querySelector('.glass-card').insertBefore(successAlert, document.querySelector('.mb-3'));
+                    },
+                    // Error callback
+                    error => {
+                        console.error('Error getting location:', error);
+                        let errorMessage = 'Unable to retrieve your location. ';
+
+                        switch (error.code) {
+                            case error.PERMISSION_DENIED:
+                                errorMessage += 'Please enable location access in your browser settings.';
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                errorMessage += 'Location information is unavailable.';
+                                break;
+                            case error.TIMEOUT:
+                                errorMessage += 'The request to get location timed out.';
+                                break;
+                            default:
+                                errorMessage += 'Please enter your location manually.';
+                        }
+
+                        // Show error message in a bootstrap alert
+                        const errorAlert = document.createElement('div');
+                        errorAlert.className = 'alert alert-danger alert-dismissible fade show';
+                        errorAlert.innerHTML = `
+                            <strong>Error!</strong> ${errorMessage}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        `;
+                        document.querySelector('.glass-card').insertBefore(errorAlert, document.querySelector('.mb-3'));
+                    },
+                    // Options
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    }
+                );
+            } else {
+                alert('Geolocation is not supported by your browser. Please enter your location manually.');
+            }
+        });
+    </script>
+</body>
+
+</html>

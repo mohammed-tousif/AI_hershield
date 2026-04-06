@@ -1,0 +1,12 @@
+**/node_modules/**
+node_modules
+.git
+.gitignore
+package.json
+package-lock.json
+README.md
+firebase.json
+.firebaserc
+*.log
+.DS_Store
+Safety Map

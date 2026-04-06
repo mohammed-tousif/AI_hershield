@@ -1,0 +1,16 @@
+# Her Shield — backend API on Render (hybrid with Firebase for auth + Firestore + hosting).
+# https://render.com/docs/yaml-spec
+services:
+  - type: web
+    name: hershield-api
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Render injects PORT automatically.
+      # Set in Render dashboard (do not commit secrets):
+      # APP_URL, MONGODB_URI (optional), FIREBASE_SERVICE_ACCOUNT_JSON, TWILIO_*, GOOGLE_MAPS_API_KEY, etc.

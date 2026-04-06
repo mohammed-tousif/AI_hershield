@@ -1,0 +1,13 @@
+# Secrets — never commit
+.env
+*.local.env
+hershield-firebase-adminsdk.json
+*-firebase-adminsdk*.json
+
+# Dependencies & runtime
+node_modules/
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db

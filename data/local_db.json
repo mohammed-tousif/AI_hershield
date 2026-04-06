@@ -1,0 +1,66 @@
+{
+  "sessions": [
+    {
+      "userId": "1764874823339275",
+      "trackingCode": "45NF4M",
+      "name": "Sarah",
+      "email": "cursorproin@gmail.com",
+      "destination": "Dharwad",
+      "pin": "767676",
+      "emergencyContacts": [
+        "rajeshsambaragi@gmail.com"
+      ],
+      "isTrackingActive": true,
+      "lastVerified": 1764874823339,
+      "locationLogs": [
+        {
+          "lat": 15.365258664370414,
+          "lng": 75.14931013032633,
+          "timestamp": 1764874823448
+        },
+        {
+          "lat": 15.365258664370414,
+          "lng": 75.14931013032633,
+          "timestamp": 1764874823500
+        },
+        {
+          "lat": 15.365258663451295,
+          "lng": 75.14931012983048,
+          "timestamp": 1764874823573
+        },
+        {
+          "lat": 15.365258663422326,
+          "lng": 75.1493101298152,
+          "timestamp": 1764874823575
+        }
+      ],
+      "createdAt": 1764874823339
+    },
+    {
+      "userId": "1764874837910293",
+      "trackingCode": "N15LSI",
+      "name": "Sarah",
+      "email": "cursorproin@gmail.com",
+      "destination": "Dharwad",
+      "pin": "767676",
+      "emergencyContacts": [
+        "rajeshsambaragi@gmail.com"
+      ],
+      "isTrackingActive": true,
+      "lastVerified": 1764874837910,
+      "locationLogs": [
+        {
+          "lat": 15.365207377309765,
+          "lng": 75.1492709306063,
+          "timestamp": 1764874838038
+        },
+        {
+          "lat": 15.365158702538462,
+          "lng": 75.14923372710751,
+          "timestamp": 1764874838073
+        }
+      ],
+      "createdAt": 1764874837910
+    }
+  ]
+}

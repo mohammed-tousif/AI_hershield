@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Karnataka Safe Routes</title>
+    <style>
+        body {
+            display: flex;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        #sidebar {
+            width: 300px;
+            padding: 20px;
+            background-color: #f0f0f0;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        #map {
+            height: 100vh;
+            flex-grow: 1;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #routeInfo {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 4px;
+            display: none;
+        }
+
+        /* Report Button Styles */
+        .report-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: auto !important;
+            background-color: #ff4444;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+
+        .report-btn:hover {
+            background-color: #cc0000;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: black;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            width: 100%;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            margin-bottom: 5px;
+        }
+
+        .submit-btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 15px;
+            display: block;
+        }
+
+        .submit-btn:hover {
+            background-color: #45a049;
+        }
+
+        .submit-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        #alertContainer {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+
+        .alert {
+            background-color: #ffffff;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 10px;
+            min-width: 300px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .alert-success {
+            border-left: 4px solid #4CAF50;
+        }
+
+        .alert-error {
+            border-left: 4px solid #f44336;
+        }
+
+        .alert-details {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .close-alert {
+            float: right;
+            font-size: 20px;
+            font-weight: bold;
+            line-height: 20px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            padding: 0 5px;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Add this to ensure small text is styled properly */
+        small {
+            display: block;
+            margin-top: 5px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div id="sidebar">
+        <h2>Safe Routes Finder</h2>
+        <select id="start" onchange="showMarker('start')">
+            <option value="">Select Starting Point</option>
+            <option value="indiranagar">Indiranagar</option>
+            <option value="koramangala">Koramangala</option>
+            <option value="hsr">HSR Layout</option>
+            <option value="whitefield">Whitefield</option>
+            <option value="malleswaram">Malleswaram</option>
+        </select>
+
+        <select id="end" onchange="showMarker('end')">
+            <option value="">Select Destination</option>
+            <option value="indiranagar">Indiranagar</option>
+            <option value="koramangala">Koramangala</option>
+            <option value="hsr">HSR Layout</option>
+            <option value="whitefield">Whitefield</option>
+            <option value="malleswaram">Malleswaram</option>
+        </select>
+
+        <button onclick="calculateAndDisplayRoute()">Find Safe Route</button>
+        <div id="routeInfo"></div>
+    </div>
+
+    <div id="map"></div>
+
+    <!-- Report Button and Modal -->
+    <button id="reportButton" class="report-btn">Report Incident</button>
+
+    <div id="reportModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Report an Incident</h2>
+            <form id="reportForm" method="POST">
+                <div class="form-group">
+                    <label for="incidentType">Type of Incident:</label>
+                    <select id="incidentType" name="type" required>
+                        <option value="">Select incident type</option>
+                        <option value="harassment">Harassment</option>
+                        <option value="theft">Theft</option>
+                        <option value="assault">Assault</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="location">Location:</label>
+                    <input type="text" id="location" name="location" placeholder="Enter location manually" required>
+                    <small>Or select from available locations:</small>
+                    <select id="locationSelect" onchange="updateLocationInput()">
+                        <option value="">Select from available locations</option>
+                        <option value="indiranagar">Indiranagar</option>
+                        <option value="koramangala">Koramangala</option>
+                        <option value="hsr">HSR Layout</option>
+                        <option value="whitefield">Whitefield</option>
+                        <option value="malleswaram">Malleswaram</option>
+                    </select>
+                </div>
+
+                <input type="hidden" id="latitude" name="latitude">
+                <input type="hidden" id="longitude" name="longitude">
+
+                <div class="form-group">
+                    <label for="datetime">Date and Time:</label>
+                    <input type="datetime-local" id="datetime" name="datetime" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Description:</label>
+                    <textarea id="description" name="description" rows="4" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" id="submitReport" class="submit-btn">Submit Report</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let map;
+        let markers = {};
+        let directionsService;
+        let directionsRenderer;
+
+        const locations = {
+            'indiranagar': { lat: 12.9784, lng: 77.6408, name: 'Indiranagar' },
+            'koramangala': { lat: 12.9279, lng: 77.6271, name: 'Koramangala' },
+            'hsr': { lat: 12.9116, lng: 77.6474, name: 'HSR Layout' },
+            'whitefield': { lat: 12.9698, lng: 77.7500, name: 'Whitefield' },
+            'malleswaram': { lat: 12.9825, lng: 77.5745, name: 'Malleswaram' }
+        };
+
+        function initMap() {
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: { lat: 12.9716, lng: 77.5946 },
+                zoom: 12
+            });
+
+            directionsService = new google.maps.DirectionsService();
+            directionsRenderer = new google.maps.DirectionsRenderer({
+                map: map,
+                suppressMarkers: true
+            });
+        }
+
+        function showMarker(type) {
+            const locationId = document.getElementById(type).value;
+            
+            if (markers[type]) {
+                markers[type].setMap(null);
+            }
+
+            if (locationId && locations[locationId]) {
+                const location = locations[locationId];
+                markers[type] = new google.maps.Marker({
+                    position: location,
+                    map: map,
+                    title: location.name,
+                    icon: {
+                        url: type === 'start' ? 'http://maps.google.com/mapfiles/ms/icons/green-dot.png' : 
+                                              'http://maps.google.com/mapfiles/ms/icons/red-dot.png'
+                    }
+                });
+            }
+        }
+
+        function calculateAndDisplayRoute() {
+            const startSelect = document.getElementById('start');
+            const endSelect = document.getElementById('end');
+            const routeInfo = document.getElementById('routeInfo');
+
+            if (!startSelect.value || !endSelect.value) {
+                alert('Please select both starting point and destination');
+                return;
+            }
+
+            if (startSelect.value === endSelect.value) {
+                alert('Starting point and destination cannot be the same');
+                return;
+            }
+
+            const start = locations[startSelect.value];
+            const end = locations[endSelect.value];
+
+            const request = {
+                origin: start,
+                destination: end,
+                travelMode: 'WALKING'
+            };
+
+            directionsService.route(request, function(result, status) {
+                if (status === 'OK') {
+                    directionsRenderer.setDirections(result);
+                    const route = result.routes[0].legs[0];
+                    routeInfo.innerHTML = `
+                        <h3>Route Information</h3>
+                        <p><strong>From:</strong> ${start.name}</p>
+                        <p><strong>To:</strong> ${end.name}</p>
+                        <p><strong>Distance:</strong> ${route.distance.text}</p>
+                        <p><strong>Walking Time:</strong> ${route.duration.text}</p>
+                    `;
+                    routeInfo.style.display = 'block';
+
+                    const bounds = new google.maps.LatLngBounds();
+                    bounds.extend(start);
+                    bounds.extend(end);
+                    map.fitBounds(bounds);
+                } else {
+                    console.error('Directions request failed due to ' + status);
+                    alert('Could not calculate route between these locations. Please try again.');
+                }
+            });
+        }
+
+        // Report Modal Functionality
+        const modal = document.getElementById("reportModal");
+        const btn = document.getElementById("reportButton");
+        const span = document.getElementsByClassName("close")[0];
+        const reportForm = document.getElementById("reportForm");
+
+        btn.onclick = function() {
+            modal.style.display = "block";
+        }
+
+        span.onclick = function() {
+            modal.style.display = "none";
+        }
+
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        document.getElementById('reportForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            console.log('Form submitted'); // Debug log
+            
+            const submitBtn = document.getElementById('submitReport');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+
+            try {
+                const formData = {
+                    type: document.getElementById('incidentType').value,
+                    location: document.getElementById('location').value,
+                    coordinates: {
+                        lat: document.getElementById('latitude').value || null,
+                        lng: document.getElementById('longitude').value || null
+                    },
+                    datetime: document.getElementById('datetime').value,
+                    description: document.getElementById('description').value
+                };
+
+                console.log('Sending data:', formData); // Debug log
+
+                const response = await fetch('http://localhost:5000/report-incident', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+                console.log('Server response:', data); // Debug log
+                
+                if (data.status === 'success') {
+                    // Create alert message
+                    const alertMessage = `Report Submitted Successfully!\n\nReport Details:\n` +
+                        `Type: ${formData.type}\n` +
+                        `Location: ${formData.location}\n` +
+                        `Date/Time: ${new Date(formData.datetime).toLocaleString()}\n` +
+                        `Description: ${formData.description}`;
+
+                    // Show basic alert
+                    window.alert(alertMessage);
+                    
+                    // Close modal and reset form
+                    modal.style.display = "none";
+                    this.reset();
+
+                    // Add marker if coordinates available
+                    if (formData.coordinates.lat && formData.coordinates.lng) {
+                        const marker = new google.maps.Marker({
+                            position: {
+                                lat: parseFloat(formData.coordinates.lat),
+                                lng: parseFloat(formData.coordinates.lng)
+                            },
+                            map: map,
+                            icon: {
+                                url: 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png'
+                            },
+                            title: `${formData.type} incident at ${formData.location}`
+                        });
+                    }
+                } else {
+                    throw new Error(data.message || 'Failed to submit report');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                window.alert('Error submitting report: ' + error.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Report';
+            }
+        });
+
+        // Pre-fill current date and time when opening modal
+        document.getElementById('reportButton').onclick = function() {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('datetime').value = now.toISOString().slice(0, 16);
+            modal.style.display = "block";
+        };
+
+        // Add this function for showing alerts
+        function showAlert(type, message) {
+            // Remove any existing alerts
+            const existingAlerts = document.querySelectorAll('.alert');
+            existingAlerts.forEach(alert => alert.remove());
+
+            // Create new alert
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="close-alert" onclick="this.parentElement.remove()">×</button>
+            `;
+            
+            // Add to container
+            const container = document.getElementById('alertContainer');
+            if (!container) {
+                const newContainer = document.createElement('div');
+                newContainer.id = 'alertContainer';
+                document.body.appendChild(newContainer);
+            }
+            
+            document.getElementById('alertContainer').appendChild(alertDiv);
+
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (alertDiv.parentElement) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+
+        // Function to update location input when selecting from dropdown
+        function updateLocationInput() {
+            const select = document.getElementById("locationSelect");
+            const locationInput = document.getElementById("location");
+            const latInput = document.getElementById("latitude");
+            const lngInput = document.getElementById("longitude");
+
+            if (select.value) {
+                const selectedLocation = locations[select.value];
+                locationInput.value = selectedLocation.name;
+                latInput.value = selectedLocation.lat;
+                lngInput.value = selectedLocation.lng;
+            }
+        }
+
+        // Add click listener to map for manual location selection
+        map.addListener('click', function(e) {
+            const locationInput = document.getElementById("location");
+            const latInput = document.getElementById("latitude");
+            const lngInput = document.getElementById("longitude");
+            
+            // Update coordinates
+            latInput.value = e.latLng.lat();
+            lngInput.value = e.latLng.lng();
+
+            // Reverse geocode to get address
+            const geocoder = new google.maps.Geocoder();
+            geocoder.geocode({ location: e.latLng }, function(results, status) {
+                if (status === 'OK' && results[0]) {
+                    locationInput.value = results[0].formatted_address;
+                } else {
+                    locationInput.value = `${e.latLng.lat()}, ${e.latLng.lng()}`;
+                }
+            });
+        });
+    </script>
+
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBGXF_WodaMeP10oziYhG0NdqHw2fJogxM&callback=initMap" async defer></script>
+</body>
+</html>

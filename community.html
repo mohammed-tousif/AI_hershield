@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Her Shield - Community</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #BDA6CE;
+            --secondary-color: #9B8EC7;
+            --accent-color: #B4D3D9;
+            --peach-light: #F2EAE0;
+            --peach-dark: #8B7EB8;
+            --text-dark: #2D3436;
+            --text-light: #ffffff;
+            --gradient-1: linear-gradient(135deg, #BDA6CE 0%, #9B8EC7 100%);
+            --gradient-2: linear-gradient(45deg, #B4D3D9 0%, #BDA6CE 100%);
+            --glass-bg: rgba(255, 255, 255, 0.95);
+            --glass-border: rgba(255, 255, 255, 0.18);
+            --card-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+            --gradient-start: #BDA6CE;
+            --gradient-middle: #9B8EC7;
+            --gradient-end: #B4D3D9;
+            --sidebar-width: 280px;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #F2EAE0;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .gradient-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: linear-gradient(-45deg,
+                    rgba(189, 166, 206, 0.1),
+                    rgba(155, 142, 199, 0.1),
+                    rgba(255, 160, 122, 0.1));
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+
+        @keyframes gradient {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .main-content {
+            min-height: 100vh;
+            padding-bottom: 2rem;
+        }
+
+
+
+        .community-header {
+            background: var(--gradient-1);
+            padding: 3rem 0;
+            margin-bottom: 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .community-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><circle cx="2" cy="2" r="2" fill="rgba(255,255,255,0.1)"/></svg>');
+            opacity: 0.3;
+            animation: patternMove 20s linear infinite;
+        }
+
+        .post-card {
+            background: var(--glass-bg);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--glass-border);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .post-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        }
+
+        .alert-card {
+            background: linear-gradient(135deg, rgba(189, 166, 206, 0.1) 0%, rgba(155, 142, 199, 0.1) 100%);
+            border-left: 4px solid var(--secondary-color);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .alert-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .emergency-card {
+            background: var(--glass-bg);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--glass-border);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .emergency-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-post {
+            background: var(--gradient-1);
+            border: none;
+            padding: 1rem 2.5rem;
+            border-radius: 1rem;
+            color: white;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-post:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(155, 142, 199, 0.3);
+        }
+
+        .form-control {
+            border-radius: 1rem;
+            border: 2px solid rgba(189, 166, 206, 0.1);
+            padding: 1.2rem;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .form-control:focus {
+            box-shadow: 0 0 0 4px rgba(189, 166, 206, 0.1);
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        .section-title {
+            color: var(--secondary-color);
+            font-weight: 600;
+            margin-bottom: 2rem;
+            position: relative;
+            display: inline-block;
+            padding-bottom: 0.5rem;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60%;
+            height: 4px;
+            background: var(--gradient-1);
+            border-radius: 2px;
+        }
+
+        .btn-action {
+            padding: 0.5rem 1rem;
+            border-radius: 0.75rem;
+            transition: all 0.3s ease;
+            background: rgba(189, 166, 206, 0.1);
+            color: var(--secondary-color);
+            border: none;
+            font-weight: 500;
+        }
+
+        .btn-action:hover {
+            background: var(--gradient-1);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(189, 166, 206, 0.1);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--gradient-1);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--gradient-2);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Background Elements -->
+    <div class="gradient-background"></div>
+
+    <!-- Firebase SDK and Unified Navigation -->
+    <script type="module">
+        import './firebase-config.js';
+        import './firebase-auth.js';
+        import './navigation.js';
+    </script>
+
+    <!-- Main Content -->
+    <div class="main-content" style="padding: 2rem;">
+        <!-- Community Header -->
+        <header class="community-header text-white rounded-4 mb-4" style="margin-top: 0;">
+            <div class="container-fluid">
+                <h1 class="display-5 fw-bold mb-3">Women Safety & Security Community</h1>
+                <p class="lead mb-0">Connect, Share, and Support Each Other</p>
+            </div>
+        </header>
+
+        <div class="container-fluid">
+            <div class="row">
+                <!-- Discussion Board Section -->
+                <div class="col-lg-8 mb-4">
+                    <h2 class="section-title mb-4">
+                        <i class="fas fa-comments me-2"></i>Community Feed
+                    </h2>
+
+                    <!-- Advanced Post Creation Composer -->
+                    <div class="post-card mb-4 shadow-sm">
+                        <div class="d-flex align-items-center mb-3">
+                            <img src="https://ui-avatars.com/api/?name=You&background=BDA6CE&color=fff"
+                                alt="Your Profile" class="rounded-circle me-3"
+                                style="width: 48px; height: 48px; border: 2px solid #BDA6CE;">
+                            <div class="flex-grow-1">
+                                <div class="post-composer-trigger" onclick="expandComposer()">
+                                    <input type="text" class="form-control form-control-lg border-0 bg-light"
+                                        placeholder="What's on your mind? Share safety tips, experiences..." readonly
+                                        style="cursor: pointer; border-radius: 50px; font-size: 15px;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Expanded Composer (Hidden by default) -->
+                        <div id="expandedComposer" style="display: none;">
+                            <form id="postForm">
+                                <div class="mb-3">
+                                    <textarea class="form-control border-0" id="postContent" rows="4"
+                                        placeholder="Share your thoughts, experiences, or safety tips..."
+                                        style="resize: none; font-size: 15px; line-height: 1.6;"></textarea>
+                                </div>
+                                <div class="row g-2 mb-3">
+                                    <div class="col-md-4">
+                                        <input type="text" class="form-control" id="postLocation"
+                                            placeholder="Location (e.g., Hubli)">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input type="url" class="form-control" id="postImageUrl"
+                                            placeholder="Image URL (optional)">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <select class="form-control" id="postCategory">
+                                            <option value="general">General</option>
+                                            <option value="alert">Alert</option>
+                                            <option value="tip">Safety Tip</option>
+                                            <option value="experience">Experience</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Post Options Bar -->
+                                <div class="border-top pt-3">
+                                    <div class="d-flex align-items-center justify-content-between flex-wrap">
+                                        <div class="d-flex align-items-center gap-2 mb-2 mb-md-0">
+                                            <span class="text-muted small fw-semibold me-2">Add to post:</span>
+                                            <button type="button" class="btn btn-sm btn-light rounded-circle"
+                                                title="Add Photo" style="width: 40px; height: 40px;">
+                                                <i class="fas fa-image text-success"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-light rounded-circle"
+                                                title="Add Location" style="width: 40px; height: 40px;">
+                                                <i class="fas fa-map-marker-alt text-danger"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-light rounded-circle"
+                                                title="Tag Category" style="width: 40px; height: 40px;">
+                                                <i class="fas fa-tag text-primary"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-light rounded-circle"
+                                                title="Add Poll" style="width: 40px; height: 40px;">
+                                                <i class="fas fa-poll text-warning"></i>
+                                            </button>
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <button type="button" class="btn btn-light" onclick="collapseComposer()">
+                                                Cancel
+                                            </button>
+                                            <button type="submit" class="btn btn-primary px-4"
+                                                style="background: linear-gradient(135deg, #BDA6CE, #9B8EC7); border: none; border-radius: 8px;">
+                                                <i class="fas fa-paper-plane me-2"></i>Post
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Quick Action Buttons (When Collapsed) -->
+                        <div id="quickActions" class="border-top pt-3">
+                            <div class="row g-2">
+                                <div class="col-4">
+                                    <button class="btn btn-light w-100 d-flex align-items-center justify-content-center"
+                                        onclick="expandComposer()" style="border-radius: 8px; padding: 10px;">
+                                        <i class="fas fa-image text-success me-2"></i>
+                                        <span class="d-none d-md-inline">Photo</span>
+                                    </button>
+                                </div>
+                                <div class="col-4">
+                                    <button class="btn btn-light w-100 d-flex align-items-center justify-content-center"
+                                        onclick="expandComposer()" style="border-radius: 8px; padding: 10px;">
+                                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                                        <span class="d-none d-md-inline">Alert</span>
+                                    </button>
+                                </div>
+                                <div class="col-4">
+                                    <button class="btn btn-light w-100 d-flex align-items-center justify-content-center"
+                                        onclick="expandComposer()" style="border-radius: 8px; padding: 10px;">
+                                        <i class="fas fa-lightbulb text-primary me-2"></i>
+                                        <span class="d-none d-md-inline">Tip</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <script>
+                        function expandComposer() {
+                            document.getElementById('expandedComposer').style.display = 'block';
+                            document.getElementById('quickActions').style.display = 'none';
+                            document.querySelector('.post-composer-trigger').style.display = 'none';
+                            document.getElementById('postContent').focus();
+                        }
+
+                        function collapseComposer() {
+                            document.getElementById('expandedComposer').style.display = 'none';
+                            document.getElementById('quickActions').style.display = 'block';
+                            document.querySelector('.post-composer-trigger').style.display = 'block';
+                            document.getElementById('postContent').value = '';
+                            document.getElementById('postLocation').value = '';
+                            document.getElementById('postImageUrl').value = '';
+                            document.getElementById('postCategory').value = 'general';
+                        }
+
+                        // Handle form submission
+                        document.getElementById('postForm').addEventListener('submit', async function (e) {
+                            e.preventDefault();
+                            const content = document.getElementById('postContent').value;
+                            if (content.trim()) {
+                                const location = document.getElementById('postLocation').value;
+                                const imageUrl = document.getElementById('postImageUrl').value;
+                                const category = document.getElementById('postCategory').value;
+                                try {
+                                    const response = await fetch('/api/community/posts', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            content: content.trim(),
+                                            location,
+                                            imageUrl,
+                                            category,
+                                            userName: localStorage.getItem('hershield_user_name') || 'Community Member',
+                                            userEmail: localStorage.getItem('hershield_user_email') || ''
+                                        })
+                                    });
+                                    const result = await response.json();
+                                    if (!response.ok || !result.success) throw new Error(result.message || 'Failed to create post');
+                                    collapseComposer();
+                                    await window.loadCommunityPosts();
+                                } catch (error) {
+                                    alert(`Failed to create post: ${error.message}`);
+                                }
+                            }
+                        });
+                    </script>
+
+
+                    <!-- Posts Container: all posts are loaded from Firestore -->
+                    <div id="postsContainer">
+                        <div id="dynamicPosts">
+                            <!-- Loading state -->
+                            <div id="postsLoadingSpinner" class="text-center py-5">
+                                <div class="spinner-border" style="color: var(--primary-color);" role="status"></div>
+                                <p class="mt-3 text-muted">Loading community posts…</p>
+                            </div>
+                        </div>
+                    </div>
+                        <div class="post-card mb-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <img src="https://ui-avatars.com/api/?name=Priya+Sharma&background=9B8EC7&color=fff"
+                                    alt="Profile" class="rounded-circle me-3" style="width: 50px; height: 50px;">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-0 fw-bold">Priya Sharma</h6>
+                                    <small class="post-meta"><i class="far fa-clock me-1"></i>2 hours ago •
+                                        Bangalore</small>
+                                </div>
+                                <span class="badge bg-success">Safety Tip</span>
+                            </div>
+                            <p class="mb-3">Just completed a self-defense workshop at Women's Empowerment Center! 🥋
+                                Learned some amazing techniques. Highly recommend to all women in the community. They
+                                have a special discount this month!</p>
+                            <img src="https://images.unsplash.com/photo-1555597673-b21d5c935865?w=800&h=400&fit=crop"
+                                alt="Self Defense Class" class="img-fluid rounded-3 mb-3"
+                                style="width: 100%; max-height: 300px; object-fit: cover;">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <button class="btn btn-sm btn-light me-2">
+                                        <i class="fas fa-heart text-danger me-1"></i>24 Likes
+                                    </button>
+                                    <button class="btn btn-sm btn-light me-2">
+                                        <i class="far fa-comment me-1"></i>8 Comments
+                                    </button>
+                                    <button class="btn btn-sm btn-light">
+                                        <i class="far fa-share-square me-1"></i>Share
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Post 2 - Community Alert -->
+                        <div class="post-card mb-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <img src="https://ui-avatars.com/api/?name=Anjali+Reddy&background=B4D3D9&color=fff"
+                                    alt="Profile" class="rounded-circle me-3" style="width: 50px; height: 50px;">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-0 fw-bold">Anjali Reddy</h6>
+                                    <small class="post-meta"><i class="far fa-clock me-1"></i>5 hours ago •
+                                        Hyderabad</small>
+                                </div>
+                                <span class="badge bg-warning text-dark">Alert</span>
+                            </div>
+                            <div class="alert alert-warning mb-3" style="border-left: 4px solid #ffc107;">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>Area Alert:</strong> Avoid Jubilee Hills area between 10 PM - 6 AM. Increased
+                                reports of suspicious activity. Stay safe everyone! 🚨
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <button class="btn btn-sm btn-light me-2">
+                                        <i class="fas fa-heart text-danger me-1"></i>45 Likes
+                                    </button>
+                                    <button class="btn btn-sm btn-light me-2">
+                                        <i class="far fa-comment me-1"></i>12 Comments
+                                    </button>
+                                    <button class="btn btn-sm btn-light">
+                                        <i class="far fa-bookmark me-1"></i>Save
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Post 3 - Success Story with Image -->
+                        <div class="post-card mb-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <img src="https://ui-avatars.com/api/?name=Meera+Patel&background=9B59B6&color=fff"
+                                    alt="Profile" class="rounded-circle me-3" style="width: 50px; height: 50px;">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-0 fw-bold">Meera Patel</h6>
+                                    <small class="post-meta"><i class="far fa-clock me-1"></i>1 day ago • Mumbai</small>
+                                </div>
+                                <span class="badge bg-info">Success Story</span>
+                            </div>
+                            <p class="mb-3">🎉 Big news! Our community helped install 15 new street lights in the
+                                Andheri area. Thank you to everyone who signed the petition and attended the council
+                                meeting. This is what community power looks like! 💪✨</p>
+                            <img src="https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&h=400&fit=crop"
+                                alt="Street Lights" class="img-fluid rounded-3 mb-3"
+                                style="width: 100%; max-height: 300px; object-fit: cover;">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <button class="btn btn-sm btn-light me-2">
+                                        <i class="fas fa-heart text-danger me-1"></i>156 Likes
+                                    </button>
+                                    <button class="btn btn-sm btn-light me-2">
+                                        <i class="far fa-comment me-1"></i>34 Comments
+                                    </button>
+                                    <button class="btn btn-sm btn-light">
+                                        <i class="far fa-share-square me-1"></i>Share
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Post 4 - Question/Discussion -->
+                        <div class="post-card mb-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <img src="https://ui-avatars.com/api/?name=Kavya+Nair&background=3498DB&color=fff"
+                                    alt="Profile" class="rounded-circle me-3" style="width: 50px; height: 50px;">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-0 fw-bold">Kavya Nair</h6>
+                                    <small class="post-meta"><i class="far fa-clock me-1"></i>1 day ago • Kochi</small>
+                                </div>
+                                <span class="badge bg-primary">Question</span>
+                            </div>
+                            <p class="mb-3">Looking for recommendations for safe late-night cab services in Kochi. I
+                                work night shifts and need reliable transportation. Any suggestions? 🚕</p>
+                            <div class="bg-light p-3 rounded-3 mb-3">
+                                <small class="text-muted d-block mb-2"><strong>Top Answer:</strong></small>
+                                <div class="d-flex">
+                                    <img src="https://ui-avatars.com/api/?name=Divya+Kumar&background=E74C3C&color=fff"
+                                        alt="Profile" class="rounded-circle me-2" style="width: 30px; height: 30px;">
+                                    <div>
+                                        <small class="fw-bold">Divya Kumar</small>
+                                        <p class="mb-0 small">I use Uber and Ola with live tracking shared with family.
+                                            Also, Her Shield's live tracker feature is amazing for this! Always share your
+                                            ride details. 👍</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <button class="btn btn-sm btn-light me-2">
+                                        <i class="fas fa-heart text-danger me-1"></i>18 Likes
+                                    </button>
+                                    <button class="btn btn-sm btn-light me-2">
+                                        <i class="far fa-comment me-1"></i>23 Comments
+                                    </button>
+                                    <button class="btn btn-sm btn-light">
+                                        <i class="far fa-share-square me-1"></i>Share
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Post 5 - Event Announcement -->
+                        <div class="post-card mb-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <img src="https://ui-avatars.com/api/?name=Her+Shield+Team&background=BDA6CE&color=fff"
+                                    alt="Profile" class="rounded-circle me-3" style="width: 50px; height: 50px;">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-0 fw-bold">Her Shield Team <i class="fas fa-check-circle text-primary"
+                                            title="Verified"></i></h6>
+                                    <small class="post-meta"><i class="far fa-clock me-1"></i>2 days ago</small>
+                                </div>
+                                <span class="badge bg-danger">Event</span>
+                            </div>
+                            <div class="card border-0"
+                                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                <div class="card-body text-white">
+                                    <h5 class="card-title mb-3"><i class="fas fa-calendar-alt me-2"></i>Women's Safety
+                                        Workshop</h5>
+                                    <p class="card-text mb-2"><i class="far fa-calendar me-2"></i><strong>Date:</strong>
+                                        January 15, 2026</p>
+                                    <p class="card-text mb-2"><i class="far fa-clock me-2"></i><strong>Time:</strong>
+                                        10:00 AM - 4:00 PM</p>
+                                    <p class="card-text mb-3"><i
+                                            class="fas fa-map-marker-alt me-2"></i><strong>Venue:</strong> Community
+                                        Center, Indiranagar</p>
+                                    <button class="btn btn-light btn-sm">
+                                        <i class="fas fa-user-plus me-1"></i>Register Now (Free)
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mt-3 d-flex align-items-center justify-content-between">
+                                <div>
+                                    <button class="btn btn-sm btn-light me-2">
+                                        <i class="fas fa-heart text-danger me-1"></i>89 Likes
+                                    </button>
+                                    <button class="btn btn-sm btn-light me-2">
+                                        <i class="far fa-comment me-1"></i>15 Comments
+                                    </button>
+                                    <button class="btn btn-sm btn-light">
+                                        <i class="far fa-share-square me-1"></i>Share
+                                    </button>
+                                </div>
+                                <small class="text-muted">67 people interested</small>
+                            </div>
+                        </div>
+
+                        <!-- Post 6 - Personal Experience -->
+                        <div class="post-card mb-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <img src="https://ui-avatars.com/api/?name=Riya+Singh&background=E67E22&color=fff"
+                                    alt="Profile" class="rounded-circle me-3" style="width: 50px; height: 50px;">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-0 fw-bold">Riya Singh</h6>
+                                    <small class="post-meta"><i class="far fa-clock me-1"></i>3 days ago • Delhi</small>
+                                </div>
+                                <span class="badge bg-secondary">Experience</span>
+                            </div>
+                            <p class="mb-3">Yesterday, I used the Her Shield live tracker while traveling alone at night.
+                                My family could see my location in real-time, and I felt so much safer. The periodic
+                                safety check-ins are genius! Thank you for creating this app. 🙏💜</p>
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <button class="btn btn-sm btn-light me-2">
+                                        <i class="fas fa-heart text-danger me-1"></i>203 Likes
+                                    </button>
+                                    <button class="btn btn-sm btn-light me-2">
+                                        <i class="far fa-comment me-1"></i>45 Comments
+                                    </button>
+                                    <button class="btn btn-sm btn-light">
+                                        <i class="far fa-share-square me-1"></i>Share
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar -->
+                <div class="col-lg-4">
+                    <!-- Safety Alerts Section -->
+                    <div class="mb-4">
+                        <h2 class="section-title">Safety Alerts</h2>
+                        <div id="sidebarAlertsList">
+                            <div class="text-center py-3">
+                                <div class="spinner-border spinner-border-sm" style="color: var(--primary-color);" role="status"></div>
+                                <span class="ms-2 text-muted small">Loading alerts…</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Emergency Resources Section -->
+                    <div>
+                        <h2 class="section-title">Emergency Resources</h2>
+                        <div class="emergency-card">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-phone-alt emergency-icon"></i>
+                                <div>
+                                    <h5>Police Helpline</h5>
+                                    <p class="mb-0">911</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="emergency-card">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-hands-helping emergency-icon"></i>
+                                <div>
+                                    <h5>Women Helpline</h5>
+                                    <p class="mb-0">1-800-799-SAFE</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="emergency-card">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-ambulance emergency-icon"></i>
+                                <div>
+                                    <h5>Emergency Medical</h5>
+                                    <p class="mb-0">911</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <script>
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.innerText = text || '';
+                return div.innerHTML;
+            }
+
+            function categoryBadge(cat) {
+                const map = {
+                    alert: 'bg-warning text-dark',
+                    tip: 'bg-success',
+                    experience: 'bg-secondary',
+                    general: 'bg-primary',
+                    event: 'bg-danger',
+                    question: 'bg-info',
+                };
+                return map[(cat || 'general').toLowerCase()] || 'bg-primary';
+            }
+
+            function timeAgo(dateStr) {
+                const diff = Date.now() - new Date(dateStr).getTime();
+                const mins = Math.floor(diff / 60000);
+                if (mins < 1) return 'just now';
+                if (mins < 60) return `${mins}m ago`;
+                const hrs = Math.floor(mins / 60);
+                if (hrs < 24) return `${hrs}h ago`;
+                return `${Math.floor(hrs / 24)}d ago`;
+            }
+
+            function renderDbPost(post) {
+                const image = post.imageUrl ? `<img src="${escapeHtml(post.imageUrl)}" alt="Post image" class="img-fluid rounded-3 mb-3" style="width:100%; max-height:300px; object-fit:cover;">` : '';
+                return `
+                    <div class="post-card mb-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(post.userName || 'Community Member')}&background=BDA6CE&color=fff"
+                                alt="Profile" class="rounded-circle me-3" style="width: 50px; height: 50px;">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-0 fw-bold">${escapeHtml(post.userName || 'Community Member')}</h6>
+                                <small class="post-meta"><i class="far fa-clock me-1"></i>${timeAgo(post.createdAt)}${post.location ? ` &bull; ${escapeHtml(post.location)}` : ''}</small>
+                            </div>
+                            <span class="badge ${categoryBadge(post.category)}">${escapeHtml(post.category || 'General')}</span>
+                        </div>
+                        <p class="mb-3">${escapeHtml(post.content || '')}</p>
+                        ${image}
+                        <div class="d-flex align-items-center">
+                            <button class="btn btn-action me-2 js-like-btn"><i class="far fa-heart me-1"></i>${post.likes || 0} Likes</button>
+                            <button class="btn btn-action"><i class="far fa-comment me-1"></i>Comment</button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            window.loadCommunityPosts = async function () {
+                const dynamicPosts = document.getElementById('dynamicPosts');
+                const spinner = document.getElementById('postsLoadingSpinner');
+                if (!dynamicPosts) return;
+                try {
+                    const response = await fetch('/api/community/posts?limit=50');
+                    const result = await response.json();
+                    if (!response.ok || !result.success) throw new Error(result.message || 'Failed to fetch posts');
+                    const posts = result.posts || [];
+                    if (spinner) spinner.remove();
+                    if (posts.length === 0) {
+                        dynamicPosts.innerHTML = `
+                            <div class="post-card text-center py-5">
+                                <i class="fas fa-comments fa-3x mb-3" style="color: var(--primary-color); opacity: 0.4;"></i>
+                                <p class="text-muted">No community posts yet.<br><strong>Be the first to share something!</strong></p>
+                            </div>`;
+                        return;
+                    }
+                    dynamicPosts.innerHTML = posts.map(renderDbPost).join('');
+                    // Re-attach like handlers
+                    dynamicPosts.querySelectorAll('.js-like-btn').forEach(btn => {
+                        btn.addEventListener('click', function () {
+                            const icon = this.querySelector('i');
+                            if (icon.classList.contains('far')) {
+                                icon.classList.replace('far', 'fas');
+                                gsap.from(icon, { scale: 1.5, duration: 0.2, ease: 'back.out' });
+                            } else {
+                                icon.classList.replace('fas', 'far');
+                            }
+                        });
+                    });
+                } catch (error) {
+                    console.error('Failed loading community posts:', error);
+                    if (spinner) spinner.remove();
+                    dynamicPosts.innerHTML = '<div class="alert alert-warning"><i class="fas fa-wifi-slash me-2"></i>Could not load community posts. Please check your connection.</div>';
+                }
+            };
+
+            async function loadSidebarAlerts() {
+                const alertsList = document.getElementById('sidebarAlertsList');
+                if (!alertsList) return;
+                try {
+                    const resp = await fetch('/api/community/alerts?limit=5');
+                    const result = await resp.json();
+                    if (!resp.ok || !result.success) throw new Error(result.message || 'Failed');
+                    const alerts = result.alerts || [];
+                    if (alerts.length === 0) {
+                        alertsList.innerHTML = '<div class="alert-card"><div class="d-flex"><i class="fas fa-check-circle text-success me-2 mt-1"></i><div><h6 class="mb-1">All Clear</h6><p class="mb-0 small">No active community safety alerts right now. Stay safe! 💜</p></div></div></div>';
+                        return;
+                    }
+                    const iconMap = { high: 'text-danger', critical: 'text-danger', medium: 'text-warning', low: 'text-success' };
+                    alertsList.innerHTML = alerts.slice(0, 4).map(alert => `
+                        <div class="alert-card">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-exclamation-circle ${iconMap[(alert.severity || 'medium').toLowerCase()] || 'text-warning'} me-2 mt-1"></i>
+                                <div>
+                                    <h6 class="mb-1 fw-semibold">${escapeHtml(alert.title || 'Safety Alert')}</h6>
+                                    ${alert.location ? `<small class="text-muted"><i class="fas fa-map-marker-alt me-1"></i>${escapeHtml(alert.location)}</small><br>` : ''}
+                                    <small class="text-muted">${escapeHtml(alert.message || '')}</small>
+                                    <div class="mt-1"><small class="text-muted fst-italic">${timeAgo(alert.createdAt)}</small></div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } catch (e) {
+                    console.warn('Sidebar alerts load failed:', e.message);
+                    alertsList.innerHTML = '<div class="text-muted small px-2">Could not load alerts.</div>';
+                }
+            }
+
+            function createNewPost(content) {
+                const post = document.createElement('div');
+                post.className = 'post-card';
+                const timestamp = new Date().toLocaleTimeString();
+                post.innerHTML = `
+                    <div class="d-flex align-items-center mb-3">
+                        <img src="https://ui-avatars.com/api/?name=Community+Member&background=BDA6CE&color=fff"
+                            alt="Profile" class="rounded-circle me-2" style="width: 40px; height: 40px;">
+                        <div>
+                            <h6 class="mb-0">Community Member</h6>
+                            <small class="text-muted">${timestamp}</small>
+                        </div>
+                    </div>
+                    <p>${content}</p>
+                    <div class="d-flex align-items-center">
+                        <button class="btn btn-action me-2"><i class="far fa-heart me-1"></i>Like</button>
+                        <button class="btn btn-action"><i class="far fa-comment me-1"></i>Comment</button>
+                    </div>
+                `;
+                const container = document.getElementById('postsContainer');
+                if (container) container.insertBefore(post, container.firstChild);
+                gsap.from(post, { y: -20, opacity: 0, duration: 0.4, ease: 'power2.out' });
+            }
+
+            // Load on init
+            window.loadCommunityPosts();
+            loadSidebarAlerts();
+
+            // Auto-refresh
+            setInterval(window.loadCommunityPosts, 30000);
+            setInterval(loadSidebarAlerts, 30000);
+        });
+    </script>
+</body>
+</html>

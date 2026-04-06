@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Her Shield - Authentication</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        :root {
+            --gradient-start: #BDA6CE;
+            --gradient-middle: #9B8EC7;
+            --gradient-end: #B4D3D9;
+        }
+
+        body {
+            font-family: -apple-system, 'SF Pro Display', 'Poppins', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background: #F2EAE0;
+        }
+
+        .gradient-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: linear-gradient(-45deg, var(--gradient-start), var(--gradient-middle), var(--gradient-end));
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+
+        .gradient-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+                    rgba(255, 255, 255, 0.1) 0%,
+                    rgba(7, 0, 0, 0.05) 25%,
+                    transparent 50%);
+            pointer-events: none;
+        }
+
+        @keyframes gradient {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .auth-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 1;
+        }
+
+        .auth-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .auth-header h2 {
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 0.5rem;
+            font-size: 2.4rem;
+            letter-spacing: -0.5px;
+        }
+
+        .auth-header p {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #666;
+        }
+
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 2.5rem;
+            border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+            gap: 1rem;
+        }
+
+        .auth-tab {
+            flex: 1;
+            text-align: center;
+            padding: 1rem;
+            cursor: pointer;
+            color: var(--text-dark);
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            position: relative;
+            user-select: none;
+        }
+
+        .auth-tab::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, var(--gradient-start), var(--gradient-middle));
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .auth-tab.active {
+            color: var(--gradient-middle);
+        }
+
+        .auth-tab.active::after {
+            transform: scaleX(1);
+        }
+
+        .form-control {
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            border: 2px solid rgba(0, 0, 0, 0.1);
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            color: var(--text-dark);
+        }
+
+        .form-control:focus {
+            border-color: var(--gradient-middle);
+            box-shadow: 0 0 0 4px rgba(155, 142, 199, 0.1);
+        }
+
+        .form-floating>label {
+            padding: 1rem 1.25rem;
+            font-weight: 500;
+        }
+
+        .btn-modern {
+            background: linear-gradient(90deg, var(--gradient-start), var(--gradient-middle));
+            border: none;
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(155, 142, 199, 0.2);
+        }
+
+        .btn-modern:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .social-login {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .social-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            color: var(--text-dark);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            font-size: 1.2rem;
+        }
+
+        .social-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+            color: var(--gradient-middle);
+        }
+
+        .form-check-input:checked {
+            background-color: var(--gradient-middle);
+            border-color: var(--gradient-middle);
+        }
+
+        .form-check-label {
+            font-weight: 500;
+            color: var(--text-dark);
+        }
+
+        .auth-form {
+            display: none;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+        }
+
+        .auth-form.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (max-width: 576px) {
+            .auth-card {
+                padding: 2rem;
+            }
+
+            .auth-header h2 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="gradient-background"></div>
+    <div class="gradient-overlay"></div>
+
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h2>Her Shield</h2>
+                <p>Your Safety Companion</p>
+            </div>
+
+            <div class="auth-tabs">
+                <div class="auth-tab active" onclick="switchTab('login')">Login</div>
+                <div class="auth-tab" onclick="switchTab('signup')">Sign Up</div>
+                <div class="auth-tab" onclick="switchTab('recover')">Recover</div>
+            </div>
+
+            <!-- Login Form -->
+            <div class="auth-form active" id="loginForm">
+                <form onsubmit="return handleLogin(event)">
+                    <div class="form-floating mb-3">
+                        <input type="email" class="form-control" id="loginEmail" placeholder="name@example.com"
+                            required>
+                        <label for="loginEmail">Email address</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <input type="password" class="form-control" id="loginPassword" placeholder="Password" required>
+                        <label for="loginPassword">Password</label>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="rememberMe">
+                            <label class="form-check-label" for="rememberMe">Remember me</label>
+                        </div>
+                        <a href="#" onclick="switchTab('recover')" class="text-decoration-none"
+                            style="color: var(--gradient-middle); font-weight: 500;">Forgot password?</a>
+                    </div>
+                    <button type="submit" class="btn btn-modern w-100">Login</button>
+                </form>
+
+                <div class="text-center mt-4">
+                    <p class="text-muted fw-500">Or login with</p>
+                    <div class="social-login">
+                        <a href="#" class="social-btn" onclick="handleSocialLogin('google')"><i
+                                class="fab fa-google"></i></a>
+                        <a href="#" class="social-btn" onclick="handleSocialLogin('facebook')"><i
+                                class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="social-btn" onclick="handleSocialLogin('apple')"><i
+                                class="fab fa-apple"></i></a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sign Up Form -->
+            <div class="auth-form" id="signupForm">
+                <form onsubmit="return handleSignup(event)">
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control" id="signupName" placeholder="Full Name" required>
+                        <label for="signupName">Full Name</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <input type="email" class="form-control" id="signupEmail" placeholder="name@example.com"
+                            required>
+                        <label for="signupEmail">Email address</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <input type="tel" class="form-control" id="signupPhone" placeholder="Phone Number" required>
+                        <label for="signupPhone">Phone Number</label>
+                    </div>
+                    <div class="form-floating mb-4">
+                        <input type="password" class="form-control" id="signupPassword" placeholder="Password" required>
+                        <label for="signupPassword">Password</label>
+                    </div>
+                    <div class="form-check mb-4">
+                        <input class="form-check-input" type="checkbox" id="termsCheck" required>
+                        <label class="form-check-label" for="termsCheck">
+                            I agree to the Terms of Service and Privacy Policy
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-modern w-100">Create Account</button>
+                </form>
+            </div>
+
+            <!-- Password Recovery Form -->
+            <div class="auth-form" id="recoverForm">
+                <div class="text-center mb-4">
+                    <h4 class="fw-600">Password Recovery</h4>
+                    <p class="text-muted">Enter your email to receive recovery instructions</p>
+                </div>
+                <form onsubmit="return handleRecovery(event)">
+                    <div class="form-floating mb-4">
+                        <input type="email" class="form-control" id="recoverEmail" placeholder="name@example.com"
+                            required>
+                        <label for="recoverEmail">Email address</label>
+                    </div>
+                    <button type="submit" class="btn btn-modern w-100">Send Recovery Email</button>
+                    <div class="text-center mt-3">
+                        <a href="#" onclick="switchTab('login')" class="text-decoration-none"
+                            style="color: var(--gradient-middle); font-weight: 500;">Back to Login</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import './firebase-config.js';
+        import './firebase-auth.js';
+
+        // Moving gradient effect
+        document.addEventListener('mousemove', (e) => {
+            const x = e.clientX;
+            const y = e.clientY;
+            document.documentElement.style.setProperty('--mouse-x', `${x}px`);
+            document.documentElement.style.setProperty('--mouse-y', `${y}px`);
+        });
+
+        // Tab switching with smooth transitions - EXPOSE GLOBALLY
+        window.switchTab = function switchTab(tab) {
+            // Update tab styles
+            document.querySelectorAll('.auth-tab').forEach(t => {
+                t.classList.remove('active');
+                if (t.textContent.toLowerCase() === tab) {
+                    t.classList.add('active');
+                }
+            });
+
+            // Hide all forms with fade out
+            document.querySelectorAll('.auth-form').forEach(form => {
+                form.style.opacity = '0';
+                form.style.transform = 'translateY(10px)';
+                setTimeout(() => {
+                    form.classList.remove('active');
+                    if (form.id === `${tab}Form`) {
+                        form.classList.add('active');
+                        setTimeout(() => {
+                            form.style.opacity = '1';
+                            form.style.transform = 'translateY(0)';
+                        }, 50);
+                    }
+                }, 300);
+            });
+        }
+
+        // Form handlers with Firebase authentication - EXPOSE GLOBALLY
+        window.handleLogin = async function handleLogin(event) {
+            event.preventDefault();
+            const form = event.target;
+            const button = form.querySelector('button');
+
+            if (!form.checkValidity()) {
+                form.classList.add('was-validated');
+                return false;
+            }
+
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Logging in...';
+
+            try {
+                const result = await window.authService.loginWithEmail(email, password);
+                if (result.success) {
+                    // Wait for Firebase auth state to propagate before redirecting
+                    setTimeout(() => {
+                        window.location.replace('dashboard.html');
+                    }, 1000);
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                button.disabled = false;
+                button.innerHTML = 'Login';
+                alert('Login failed: ' + error.message);
+            }
+
+            return false;
+        }
+
+        window.handleSignup = async function handleSignup(event) {
+            event.preventDefault();
+            const form = event.target;
+            const button = form.querySelector('button');
+
+            if (!form.checkValidity()) {
+                form.classList.add('was-validated');
+                return false;
+            }
+
+            const name = document.getElementById('signupName').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating account...';
+
+            try {
+                const result = await window.authService.registerWithEmail(email, password, name);
+                if (result.success) {
+                    button.disabled = false;
+                    button.innerHTML = 'Create Account';
+                    alert('Account created successfully! Please log in.');
+                    switchTab('login');
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                button.disabled = false;
+                button.innerHTML = 'Create Account';
+                alert('Registration failed: ' + error.message);
+            }
+
+            return false;
+        }
+
+        window.handleRecovery = async function handleRecovery(event) {
+            event.preventDefault();
+            const form = event.target;
+            const button = form.querySelector('button');
+
+            if (!form.checkValidity()) {
+                form.classList.add('was-validated');
+                return false;
+            }
+
+            const email = document.getElementById('recoverEmail').value;
+
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Sending...';
+
+            try {
+                const result = await window.authService.resetPassword(email);
+                if (result.success) {
+                    button.disabled = false;
+                    button.innerHTML = 'Send Recovery Email';
+                    alert('Recovery instructions have been sent to your email.');
+                    switchTab('login');
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                button.disabled = false;
+                button.innerHTML = 'Send Recovery Email';
+                alert('Password reset failed: ' + error.message);
+            }
+
+            return false;
+        }
+
+        window.handleSocialLogin = async function handleSocialLogin(provider) {
+            try {
+                let result;
+                switch (provider) {
+                    case 'google':
+                        result = await window.authService.loginWithGoogle();
+                        break;
+                    case 'facebook':
+                        result = await window.authService.loginWithFacebook();
+                        break;
+                    case 'apple':
+                        result = await window.authService.loginWithApple();
+                        break;
+                    default:
+                        throw new Error('Unknown provider');
+                }
+
+                if (result.success) {
+                    // Wait for Firebase auth state to propagate before redirecting
+                    setTimeout(() => {
+                        window.location.replace('dashboard.html');
+                    }, 1000);
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                alert('Social login failed: ' + error.message);
+            }
+        }
+    </script>
+</body>
+
+</html>

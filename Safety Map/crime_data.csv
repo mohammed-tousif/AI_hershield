@@ -1,0 +1,181 @@
+latitude,longitude,risk_level,location
+#Karnataka - Major Cities and Areas
+12.9716,77.5946,2,"Bangalore - MG Road"
+12.9850,77.5533,1,"Bangalore - Malleshwaram"
+12.9302,77.6853,3,"Bangalore - Electronic City"
+12.9979,77.5920,2,"Bangalore - Indiranagar"
+12.9346,77.6206,3,"Bangalore - Koramangala"
+12.9783,77.6408,1,"Bangalore - Whitefield"
+12.9254,77.5973,2,"Bangalore - BTM Layout"
+13.0298,77.5441,2,"Bangalore - Yeshwanthpur"
+12.9299,77.5222,1,"Bangalore - Kengeri"
+13.0641,77.5876,2,"Bangalore - Hebbal"
+15.3647,75.1240,2,"Hubli - City Center"
+15.3573,75.1232,3,"Hubli - Railway Station"
+15.3500,75.1167,1,"Hubli - Airport Area"
+15.3349,75.1335,2,"Hubli - Industrial Area"
+15.4589,75.0078,1,"Hubli - Suburban Area"
+15.2117,75.2903,3,"Hubli-Dharwad Highway"
+15.4553,75.0070,2,"Dharwad - City Center"
+15.4483,75.0054,1,"Dharwad - University Campus"
+15.4677,75.0216,2,"Dharwad - Railway Station"
+15.1765,75.3351,2,"Haliyal - Town Center"
+15.0885,75.4471,3,"Haliyal - Industrial Zone"
+15.1589,75.3575,1,"Haliyal - Residential Area"
+14.8162,74.1341,2,"Karwar - Beach Road"
+14.8136,74.1300,3,"Karwar - Port Area"
+14.8000,74.1300,1,"Karwar - City Center"
+16.1691,75.6615,2,"Vijayapura - City Center"
+16.8302,75.7100,1,"Bagalkot - City Center"
+15.3505,75.1338,2,"Gadag - City Center"
+13.9299,75.5681,1,"Shimoga - City Center"
+12.3075,76.6497,2,"Mysore - City Palace"
+12.2958,76.6394,1,"Mysore - Infosys Campus"
+12.3579,76.6003,2,"Mysore - University"
+13.3379,77.1173,2,"Tumkur - City Center"
+12.5137,76.8845,1,"Mandya - City Center"
+15.1394,76.9214,2,"Chitradurga - Fort Area"
+13.4305,77.7281,1,"Chikballapur - City Center"
+12.7109,77.2858,2,"Ramanagara - City Center"
+13.0068,77.6674,3,"Devanahalli - Airport Area"
+12.7619,77.5275,1,"Bidadi Industrial Area"
+14.2311,76.3990,2,"Davanagere - City Center"
+16.2160,77.3566,1,"Raichur - City Center"
+15.8497,74.4977,2,"Belgaum - City Center"
+13.0012,76.1026,1,"Hassan - City Center"
+12.4244,75.7382,2,"Madikeri - City Center"
+13.3161,75.7720,1,"Chikmagalur - Coffee Town"
+15.5786,75.7680,2,"Koppal - City Center"
+
+# Karnataka - Tourist Spots and Important Areas
+12.2753,75.7321,1,"Coorg - Madikeri Fort"
+12.4198,75.7050,2,"Coorg - Abbey Falls"
+13.4168,75.7406,1,"Chikmagalur - Mullayanagiri Peak"
+14.2297,76.3922,2,"Chitradurga Fort"
+12.4246,76.5704,1,"Mysore Zoo"
+12.3052,76.6528,2,"Mysore Palace"
+14.2311,76.3990,1,"Jog Falls Area"
+15.3350,76.4620,2,"Hampi Heritage Site"
+12.9850,75.8472,1,"Sakleshpur Hill Station"
+13.9925,75.5644,2,"Shimoga - Jog Falls Route"
+
+# Karnataka - Educational Hubs
+12.9217,77.5936,1,"Bangalore - IISc Campus"
+13.0355,77.5767,1,"Bangalore - Ramaiah Institute"
+15.4483,75.0054,1,"Dharwad - Karnataka University"
+12.3120,76.6387,1,"Mysore - SJCE Campus"
+12.9850,77.5533,1,"Bangalore - MS Ramaiah Campus"
+15.3647,75.1240,1,"Hubli - Engineering Colleges Area"
+
+# Karnataka - Industrial Areas
+13.0641,77.5876,2,"Bangalore - Peenya Industrial"
+12.9783,77.6408,2,"Bangalore - ITPL"
+12.9302,77.6853,2,"Bangalore - Electronic City"
+15.3349,75.1335,2,"Hubli - Industrial Estate"
+12.7619,77.5275,2,"Bidadi Industrial Region"
+13.1598,77.4129,2,"Nelamangala Industrial"
+
+# Karnataka - Transportation Hubs
+12.9785,77.5975,2,"Bangalore - Majestic Bus Station"
+12.9784,77.5666,2,"Bangalore - City Railway Station"
+13.1989,77.7068,3,"Bangalore International Airport"
+15.3573,75.1232,2,"Hubli Railway Junction"
+12.3075,76.6497,2,"Mysore Railway Station"
+15.3500,75.1167,2,"Hubli Airport Region"
+
+# Karnataka - Highways and Major Roads
+13.0681,77.4537,2,"Bangalore - Tumkur Road NH48"
+12.9236,77.6852,2,"Bangalore - Hosur Road NH44"
+13.0701,77.5935,2,"Bangalore - Bellary Road NH44"
+12.8639,77.5372,2,"Bangalore - Mysore Road NH275"
+15.2117,75.2903,2,"Hubli-Dharwad Highway"
+12.4256,76.6448,2,"Mysore-Bangalore Highway"
+
+# Rest of India - Major Cities (Sample from previous data)
+28.6139,77.2090,3,"Delhi - Central"
+28.6304,77.2177,2,"Delhi - Connaught Place"
+19.0760,72.8777,3,"Mumbai - Dharavi"
+19.2183,72.9781,1,"Mumbai - Powai"
+22.5726,88.3639,2,"Kolkata - Park Street"
+13.0827,80.2707,2,"Chennai - Marina Beach"
+17.3850,78.4867,2,"Hyderabad - Banjara Hills"
+23.0225,72.5714,2,"Ahmedabad - City Center"
+26.8467,80.9462,2,"Lucknow - Hazratganj"
+18.5204,73.8567,2,"Pune - Koregaon Park"
+
+# Haliyal Town and Educational Areas
+15.3227,74.7549,1,"KLS VDI Institute of Technology"
+15.3329,74.7547,1,"KLS VDI Campus Hostels"
+15.3280,74.7550,1,"KLS VDI Sports Ground"
+15.3297,74.7583,2,"Haliyal Bus Stand"
+15.3305,74.7572,1,"Government High School Haliyal"
+15.3312,74.7561,1,"Haliyal PU College"
+
+# Haliyal Town Center and Markets
+15.3294,74.7566,2,"Haliyal Main Market"
+15.3289,74.7571,2,"Gandhi Chowk"
+15.3287,74.7568,1,"Municipal Office Area"
+15.3291,74.7563,2,"Old Bus Stand Area"
+15.3298,74.7559,2,"State Bank Circle"
+15.3301,74.7557,1,"Post Office Area"
+15.3286,74.7575,2,"Weekly Market Ground"
+
+# Residential Areas
+15.3276,74.7561,1,"Teachers Colony"
+15.3282,74.7553,1,"Bank Colony"
+15.3271,74.7568,1,"Revenue Layout"
+15.3265,74.7572,1,"New Extension Area"
+15.3259,74.7565,1,"Police Quarters"
+15.3288,74.7558,1,"Civil Station Area"
+
+# Industrial and Commercial Areas
+15.3315,74.7545,2,"Industrial Estate Haliyal"
+15.3308,74.7538,3,"Timber Market Area"
+15.3320,74.7552,2,"Warehouse Area"
+15.3312,74.7568,2,"Commercial Complex"
+15.3305,74.7575,2,"Transport Nagar"
+
+# Healthcare Facilities
+15.3293,74.7562,1,"Government Hospital"
+15.3287,74.7559,1,"Primary Health Center"
+15.3295,74.7556,1,"Red Cross Center"
+
+# Religious Places
+15.3290,74.7564,1,"Main Temple"
+15.3285,74.7569,1,"Jama Masjid"
+15.3292,74.7573,1,"Church Area"
+
+# Outskirts and Connecting Roads
+15.3335,74.7580,2,"Haliyal-Dandeli Road Junction"
+15.3245,74.7590,2,"Haliyal-Yellapur Road"
+15.3315,74.7520,3,"Forest Border Area"
+15.3260,74.7530,2,"Railway Crossing Area"
+15.3350,74.7560,2,"Highway Junction"
+
+# Agricultural Areas
+15.3240,74.7540,1,"Agricultural Fields North"
+15.3220,74.7570,1,"Agricultural Fields South"
+15.3270,74.7520,1,"Farming Community Area"
+
+# Recreation and Parks
+15.3283,74.7567,1,"Town Park"
+15.3278,74.7571,1,"Children's Park"
+15.3286,74.7563,1,"Sports Ground"
+
+# High Risk Areas (Marked for Safety)
+15.3310,74.7585,3,"Isolated Industrial Zone"
+15.3325,74.7540,3,"Remote Forest Path"
+15.3318,74.7565,3,"Unmanned Railway Area"
+15.3330,74.7575,3,"Abandoned Warehouse Zone"
+
+# Moderate Risk Areas
+15.3295,74.7580,2,"Night Market Area"
+15.3305,74.7565,2,"Busy Junction"
+15.3315,74.7570,2,"Transport Hub"
+15.3300,74.7555,2,"Market Extension"
+
+# Safe Zones
+15.3275,74.7565,1,"Residential Complex"
+15.3280,74.7560,1,"School Zone"
+15.3285,74.7555,1,"Hospital Area"
+15.3290,74.7550,1,"Government Quarters"

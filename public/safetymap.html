@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Safety Map | Women Safety App</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBGXF_WodaMeP10oziYhG0NdqHw2fJogxM&libraries=places,directions&callback=initMap"
+        defer></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            height: 500px;
+            width: 100%;
+            margin: 20px 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>Google Maps Safe Route Finder</h2>
+
+    <div class="container">
+        <label>Start Location:</label>
+        <input type="text" id="startLocation" class="form-control" placeholder="Enter start location">
+        <button class="btn btn-primary mt-2" id="useCurrentLocation">Use Current Location</button>
+
+        <label class="mt-3">Destination:</label>
+        <input type="text" id="endLocation" class="form-control" placeholder="Enter destination">
+
+        <button class="btn btn-success mt-3" id="findRoute">Find Safe Route</button>
+    </div>
+
+    <div id="map"></div>
+
+    <script>
+        let map, directionsService, directionsRenderer, geocoder;
+        let startAutocomplete, endAutocomplete;
+        let startPlace = null, endPlace = null;
+
+        function initMap() {
+            directionsService = new google.maps.DirectionsService();
+            directionsRenderer = new google.maps.DirectionsRenderer();
+            geocoder = new google.maps.Geocoder();
+
+            map = new google.maps.Map(document.getElementById("map"), {
+                center: { lat: 12.9716, lng: 77.5946 }, // Default to Bangalore
+                zoom: 12
+            });
+
+            directionsRenderer.setMap(map);
+
+            // Initialize Google Places Autocomplete
+            const startInput = document.getElementById("startLocation");
+            const endInput = document.getElementById("endLocation");
+
+            startAutocomplete = new google.maps.places.Autocomplete(startInput);
+            endAutocomplete = new google.maps.places.Autocomplete(endInput);
+
+            // Capture selected places from autocomplete
+            startAutocomplete.addListener('place_changed', () => {
+                startPlace = startAutocomplete.getPlace();
+                if (!startPlace.geometry) {
+                    console.warn("No geometry for start place");
+                    startPlace = null;
+                }
+            });
+
+            endAutocomplete.addListener('place_changed', () => {
+                endPlace = endAutocomplete.getPlace();
+                if (!endPlace.geometry) {
+                    console.warn("No geometry for end place");
+                    endPlace = null;
+                }
+            });
+
+            // Clear place objects when user types
+            startInput.addEventListener('input', () => {
+                startPlace = null;
+            });
+
+            endInput.addEventListener('input', () => {
+                endPlace = null;
+            });
+        }
+
+        document.getElementById("findRoute").addEventListener("click", async () => {
+            const startValue = document.getElementById("startLocation").value.trim();
+            const endValue = document.getElementById("endLocation").value.trim();
+
+            if (!startValue || !endValue) {
+                alert("Please enter both start and destination locations.");
+                return;
+            }
+
+            // Show loading state
+            const btn = document.getElementById("findRoute");
+            const originalText = btn.textContent;
+            btn.textContent = "Calculating Route...";
+            btn.disabled = true;
+
+            try {
+                await calculateRoute(startValue, endValue);
+            } catch (error) {
+                console.error("Route calculation error:", error);
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        async function calculateRoute(startValue, endValue) {
+            let origin, destination;
+
+            // Try to use place objects first, then geocode if needed
+            if (startPlace && startPlace.geometry) {
+                origin = startPlace.place_id ? { placeId: startPlace.place_id } : startPlace.geometry.location;
+            } else {
+                // Geocode the start location
+                try {
+                    origin = await geocodeLocation(startValue);
+                } catch (error) {
+                    alert("Could not find start location: " + startValue + ". Please select a location from the dropdown or enter a valid address.");
+                    return;
+                }
+            }
+
+            if (endPlace && endPlace.geometry) {
+                destination = endPlace.place_id ? { placeId: endPlace.place_id } : endPlace.geometry.location;
+            } else {
+                // Geocode the destination
+                try {
+                    destination = await geocodeLocation(endValue);
+                } catch (error) {
+                    alert("Could not find destination: " + endValue + ". Please select a location from the dropdown or enter a valid address.");
+                    return;
+                }
+            }
+
+            const request = {
+                origin: origin,
+                destination: destination,
+                travelMode: google.maps.TravelMode.DRIVING,
+                provideRouteAlternatives: true
+            };
+
+            directionsService.route(request, (result, status) => {
+                if (status === google.maps.DirectionsStatus.OK) {
+                    directionsRenderer.setDirections(result);
+                } else if (status === google.maps.DirectionsStatus.ZERO_RESULTS) {
+                    alert("No route found between these locations. Please try different locations.");
+                } else if (status === google.maps.DirectionsStatus.NOT_FOUND) {
+                    alert("One or both locations could not be found. Please check your entries and try again.");
+                } else if (status === google.maps.DirectionsStatus.INVALID_REQUEST) {
+                    alert("Invalid route request. Please ensure both locations are valid addresses or places.");
+                } else {
+                    alert("Could not calculate route: " + status + ". Please try again.");
+                }
+            });
+        }
+
+        // Helper function to geocode a location string
+        function geocodeLocation(address) {
+            return new Promise((resolve, reject) => {
+                geocoder.geocode({ address: address }, (results, status) => {
+                    if (status === google.maps.GeocoderStatus.OK && results[0]) {
+                        resolve(results[0].geometry.location);
+                    } else {
+                        reject(new Error("Geocoding failed: " + status));
+                    }
+                });
+            });
+        }
+
+        document.getElementById("useCurrentLocation").addEventListener("click", () => {
+            if (navigator.geolocation) {
+                const btn = document.getElementById("useCurrentLocation");
+                btn.textContent = "Getting Location...";
+                btn.disabled = true;
+
+                navigator.geolocation.getCurrentPosition((position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+
+                    // Reverse geocode to get address
+                    geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+                        if (status === google.maps.GeocoderStatus.OK && results[0]) {
+                            document.getElementById("startLocation").value = results[0].formatted_address;
+                            startPlace = {
+                                geometry: { location: { lat, lng } },
+                                formatted_address: results[0].formatted_address
+                            };
+                        } else {
+                            // Fallback to coordinates
+                            document.getElementById("startLocation").value = `${lat}, ${lng}`;
+                            startPlace = {
+                                geometry: { location: { lat, lng } }
+                            };
+                        }
+                        map.setCenter({ lat, lng });
+                        btn.textContent = "Use Current Location";
+                        btn.disabled = false;
+                    });
+                }, (error) => {
+                    alert("Could not get your location: " + error.message);
+                    btn.textContent = "Use Current Location";
+                    btn.disabled = false;
+                });
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        });
+
+        window.onload = initMap;
+    </script>
+
+</body>
+
+</html>

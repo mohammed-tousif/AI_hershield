@@ -1,0 +1,1675 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Safety Tracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <script
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBGXF_WodaMeP10oziYhG0NdqHw2fJogxM&libraries=places,directions,visualization&callback=initMap"
+        async defer></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        :root {
+            --gradient-start: #BDA6CE;
+            --gradient-middle: #9B8EC7;
+            --gradient-end: #B4D3D9;
+            --text-dark: #2D3436;
+            --text-light: #ffffff;
+            --sidebar-width: 280px;
+            --header-height: 70px;
+            --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            color: var(--text-dark);
+            line-height: 1.6;
+            background: #F2EAE0;
+            overflow-x: hidden;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Gradient Background Effects */
+        .gradient-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: linear-gradient(-45deg, var(--gradient-start), var(--gradient-middle), var(--gradient-end));
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+            opacity: 0.05;
+        }
+
+        .gradient-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+                    rgba(255, 255, 255, 0.1) 0%,
+                    rgba(255, 255, 255, 0.05) 25%,
+                    transparent 50%);
+            pointer-events: none;
+        }
+
+        @keyframes gradient {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        /* Dashboard Layout */
+        .dashboard-container {
+            display: flex;
+            width: 100%;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            border-right: 1px solid rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            transition: transform 0.3s var(--transition-smooth);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            padding: 0 0 1.5rem 0;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .sidebar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-middle));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            overflow-y: auto;
+        }
+
+        .sidebar-menu-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar-menu-link {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.25rem;
+            border-radius: 12px;
+            color: var(--text-dark);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            font-weight: 500;
+            gap: 1rem;
+        }
+
+        .sidebar-menu-link:hover {
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-middle));
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .sidebar-menu-link.active {
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-middle));
+            color: white;
+        }
+
+        .sidebar-menu-icon {
+            width: 24px;
+            font-size: 1.2rem;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 1rem 0;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: calc(var(--header-height) + 2rem) 2.5rem 2.5rem 2.5rem;
+            width: calc(100% - var(--sidebar-width));
+            position: relative;
+        }
+
+        /* Header Bar */
+        .header-bar {
+            position: fixed;
+            top: 0;
+            right: 0;
+            left: var(--sidebar-width);
+            height: var(--header-height);
+            background: white;
+            z-index: 99;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2.5rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .header-bar h4 {
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-middle));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-weight: 600;
+            font-size: 1.35rem;
+        }
+
+        /* Toggle Button for Mobile */
+        .sidebar-toggle {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 10001;
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-middle));
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(155, 142, 199, 0.5);
+            transition: all 0.3s ease;
+            font-size: 1.25rem;
+            opacity: 1;
+        }
+
+        .sidebar-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 25px rgba(155, 142, 199, 0.6);
+            background: linear-gradient(135deg, var(--gradient-middle), var(--gradient-start));
+        }
+
+        .mobile-toggle {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 10001;
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-middle));
+            color: white;
+            border: none;
+            padding: 0;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(155, 142, 199, 0.5);
+            transition: all 0.3s ease;
+            font-size: 1.25rem;
+            opacity: 1;
+        }
+
+        .mobile-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 25px rgba(155, 142, 199, 0.6);
+            background: linear-gradient(135deg, var(--gradient-middle), var(--gradient-start));
+        }
+
+        /* Mobile Navigation Overlay */
+        .mobile-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(3px);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .mobile-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+
+        /* Responsive Adjustments */
+        @media (max-width: 991px) {
+            .main-content {
+                margin-left: 0 !important;
+                width: 100%;
+                padding-top: calc(var(--header-height) + 1rem);
+                padding-left: 1.5rem;
+                padding-right: 1.5rem;
+            }
+
+            .header-bar {
+                left: 0 !important;
+                padding: 0 70px !important;
+            }
+
+            .sidebar-toggle {
+                display: flex !important;
+                top: 10px;
+                left: 10px;
+            }
+
+            .mobile-toggle {
+                display: flex !important;
+                top: 10px;
+                right: 10px;
+            }
+
+            .quick-actions-panel {
+                width: 280px;
+            }
+
+            /* Additional styling for sidebar */
+            .sidebar nav {
+                margin-top: 1rem !important;
+                display: flex !important;
+                flex-direction: column !important;
+            }
+
+            .sidebar .nav-link {
+                margin-bottom: 0.75rem !important;
+                width: 100% !important;
+                opacity: 1 !important;
+            }
+
+            .sidebar .nav-link span {
+                color: inherit !important;
+                font-weight: 600 !important;
+            }
+        }
+
+        @media (max-width: 767px) {
+            .main-content {
+                padding: calc(var(--header-height) + 1rem) 1.25rem 1.25rem 1.25rem;
+            }
+
+            .header-bar {
+                padding: 0 70px;
+            }
+
+            .sidebar {
+                width: 280px;
+                padding: 1.5rem;
+            }
+
+            .sidebar-toggle {
+                background: linear-gradient(135deg, var(--gradient-start), var(--gradient-middle));
+                box-shadow: 0 5px 20px rgba(155, 142, 199, 0.7);
+            }
+
+            .mobile-toggle {
+                width: 50px;
+                height: 50px;
+                padding: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .quick-actions-panel {
+                width: 270px;
+                padding: 1.5rem 1rem;
+            }
+
+            .quick-actions {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .tracking-code {
+                font-size: 1.75rem;
+            }
+
+            h4,
+            .h4 {
+                font-size: 1.3rem;
+            }
+
+            .header-bar h4 {
+                font-size: 1.2rem;
+            }
+
+            .glass-card {
+                padding: 1.25rem;
+                margin-bottom: 1rem;
+            }
+
+            .btn {
+                padding: 0.7rem 1rem;
+                font-size: 0.95rem;
+            }
+
+            .form-control,
+            .form-select {
+                padding: 0.7rem 1rem;
+                font-size: 0.95rem;
+            }
+
+            .form-label {
+                font-size: 0.9rem;
+            }
+
+            .dropdown-menu {
+                min-width: 220px;
+            }
+
+            .dropdown-item {
+                padding: 0.4rem 0.75rem;
+                font-size: 0.8rem;
+            }
+
+            .sidebar {
+                padding: 1.25rem;
+                width: 250px;
+            }
+
+            .sidebar-brand {
+                font-size: 1.3rem;
+            }
+
+            .sidebar-menu-link {
+                padding: 0.75rem 1rem;
+                font-size: 0.9rem;
+            }
+
+            .sidebar-menu-icon {
+                width: 20px;
+                font-size: 1rem;
+            }
+
+            .quick-actions-panel {
+                width: 85%;
+                max-width: 260px;
+            }
+
+            .action-button {
+                padding: 1rem;
+            }
+
+            .header-bar {
+                padding: 0 60px;
+            }
+        }
+
+        /* Cards and Components */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            margin-bottom: 1.5rem;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Buttons */
+        .btn-start-tracking {
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-middle));
+            border: none;
+            color: var(--text-light);
+            padding: 12px 30px;
+            border-radius: 12px;
+            font-weight: 500;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(155, 142, 199, 0.3);
+        }
+
+        .btn-start-tracking:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(155, 142, 199, 0.4);
+            background: linear-gradient(135deg, var(--gradient-middle), var(--gradient-start));
+        }
+
+        .btn-end-tracking {
+            background: linear-gradient(135deg, #9B8EC7, #7A6B99);
+            border: none;
+            color: var(--text-light);
+            padding: 12px 30px;
+            border-radius: 12px;
+            font-weight: 500;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(155, 142, 199, 0.3);
+        }
+
+        .btn-end-tracking:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(155, 142, 199, 0.4);
+            background: linear-gradient(135deg, #7A6B99, #9B8EC7);
+        }
+
+        /* Primary Button */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-middle));
+            border: none;
+            box-shadow: 0 5px 15px rgba(155, 142, 199, 0.3);
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(155, 142, 199, 0.4);
+            background: linear-gradient(135deg, var(--gradient-middle), var(--gradient-start));
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #11cdef, #1171ef);
+            border: none;
+            box-shadow: 0 5px 15px rgba(17, 205, 239, 0.3);
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .btn-info:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(17, 205, 239, 0.4);
+        }
+
+        .dropdown-menu {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 0;
+            padding: 0.5rem;
+            border-radius: 12px;
+        }
+
+        .dropdown-item {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .dropdown-item:hover {
+            background-color: rgba(155, 142, 199, 0.1);
+            transform: translateX(5px);
+        }
+
+        /* Animation Effects */
+        .scale-in {
+            animation: scaleIn 0.5s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Tracking Elements */
+        .tracking-code {
+            font-size: 2rem;
+            font-weight: bold;
+            text-align: center;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-middle));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin: 1rem 0;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .map-placeholder {
+            width: 100%;
+            height: 300px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 1rem 0;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .map-placeholder:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-indicator {
+            padding: 1.5rem;
+            border-radius: 24px;
+            margin: 1rem 0;
+            text-align: center;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            background: white;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .status-safe {
+            background: rgba(45, 206, 137, 0.1);
+            border-color: rgba(45, 206, 137, 0.3);
+            color: #2DCE89;
+        }
+
+        .status-danger {
+            background: rgba(155, 142, 199, 0.1);
+            border-color: rgba(155, 142, 199, 0.3);
+            color: #9B8EC7;
+        }
+
+        .timer-display {
+            font-size: 1.5rem;
+            text-align: center;
+            margin: 1rem 0;
+            color: var(--text-dark);
+            padding: 1.5rem;
+            background: white;
+            border-radius: 24px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        .form-control,
+        .form-select {
+            border-radius: 12px;
+            padding: 12px 20px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            background: white;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            box-shadow: 0 0 0 3px rgba(155, 142, 199, 0.2);
+            border-color: var(--gradient-middle);
+            background: white;
+        }
+
+        /* Sidebar Active State for Body */
+        body.sidebar-active {
+            overflow: hidden;
+        }
+
+        /* Quick Actions Grid */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        @media (max-width: 991px) {
+            .quick-actions {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 1rem;
+            }
+        }
+
+        @media (max-width: 767px) {
+            .quick-actions {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .mobile-toggle {
+                top: 10px;
+                right: 10px;
+                padding: 0.6rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .quick-actions .glass-card {
+                padding: 1rem;
+            }
+        }
+
+        /* Quick Actions Panel */
+        .quick-actions-panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 280px;
+            height: 100vh;
+            background: white;
+            z-index: 99998;
+            padding: 2rem 1.5rem;
+            overflow-y: auto;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
+            border-top-left-radius: 20px;
+            border-bottom-left-radius: 20px;
+        }
+
+        .quick-actions-panel.active {
+            transform: translateX(0);
+        }
+
+        .quick-actions-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .quick-actions-header h5 {
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-middle));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .quick-actions-header .btn-close {
+            background-color: rgba(155, 142, 199, 0.1);
+            opacity: 1;
+            transition: all 0.3s ease;
+        }
+
+        .quick-actions-header .btn-close:hover {
+            background-color: rgba(155, 142, 199, 0.2);
+            transform: rotate(90deg);
+        }
+
+        /* Overlay for Quick Actions */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Action Buttons */
+        .action-button {
+            cursor: pointer;
+            border: none;
+            width: 100%;
+            text-align: left;
+            background: white;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            border-radius: 16px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.03);
+        }
+
+        .action-button:hover {
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-middle));
+            color: white;
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(155, 142, 199, 0.2);
+        }
+
+        .action-button:hover p.text-muted {
+            color: rgba(255, 255, 255, 0.8) !important;
+        }
+
+        .action-button:hover i {
+            color: white !important;
+        }
+
+        .action-icon {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(189, 166, 206, 0.1);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .action-button:hover .action-icon {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* User Profile Styling */
+        .user-profile {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-right: 1rem;
+            object-fit: cover;
+            border: 2px solid var(--gradient-middle);
+        }
+
+        .user-info h6 {
+            margin: 0;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .user-info small {
+            color: var(--gradient-middle);
+            font-weight: 500;
+        }
+
+        /* Navigation Links (Dashboard Style) */
+        .nav-link {
+            padding: 1rem 1.25rem;
+            border-radius: 12px;
+            color: var(--text-dark) !important;
+            font-weight: 600 !important;
+            transition: all 0.3s ease;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            text-decoration: none;
+            font-size: 1.1rem !important;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-middle)) !important;
+            color: white !important;
+            transform: translateX(5px);
+        }
+
+        .nav-link i {
+            width: 24px;
+            font-size: 1.2rem;
+            color: inherit;
+            margin-right: 0.5rem;
+        }
+
+        /* Quick Actions Panel Responsive Styles */
+        @media (max-width: 991px) {
+            .quick-actions-panel {
+                width: 300px;
+            }
+        }
+
+        @media (max-width: 767px) {
+            .quick-actions-panel {
+                width: 280px;
+                padding: 1.5rem 1rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .quick-actions-panel {
+                width: 85%;
+                max-width: 270px;
+            }
+
+            .action-button {
+                padding: 1rem;
+            }
+        }
+
+        /* Mobile Navigation Fix - Always visible */
+        @media (max-width: 991px) {
+
+            .sidebar-toggle,
+            .mobile-toggle {
+                display: flex !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                pointer-events: auto !important;
+            }
+
+            body::before {
+                content: '';
+                position: fixed;
+                top: 10px;
+                left: 10px;
+                width: 50px;
+                height: 50px;
+                background: transparent;
+                z-index: 9999;
+                pointer-events: none;
+            }
+
+            body::after {
+                content: '';
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                width: 50px;
+                height: 50px;
+                background: transparent;
+                z-index: 9999;
+                pointer-events: none;
+            }
+        }
+
+        /* Show-Hide Controls for Fixed Navigation */
+        @media (min-width: 992px) {
+
+            #fixedSidebarToggle,
+            #fixedActionsToggle {
+                display: none !important;
+            }
+        }
+
+        /* Critical Mobile Styles */
+        @media (max-width: 991px) {
+
+            /* Sidebar absolute positioning for mobile */
+            .sidebar {
+                transform: translateX(-100%);
+                width: 280px !important;
+                height: 100vh !important;
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                z-index: 99998 !important;
+                /* Very high z-index */
+                box-shadow: 0 0 30px rgba(0, 0, 0, 0.2) !important;
+                overflow-y: auto !important;
+                transition: transform 0.3s ease !important;
+                background-color: rgba(255, 255, 255, 0.98) !important;
+                backdrop-filter: blur(10px) !important;
+                padding: 2rem 1.5rem !important;
+            }
+
+            /* Active state for sidebar */
+            .sidebar.active {
+                transform: translateX(0) !important;
+                display: block !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+            }
+
+            /* Quick actions panel */
+            .quick-actions-panel {
+                position: fixed !important;
+                top: 0 !important;
+                right: 0 !important;
+                width: 280px !important;
+                height: 100vh !important;
+                z-index: 99998 !important;
+                transform: translateX(100%);
+                transition: transform 0.3s ease !important;
+            }
+
+            .quick-actions-panel.active {
+                transform: translateX(0) !important;
+            }
+
+            /* Overlay for quick actions */
+            .overlay {
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+                background: rgba(0, 0, 0, 0.5) !important;
+                backdrop-filter: blur(3px) !important;
+                z-index: 99997 !important;
+                opacity: 0;
+                visibility: hidden;
+                transition: all 0.3s ease !important;
+            }
+
+            .overlay.active {
+                opacity: 1 !important;
+                visibility: visible !important;
+            }
+
+            /* Main content adjustments */
+            .main-content {
+                margin-left: 0 !important;
+                width: 100% !important;
+                padding-top: calc(var(--header-height) + 1rem) !important;
+            }
+
+            .header-bar {
+                left: 0 !important;
+                padding: 0 70px !important;
+            }
+        }
+
+        /* Critical Mobile Navigation Fix for Dashboard Style */
+        @media (max-width: 991px) {
+            .sidebar.active {
+                display: flex !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+                transform: translateX(0) !important;
+                z-index: 99999 !important;
+                pointer-events: auto !important;
+                height: 100vh !important;
+                overflow-y: auto !important;
+            }
+
+            /* Force visibility of nav links */
+            .sidebar.active .nav-link {
+                display: flex !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+                width: 100% !important;
+                color: var(--text-dark) !important;
+                font-weight: 600 !important;
+                padding: 0.75rem 1rem !important;
+                margin-bottom: 0.5rem !important;
+            }
+
+            .sidebar.active .nav-link.active {
+                background: linear-gradient(135deg, var(--gradient-start), var(--gradient-middle)) !important;
+                color: white !important;
+            }
+
+            .sidebar.active .nav-link i {
+                color: inherit !important;
+                margin-right: 0.75rem !important;
+                font-size: 1.2rem !important;
+            }
+
+            .sidebar.active .nav-link span {
+                color: inherit !important;
+                font-weight: 600 !important;
+                font-size: 1.1rem !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="gradient-background"></div>
+    <div class="gradient-overlay"></div>
+
+    <!-- Firebase SDK and Unified Navigation -->
+    <script type="module">
+        import './firebase-config.js';
+        import './firebase-auth.js';
+        import './navigation.js';
+    </script>
+
+
+
+
+
+    <div class="dashboard-container">
+        <!-- Sidebar and Quick Actions Panel are now handled by navigation.js -->
+
+
+        <!-- Header Bar -->
+        <header class="header-bar">
+            <div>
+                <h4 class="m-0 d-flex align-items-center">
+                    <i class="fas fa-map-marked-alt me-2"></i>
+                    <span>Live Tracker</span>
+                </h4>
+            </div>
+
+            <div class="d-flex align-items-center">
+                <div class="dropdown me-3">
+                    <button class="btn btn-light btn-sm position-relative" type="button" id="notificationsDropdown"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-bell" style="color: var(--gradient-middle)"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            2
+                        </span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationsDropdown">
+                        <li>
+                            <h6 class="dropdown-header">Notifications</h6>
+                        </li>
+                        <li><a class="dropdown-item" href="#">New safety alert in your area</a></li>
+                        <li><a class="dropdown-item" href="#">Check-in reminder</a></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li><a class="dropdown-item small" href="#">View all notifications</a></li>
+                    </ul>
+                </div>
+
+                <a href="auth.html" class="btn btn-primary btn-sm">
+                    <i class="fas fa-user me-1"></i>
+                    <span>Profile</span>
+                </a>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Content Container -->
+            <div class="container-fluid px-0">
+                <div class="row">
+                    <div class="col-lg-10 col-xl-8 mx-auto">
+                        <!-- Live Tracking Content (main focus) -->
+                        <div class="glass-card">
+                            <div class="p-4">
+                                <h5 class="mb-4 fw-bold">Live Safety Tracking</h5>
+                                <!-- Initial Form -->
+                                <div id="initialForm" class="scale-in">
+                                    <form id="travelDetailsForm" class="needs-validation" novalidate
+                                        onsubmit="return false;">
+                                        <div class="mb-3">
+                                            <label for="name" class="form-label">Full Name</label>
+                                            <input type="text" class="form-control" id="name" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="phone" class="form-label">Emergency Contact Number</label>
+                                            <input type="tel" class="form-control" id="phone" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="travelMode" class="form-label">Mode of Travel</label>
+                                            <select class="form-select" id="travelMode" required>
+                                                <option value="">Select travel mode</option>
+                                                <option value="walking">Walking</option>
+                                                <option value="cab">Cab</option>
+                                                <option value="public">Public Transport</option>
+                                                <option value="other">Other</option>
+                                            </select>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="startPoint" class="form-label">Starting Point</label>
+                                                <input type="text" class="form-control" id="startPoint" required>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="destination" class="form-label">Destination</label>
+                                                <input type="text" class="form-control" id="destination" required>
+                                            </div>
+                                        </div>
+                                        <button type="submit" class="btn btn-start-tracking w-100">
+                                            <i class="fas fa-location-arrow me-2"></i> Start Tracking
+                                        </button>
+                                    </form>
+                                </div>
+
+                                <!-- Tracking View (Initially Hidden) -->
+                                <div id="trackingView" style="display: none;">
+                                    <div class="glass-card mb-4">
+                                        <div class="p-4">
+                                            <h4 class="mb-3">Your Tracking Code:</h4>
+                                            <div class="tracking-code" id="trackingCode"></div>
+                                            <p class="mb-0 text-center">Keep this code safe! You'll need it to
+                                                confirm
+                                                your safety during the journey.</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="glass-card mb-4" id="mapPlaceholder" style="height: 300px;">
+                                        <div id="map" style="width: 100%; height: 100%;"></div>
+                                    </div>
+
+                                    <div class="glass-card mb-4" id="timerDisplay">
+                                        <div class="p-3 text-center">
+                                            <h5 class="mb-2">Next safety check in:</h5>
+                                            <div class="fs-2 fw-bold" id="countdown"
+                                                style="color: var(--gradient-middle)">5:00</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="glass-card mb-4 status-safe" id="statusIndicator">
+                                        <div class="p-3 text-center">
+                                            <i class="fas fa-check-circle me-2"></i> Tracking Active
+                                        </div>
+                                    </div>
+
+                                    <button class="btn btn-end-tracking w-100 mt-3" id="endTracking">
+                                        <i class="fas fa-stop-circle me-2"></i> End Tracking Session
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page Footer -->
+            <footer class="mt-4 mb-3 text-center">
+                <div class="glass-card">
+                    <div class="p-3">
+                        <p class="mb-2 text-muted">© 2023 SafeJourney - Your safety is our priority</p>
+                        <div class="d-flex justify-content-center">
+                            <a href="#" class="me-3 text-decoration-none" style="color: var(--gradient-middle)">Privacy
+                                Policy</a>
+                            <a href="#" class="me-3 text-decoration-none" style="color: var(--gradient-middle)">Terms of
+                                Service</a>
+                            <a href="#" class="text-decoration-none" style="color: var(--gradient-middle)">Contact
+                                Us</a>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <!-- Safety Check Modal -->
+    <div class="modal fade" id="safetyCheckModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content" style="border-radius: 24px; border: 1px solid rgba(0, 0, 0, 0.1);">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title">
+                        <i class="fas fa-shield-alt me-2" style="color: var(--gradient-middle);"></i>
+                        Safety Check
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert"
+                        style="background: rgba(189, 166, 206, 0.1); border: 1px solid rgba(189, 166, 206, 0.3); border-radius: 12px;">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Please enter your tracking code to confirm your safety
+                    </div>
+                    <input type="text" class="form-control" id="safetyCodeInput" placeholder="Enter your tracking code">
+                    <div class="alert alert-danger mt-3" id="codeError" style="display: none; border-radius: 12px;">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        Incorrect code! Please try again.
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmSafety">
+                        <i class="fas fa-check me-2"></i> Confirm Safety
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notification template -->
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1080">
+        <div id="notificationToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true"
+            style="border-radius: 16px; border: 1px solid rgba(0, 0, 0, 0.1); overflow: hidden;">
+            <div class="toast-header"
+                style="background: linear-gradient(135deg, var(--gradient-start), var(--gradient-middle)); color: white;">
+                <i class="fas fa-bell me-2"></i>
+                <strong class="me-auto" id="toastTitle">Notification</strong>
+                <small class="text-white-50">Just now</small>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"
+                    aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="toastMessage">
+                Notification message
+            </div>
+        </div>
+    </div>
+
+    <!-- Audio elements -->
+    <audio id="alertSound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3" type="audio/mpeg">
+    </audio>
+
+    <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="live-tracker.js"></script>
+
+
+
+    <!-- Additional mobile navigation enhancements -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Check if we are in mobile view
+            function isMobileView() {
+                return window.innerWidth < 992;
+            }
+
+            // Disable old mobile navigation buttons
+            const oldButtons = document.querySelectorAll('.sidebar-toggle, .mobile-toggle');
+            oldButtons.forEach(button => {
+                button.style.display = 'none';
+                button.style.visibility = 'hidden';
+                button.style.opacity = '0';
+                button.style.pointerEvents = 'none';
+            });
+
+            // Add click event to all sidebar menu items
+            const menuItems = document.querySelectorAll('.nav-link');
+            menuItems.forEach(item => {
+                item.addEventListener('click', function () {
+                    if (isMobileView()) {
+                        console.log('Menu item clicked, closing sidebar');
+                        const sidebar = document.getElementById('sidebar');
+                        const overlay = document.getElementById('mobileOverlay');
+
+                        sidebar.classList.remove('active');
+                        overlay.classList.remove('active');
+                        document.body.classList.remove('sidebar-active');
+                    }
+                });
+            });
+
+            // Log mobile navigation state for debugging
+            console.log('Mobile Navigation Setup:');
+            console.log('- Fixed sidebar toggle visible:', document.getElementById('fixedSidebarToggle').style.display);
+            console.log('- Fixed actions toggle visible:', document.getElementById('fixedActionsToggle').style.display);
+            console.log('- Sidebar z-index:', getComputedStyle(document.getElementById('sidebar')).zIndex);
+            console.log('- Mobile overlay z-index:', getComputedStyle(document.getElementById('mobileOverlay')).zIndex);
+
+            // Add window resize handler
+            window.addEventListener('resize', function () {
+                if (isMobileView()) {
+                    // Ensure mobile view is enforced
+                    const mainContent = document.querySelector('.main-content');
+                    const headerBar = document.querySelector('.header-bar');
+
+                    if (mainContent) {
+                        mainContent.style.marginLeft = '0';
+                        mainContent.style.width = '100%';
+                    }
+
+                    if (headerBar) {
+                        headerBar.style.left = '0';
+                    }
+                }
+            });
+        });
+    </script>
+
+    <!-- Location Management and Map Display -->
+    <script>
+        // Location Management System
+        class LocationManager {
+            constructor() {
+                // Default current location: KLE Institute of Technology
+                this.defaultLocation = {
+                    lat: 15.351826,  // KLE Institute of Technology latitude
+                    lng: 75.081279,  // KLE Institute of Technology longitude
+                    address: "KLE Institute of Technology, Hubballi, Karnataka, India",
+                    accuracy: 12.5    // meters (excellent GPS accuracy)
+                };
+
+                // Current location dummy data for simulation (around Hubballi area)
+                this.fakeLocations = [
+                    { lat: 15.350916, lng: 75.08221, address: "KLE Institute of Technology Campus", accuracy: 12.5 },
+                    { lat: 15.3654, lng: 75.1067, address: "DMART Mall, Keshwapur, Hubballi", accuracy: 15.2 },
+                    { lat: 15.3498, lng: 75.1265, address: "Unkal Lake, Hubballi", accuracy: 18.7 },
+                    { lat: 15.3389, lng: 75.0712, address: "CSI Hospital, Rajajinagar, Hubballi", accuracy: 22.1 },
+                    { lat: 15.3276, lng: 75.0984, address: "Basaveshwar Nagar, Hubballi", accuracy: 8.9 },
+                    { lat: 15.3698, lng: 75.0923, address: "Neeligin Road Market, Hubballi", accuracy: 14.6 },
+                    { lat: 15.3412, lng: 75.0556, address: "Jain Temple Area, Hubballi", accuracy: 11.3 },
+                    { lat: 15.3578, lng: 75.1134, address: "Railway Station Road, Hubballi", accuracy: 16.8 }
+                ];
+
+                this.currentLocation = null;
+                this.updateInterval = null;
+            }
+
+            // Get current location (first try geolocation, then fallback)
+            async getCurrentLocation() {
+                return new Promise((resolve) => {
+                    // First, try to get real location
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(
+                            (position) => {
+                                this.currentLocation = {
+                                    lat: position.coords.latitude,
+                                    lng: position.coords.longitude,
+                                    accuracy: position.coords.accuracy || 100,
+                                    source: 'geolocation',
+                                    timestamp: new Date()
+                                };
+                                resolve(this.currentLocation);
+                            },
+                            (error) => {
+                                console.warn("Geolocation failed, using fallback location:", error.message);
+                                // Use fallback location
+                                const fallbackLocation = this.getFallbackLocation();
+                                this.currentLocation = {
+                                    lat: fallbackLocation.lat,
+                                    lng: fallbackLocation.lng,
+                                    accuracy: fallbackLocation.accuracy,
+                                    address: fallbackLocation.address,
+                                    source: 'fallback',
+                                    timestamp: new Date()
+                                };
+                                resolve(this.currentLocation);
+                            },
+                            {
+                                enableHighAccuracy: true,
+                                timeout: 10000,
+                                maximumAge: 300000 // 5 minutes
+                            }
+                        );
+                    } else {
+                        // Browser doesn't support geolocation, use fallback
+                        const fallbackLocation = this.getFallbackLocation();
+                        this.currentLocation = {
+                            lat: fallbackLocation.lat,
+                            lng: fallbackLocation.lng,
+                            accuracy: fallbackLocation.accuracy,
+                            address: fallbackLocation.address,
+                            source: 'fallback',
+                            timestamp: new Date()
+                        };
+                        resolve(this.currentLocation);
+                    }
+                });
+            }
+
+            // Get a random fallback location for realism
+            getFallbackLocation() {
+                const randomIndex = Math.floor(Math.random() * this.fakeLocations.length);
+                return this.fakeLocations[randomIndex];
+            }
+
+            // Format location for display
+            formatLocation(location) {
+                if (!location) return "Location unavailable";
+
+                let display = "";
+                if (location.address) {
+                    display = location.address;
+                } else {
+                    display = `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`;
+                }
+
+                if (location.accuracy) {
+                    display += ` (±${Math.round(location.accuracy)}m)`;
+                }
+
+                return display;
+            }
+
+            // Start location tracking updates
+            startLocationTracking(onLocationUpdate) {
+                // Initial location
+                this.getCurrentLocation().then(location => {
+                    onLocationUpdate(location);
+                });
+
+                // Update location every 30 seconds for simulation
+                this.updateInterval = setInterval(() => {
+                    this.getCurrentLocation().then(location => {
+                        onLocationUpdate(location);
+                    });
+                }, 30000);
+            }
+
+            // Stop location tracking
+            stopLocationTracking() {
+                if (this.updateInterval) {
+                    clearInterval(this.updateInterval);
+                    this.updateInterval = null;
+                }
+            }
+        }
+
+        // Global location manager instance
+        const locationManager = new LocationManager();
+
+        // Map Management System
+        let map;
+        let marker;
+        let accuracyCircle;
+
+        function handleMapError() {
+            const mapElement = document.getElementById('map');
+            if (mapElement) {
+                mapElement.innerHTML = `
+                    <div style="width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #F2EAE0; border-radius: 12px; padding: 2rem;">
+                        <i class="fas fa-map-marked-alt" style="font-size: 3rem; color: var(--gradient-middle); margin-bottom: 1rem;"></i>
+                        <h5 style="color: var(--text-dark); margin-bottom: 0.5rem;">Map Loading Error</h5>
+                        <p style="color: var(--text-dark); text-align: center; max-width: 80%; margin: 0;">
+                            Unable to load map. Using fallback location tracking mode.
+                            <br>
+                            <small class="text-muted">Current location: ${locationManager.formatLocation(locationManager.defaultLocation)}</small>
+                        </p>
+                    </div>
+                `;
+            }
+        }
+
+        function initMap() {
+            const mapElement = document.getElementById('map');
+            if (!mapElement) {
+                console.error('Map container element not found');
+                return;
+            }
+
+            try {
+                // Get current location for map initialization
+                locationManager.getCurrentLocation().then(location => {
+                    const mapOptions = {
+                        center: { lat: location.lat, lng: location.lng },
+                        zoom: 16,
+                        mapTypeId: google.maps.MapTypeId.ROADMAP,
+                        styles: [
+                            {
+                                featureType: "poi",
+                                elementType: "labels",
+                                stylers: [{ visibility: "off" }]
+                            }
+                        ],
+                        zoomControl: true,
+                        mapTypeControl: false,
+                        scaleControl: true,
+                        streetViewControl: false,
+                        rotateControl: false,
+                        fullscreenControl: true
+                    };
+
+                    // Create the map
+                    map = new google.maps.Map(mapElement, mapOptions);
+
+                    // Create a marker
+                    marker = new google.maps.Marker({
+                        position: { lat: location.lat, lng: location.lng },
+                        map: map,
+                        title: 'Your Current Location',
+                        animation: google.maps.Animation.DROP,
+                        icon: {
+                            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                                <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="20" cy="20" r="18" fill="#9B8EC7" fill-opacity="0.8" stroke="white" stroke-width="3"/>
+                                    <circle cx="20" cy="20" r="8" fill="white"/>
+                                    <circle cx="20" cy="20" r="4" fill="#9B8EC7"/>
+                                </svg>
+                            `),
+                            scaledSize: new google.maps.Size(40, 40),
+                            anchor: new google.maps.Point(20, 35)
+                        }
+                    });
+
+                    // Add accuracy circle
+                    accuracyCircle = new google.maps.Circle({
+                        map: map,
+                        center: { lat: location.lat, lng: location.lng },
+                        radius: location.accuracy,
+                        fillColor: '#9B8EC7',
+                        fillOpacity: 0.15,
+                        strokeColor: '#9B8EC7',
+                        strokeOpacity: 0.4,
+                        strokeWeight: 2
+                    });
+
+                    // Add location info panel
+                    const locationInfo = document.createElement('div');
+                    locationInfo.innerHTML = `
+                        <div style="position: absolute; top: 10px; left: 10px; background: white; padding: 12px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); font-size: 14px; max-width: 300px; z-index: 1000;">
+                            <strong style="color: var(--gradient-middle);">Current Location:</strong><br>
+                            <span style="color: var(--text-dark);">${locationManager.formatLocation(location)}</span><br>
+                            <small style="color: var(--text-dark); opacity: 0.7;">Source: ${location.source === 'geolocation' ? 'GPS' : 'Estimated'}</small>
+                        </div>
+                    `;
+                    mapElement.appendChild(locationInfo);
+
+                    console.log("Map initialized successfully with location:", location);
+                });
+            } catch (error) {
+                console.error("Error initializing map:", error);
+                handleMapError();
+            }
+        }
+
+        function updateMapLocation(location) {
+            if (!map || !marker || !accuracyCircle) return;
+
+            try {
+                // Smooth animation to new position
+                const newPosition = { lat: location.lat, lng: location.lng };
+
+                marker.setPosition(newPosition);
+                accuracyCircle.setCenter(newPosition);
+                accuracyCircle.setRadius(location.accuracy);
+
+                // Center map on new position
+                map.panTo(newPosition);
+
+                console.log("Map updated to new location:", location);
+            } catch (error) {
+                console.error("Error updating map location:", error);
+            }
+        }
+
+        // Handle Google Maps loading error
+        window.gm_authFailure = function () {
+            console.error('Google Maps authentication failed');
+            handleMapError();
+        };
+
+        // Initialize location manager and map when the page loads
+        window.addEventListener('load', function () {
+            console.log("Page loaded, initializing location system...");
+
+            if (typeof google === 'undefined') {
+                console.error('Google Maps API not loaded, using fallback mode');
+                handleMapError();
+                return;
+            }
+
+            // Initialize map
+            initMap();
+
+            // Set up location tracking when starting tracking
+            const startTrackingBtn = document.querySelector('.btn-start-tracking');
+            if (startTrackingBtn) {
+                startTrackingBtn.addEventListener('click', function () {
+                    // Start location tracking
+                    locationManager.startLocationTracking((location) => {
+                        console.log("Location updated:", location);
+                        updateMapLocation(location);
+                    });
+                });
+            }
+
+            // Stop location tracking when ending session
+            const endTrackingBtn = document.getElementById('endTracking');
+            if (endTrackingBtn) {
+                endTrackingBtn.addEventListener('click', function () {
+                    locationManager.stopLocationTracking();
+                    console.log("Location tracking stopped");
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>

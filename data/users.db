@@ -1,0 +1,5 @@
+{"_id":"1775224634117_1028","email":"qauser1@example.com","name":"QA User","phone":"+919999999999","profilePicture":"https://i.pravatar.cc/150?img=32","emergencyContacts":[{"_id":"1775224680780_2026","name":"Emergency QA","phone":"+919999999998","relationship":"Friend","priority":1}],"safetyPreferences":{"autoAlertEnabled":false,"shareLocationByDefault":true,"preferredAlertMethod":"both","nightModeAutoActivate":true},"statistics":{"totalTrips":1,"safeTrips":1,"emergencyAlerts":0,"incidentReports":0},"isActive":true,"createdAt":{"$$date":1775224634117},"updatedAt":{"$$date":1775224680798}}
+{"$$indexCreated":{"fieldName":"email","unique":true,"sparse":false}}
+{"$$indexCreated":{"fieldName":"firebaseUid","unique":true,"sparse":true}}
+{"$$indexCreated":{"fieldName":"email","unique":true}}
+{"$$indexCreated":{"fieldName":"firebaseUid","sparse":true,"unique":true}}
