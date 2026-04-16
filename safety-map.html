@@ -552,38 +552,119 @@
     <script src="/route-planning-fix.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <!-- Socket.IO client (served by our own server) -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+    (function initIncidentSocket() {
+        const RECONNECT_DELAY = 5000; // ms
+
+        function connect() {
+            const socket = window.io ? io({ transports: ['websocket', 'polling'], reconnectionDelay: RECONNECT_DELAY }) : null;
+            if (!socket) { console.warn('Socket.IO not available on safety-map'); return; }
+
+            socket.on('connect', () => console.log('📡 Safety-map connected to Socket.IO (id:', socket.id, ')'));
+            socket.on('disconnect', () => console.warn('⚡ Safety-map Socket.IO disconnected'));
+
+            socket.on('incident:new', (point) => {
+                console.log('🔴 incident:new received:', point);
+                // addIncidentPointLive is defined in the main inline script below
+                if (typeof addIncidentPointLive === 'function') {
+                    addIncidentPointLive(point);
+                    showIncidentToast(point);
+                }
+            });
+        }
+
+        function showIncidentToast(point) {
+            const badge = point.severity === 'high' || point.severity === 'critical' ? '🔴' : point.severity === 'medium' ? '🟡' : '🟢';
+            const typeLabel = (point.incidentType || 'incident').replace(/_/g,' ');
+            const toast = document.createElement('div');
+            toast.style.cssText = [
+                'position:fixed','top:80px','right:20px','z-index:9999',
+                'background:rgba(20,20,30,.92)','color:#fff','border-radius:12px',
+                'padding:14px 20px','font-size:.875rem','backdrop-filter:blur(8px)',
+                'box-shadow:0 8px 24px rgba(0,0,0,.4)','max-width:300px',
+                'border-left:4px solid #e74c3c','transition:opacity .4s'
+            ].join(';');
+            toast.innerHTML =
+                `<div style="font-weight:700;margin-bottom:4px">${badge} New Incident Reported</div>`+
+                `<div style="opacity:.85">${typeLabel} — ${point.location}</div>`;
+            document.body.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 400); }, 5000);
+        }
+
+        // Run after DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', connect);
+        } else {
+            connect();
+        }
+    })();
+    </script>
+
     <script>
         // Safety locations data - loaded from API
-        let crimeData = [];
+        let crimeData    = [];   // static safety-location CSV points
+        let incidentData = [];   // user-submitted incident points (from Firestore)
 
-        // Load safety data from API
+        /** Merge static + incident arrays for heatmap / stats */
+        function mergedData() { return [...crimeData, ...incidentData]; }
+
+        // ── Load BOTH data sources and initialise or refresh the map ──────────────
         async function loadSafetyData() {
             try {
-                console.log('Loading safety data from API...');
-                const response = await fetch('/api/safety/locations');
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                crimeData = await response.json();
-                console.log(`✅ Loaded ${crimeData.length} safety locations from API`);
-
-                // Initialize map after data is loaded
-                if (window.google && window.google.maps) {
-                    initMap();
-                    populateLocationFilter(); // Populate dropdown with actual cities
-                    updateStatistics(); // Update statistics with actual data
-                } else {
-                    console.log('Waiting for Google Maps API...');
-                }
-            } catch (error) {
-                console.error('❌ Failed to load safety data:', error);
-                // Fallback to empty array
+                console.log('Loading static safety data…');
+                const r1 = await fetch('/api/safety/locations');
+                if (!r1.ok) throw new Error(`/api/safety/locations HTTP ${r1.status}`);
+                crimeData = await r1.json();
+                console.log(`✅ ${crimeData.length} static safety locations loaded`);
+            } catch (err) {
+                console.error('❌ Failed to load static safety data:', err.message);
                 crimeData = [];
-                alert('Failed to load safety data. The map may not display all information.');
+            }
+
+            try {
+                console.log('Loading user incident data…');
+                const r2 = await fetch('/api/safety/incident-points');
+                if (r2.ok) {
+                    const json = await r2.json();
+                    incidentData = json.points || [];
+                    console.log(`✅ ${incidentData.length} user incident points loaded`);
+                }
+            } catch (err) {
+                console.warn('⚠️ Could not load user incidents:', err.message);
+                incidentData = [];
+            }
+
+            if (window.google && window.google.maps) {
+                initMap();
+                populateLocationFilter();
+                updateStatistics();
+            } else {
+                console.log('Waiting for Google Maps API…');
             }
         }
+
+        /** Push a single new incident point onto the live map without a full reload */
+        function addIncidentPointLive(point) {
+            incidentData.push(point);
+            if (!map) return; // map not yet init
+            // Add to heatmap data
+            if (heatmap) {
+                const existingData = heatmap.getData();
+                existingData.push({
+                    location: new google.maps.LatLng(point.latitude, point.longitude),
+                    weight: point.risk_level * 5
+                });
+                heatmap.setData(existingData);
+            }
+            // Add marker with distinct incident style
+            addIncidentMarker(point);
+            updateStatistics();
+            console.log('🔴 Live incident added to map:', point.location);
+        }
+
 
         // Initialize Google Map - Load API dynamically
         let map, heatmap, markers = [], directionsService, directionsRenderer, geocoder;
@@ -696,6 +777,7 @@
             markers.forEach(marker => marker.setMap(null));
             markers = [];
 
+            // Static safety locations (circle markers)
             crimeData.forEach(point => {
                 const adjustedRisk = getTimeBasedRiskLevel(point.risk_level, currentHour);
                 const marker = new google.maps.Marker({
@@ -711,26 +793,59 @@
                     },
                     title: point.location
                 });
-
-                const infoWindow = new google.maps.InfoWindow({
-                    content: `<strong>${point.location}</strong><br>Risk Level: ${adjustedRisk === 3 ? 'High' : adjustedRisk === 2 ? 'Medium' : 'Low'}`
+                const iw = new google.maps.InfoWindow({
+                    content: `<strong>${point.location}</strong><br>Risk: ${adjustedRisk === 3 ? 'High' : adjustedRisk === 2 ? 'Medium' : 'Low'}`
                 });
-
-                marker.addListener('click', () => {
-                    infoWindow.open(map, marker);
-                });
-
+                marker.addListener('click', () => iw.open(map, marker));
                 markers.push(marker);
             });
+
+            // User-submitted incidents (diamond markers)
+            incidentData.forEach(point => addIncidentMarker(point, false));
         }
 
-        // Create and update heatmap
+        function addIncidentMarker(point, addToArray = true) {
+            const riskColor = getRiskColor(point.risk_level);
+            const marker = new google.maps.Marker({
+                position: { lat: point.latitude, lng: point.longitude },
+                map: document.getElementById('showMarkers').checked ? map : null,
+                icon: {
+                    path: 'M 0,-1 1,0 0,1 -1,0 Z', // diamond
+                    fillColor: riskColor,
+                    fillOpacity: 0.9,
+                    strokeWeight: 2,
+                    strokeColor: '#ffffff',
+                    scale: 10
+                },
+                title: `📍 ${point.location}`,
+                zIndex: 10
+            });
+            const badge = point.severity === 'high' ? '🔴' : point.severity === 'medium' ? '🟡' : '🟢';
+            const typeLabel = (point.incidentType || 'Incident').replace(/_/g, ' ');
+            const iw = new google.maps.InfoWindow({
+                content:
+                    `<div style="max-width:220px;font-size:.85rem;">`+
+                    `<strong>${badge} User Report: ${typeLabel}</strong><br>`+
+                    `<em>${point.location}</em><br>`+
+                    (point.description ? `<span style="color:#555">${point.description}</span><br>` : '') +
+                    `Severity: <b style="color:${riskColor}">${(point.severity||'').toUpperCase()}</b>`+
+                    `</div>`
+            });
+            marker.addListener('click', () => iw.open(map, marker));
+            if (addToArray) markers.push(marker);
+            else markers.push(marker); // keep in sync so showMarkers toggle works
+            return marker;
+        }
+
+
+        // Create and update heatmap from BOTH static + user incident data
         function createHeatmap() {
-            const heatmapData = crimeData.map(point => {
+            const all = mergedData();
+            const heatmapData = all.map(point => {
                 const adjustedRisk = getTimeBasedRiskLevel(point.risk_level, currentHour);
                 return {
                     location: new google.maps.LatLng(point.latitude, point.longitude),
-                    weight: adjustedRisk * 5 // Scale up for better visibility
+                    weight: adjustedRisk * 5 // Scale for visibility
                 };
             });
 
@@ -758,27 +873,21 @@
             return baseRisk;
         }
 
-        // Update statistics
+        // Update statistics using merged data
         function updateStatistics() {
             const selectedLocation = document.getElementById('locationFilter').value;
-
-            // Filter data based on selected location
-            let filteredData = crimeData;
+            let filteredData = mergedData();
             if (selectedLocation !== 'all') {
-                filteredData = crimeData.filter(point =>
-                    point.location.toLowerCase().includes(selectedLocation.toLowerCase())
+                filteredData = filteredData.filter(p =>
+                    (p.location || '').toLowerCase().includes(selectedLocation.toLowerCase())
                 );
             }
-
-            // Calculate statistics
-            const highRisk = filteredData.filter(point => getTimeBasedRiskLevel(point.risk_level, currentHour) === 3).length;
-            const mediumRisk = filteredData.filter(point => getTimeBasedRiskLevel(point.risk_level, currentHour) === 2).length;
-            const lowRisk = filteredData.filter(point => getTimeBasedRiskLevel(point.risk_level, currentHour) === 1).length;
-
-            // Update display
-            document.getElementById('highRiskCount').textContent = highRisk;
+            const highRisk   = filteredData.filter(p => getTimeBasedRiskLevel(p.risk_level, currentHour) === 3).length;
+            const mediumRisk = filteredData.filter(p => getTimeBasedRiskLevel(p.risk_level, currentHour) === 2).length;
+            const lowRisk    = filteredData.filter(p => getTimeBasedRiskLevel(p.risk_level, currentHour) === 1).length;
+            document.getElementById('highRiskCount').textContent   = highRisk;
             document.getElementById('mediumRiskCount').textContent = mediumRisk;
-            document.getElementById('lowRiskCount').textContent = lowRisk;
+            document.getElementById('lowRiskCount').textContent    = lowRisk;
         }
 
         // Populate location filter dropdown with actual cities from data

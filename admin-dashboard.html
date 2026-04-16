@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HerShield — Admin Dashboard</title>
+<meta name="robots" content="noindex,nofollow">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a14;--sidebar:#0e0e1c;--card:#13131f;--card2:#1a1a2e;
+  --border:#1e1e35;--purple:#8b5cf6;--purple-lt:#a78bfa;--pink:#ec4899;
+  --cyan:#06b6d4;--green:#22c55e;--amber:#f59e0b;--red:#ef4444;
+  --text:#e2e8f0;--muted:#64748b;--muted2:#94a3b8;
+  --sidebar-w:260px;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;overflow-x:hidden;}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
+
+/* ── Sidebar ── */
+.sidebar{
+  width:var(--sidebar-w);min-height:100vh;background:var(--sidebar);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:100;
+  transition:transform .3s;
+}
+.sidebar-logo{
+  padding:1.5rem 1.25rem 1rem;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:.75rem;
+}
+.sidebar-logo .badge{
+  width:38px;height:38px;border-radius:10px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--purple),var(--pink));
+  display:flex;align-items:center;justify-content:center;font-size:1.1rem;
+}
+.sidebar-logo h2{font-size:.95rem;font-weight:700;color:#fff;}
+.sidebar-logo small{font-size:.7rem;color:var(--muted);display:block;margin-top:1px;}
+.admin-info{padding:.75rem 1.25rem;border-bottom:1px solid var(--border);}
+.admin-info .chip{
+  display:flex;align-items:center;gap:.5rem;
+  background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.2);
+  border-radius:8px;padding:.45rem .75rem;
+}
+.admin-info .chip i{color:var(--purple-lt);font-size:.8rem;}
+.admin-info .chip span{font-size:.75rem;color:var(--purple-lt);font-weight:500;}
+
+nav{flex:1;padding:.75rem 0;overflow-y:auto;}
+.nav-section{font-size:.65rem;font-weight:600;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;padding:.5rem 1.25rem .25rem;}
+.nav-item{
+  display:flex;align-items:center;gap:.75rem;
+  padding:.65rem 1.25rem;margin:.1rem .5rem;border-radius:10px;
+  cursor:pointer;color:var(--muted2);font-size:.85rem;font-weight:500;
+  text-decoration:none;transition:all .15s;border:none;background:none;width:calc(100% - 1rem);text-align:left;
+}
+.nav-item i{width:18px;text-align:center;font-size:.9rem;}
+.nav-item:hover,.nav-item.active{background:rgba(139,92,246,.12);color:var(--purple-lt);}
+.nav-item.active{color:#fff;background:rgba(139,92,246,.2);}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;border-radius:99px;font-size:.65rem;font-weight:700;padding:.1rem .45rem;}
+
+.sidebar-footer{padding:1rem 1.25rem;border-top:1px solid var(--border);}
+.logout-btn{
+  display:flex;align-items:center;gap:.6rem;width:100%;padding:.6rem .75rem;
+  background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.15);
+  border-radius:8px;color:#fca5a5;font-size:.82rem;font-weight:500;
+  cursor:pointer;transition:all .15s;
+}
+.logout-btn:hover{background:rgba(239,68,68,.15);}
+
+/* ── Main ── */
+.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh;}
+.topbar{
+  background:rgba(10,10,20,.8);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  padding:.9rem 1.75rem;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:50;
+}
+.topbar-title{font-size:1.05rem;font-weight:700;color:#fff;}
+.topbar-right{display:flex;align-items:center;gap:.75rem;}
+.live-indicator{display:flex;align-items:center;gap:.4rem;font-size:.78rem;color:var(--green);}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 1.4s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.refresh-btn{
+  background:rgba(255,255,255,.06);border:1px solid var(--border);
+  color:var(--muted2);border-radius:8px;padding:.4rem .8rem;
+  font-size:.8rem;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:.4rem;
+}
+.refresh-btn:hover{background:rgba(255,255,255,.1);color:#fff;}
+
+/* ── Content ── */
+.content{flex:1;padding:1.5rem 1.75rem;}
+.section{display:none;animation:fadeIn .25s ease;}
+.section.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Stat Cards ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:1rem;margin-bottom:1.75rem;}
+.stat-card{
+  background:var(--card);border:1px solid var(--border);border-radius:16px;
+  padding:1.25rem 1.5rem;display:flex;align-items:center;gap:1rem;
+  transition:border-color .2s,transform .2s;
+}
+.stat-card:hover{border-color:rgba(139,92,246,.3);transform:translateY(-2px);}
+.stat-icon{
+  width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  font-size:1.3rem;flex-shrink:0;
+}
+.stat-card .num{font-size:1.8rem;font-weight:800;color:#fff;line-height:1;}
+.stat-card .lbl{font-size:.75rem;color:var(--muted);margin-top:.25rem;font-weight:500;}
+.stat-card .trend{font-size:.72rem;margin-top:.3rem;font-weight:600;}
+.trend.up{color:var(--green);}
+.trend.alert{color:var(--red);}
+
+/* ── Section header ── */
+.sec-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem;}
+.sec-title{font-size:1.05rem;font-weight:700;color:#fff;display:flex;align-items:center;gap:.5rem;}
+.sec-title i{color:var(--purple-lt);}
+
+/* ── Table card ── */
+.table-card{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;}
+.table-toolbar{
+  padding:1rem 1.25rem;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;
+}
+.search-box{
+  display:flex;align-items:center;gap:.5rem;
+  background:rgba(255,255,255,.05);border:1px solid var(--border);
+  border-radius:8px;padding:.4rem .8rem;flex:1;min-width:200px;
+}
+.search-box input{background:none;border:none;color:#fff;font-family:inherit;font-size:.85rem;outline:none;width:100%;}
+.search-box i{color:var(--muted);font-size:.85rem;}
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+th{
+  background:rgba(255,255,255,.03);padding:.75rem 1rem;
+  text-align:left;font-size:.72rem;color:var(--muted);
+  font-weight:600;letter-spacing:.4px;text-transform:uppercase;
+  border-bottom:1px solid var(--border);white-space:nowrap;
+}
+td{
+  padding:.75rem 1rem;font-size:.83rem;border-bottom:1px solid rgba(255,255,255,.04);
+  color:var(--muted2);vertical-align:middle;
+}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(255,255,255,.02);}
+.td-main{color:#fff;font-weight:500;}
+.avatar-cell{display:flex;align-items:center;gap:.65rem;}
+.avatar{
+  width:32px;height:32px;border-radius:8px;border:1px solid var(--border);
+  font-size:.75rem;background:linear-gradient(135deg,var(--purple),var(--pink));
+  display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;
+  flex-shrink:0;
+}
+
+/* ── Badges ── */
+.badge{display:inline-flex;align-items:center;font-size:.7rem;font-weight:600;padding:.2rem .55rem;border-radius:99px;}
+.badge-purple{background:rgba(139,92,246,.15);color:var(--purple-lt);}
+.badge-green{background:rgba(34,197,94,.12);color:#86efac;}
+.badge-red{background:rgba(239,68,68,.12);color:#fca5a5;}
+.badge-amber{background:rgba(245,158,11,.12);color:#fcd34d;}
+.badge-cyan{background:rgba(6,182,212,.12);color:#67e8f9;}
+.badge-gray{background:rgba(100,116,139,.12);color:var(--muted2);}
+
+/* ── Action buttons ── */
+.btn{
+  display:inline-flex;align-items:center;gap:.4rem;padding:.4rem .9rem;
+  border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;
+  border:none;transition:all .15s;font-family:inherit;
+}
+.btn-primary{background:var(--purple);color:#fff;}
+.btn-primary:hover{background:#7c3aed;}
+.btn-danger{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.2);}
+.btn-danger:hover{background:rgba(239,68,68,.25);}
+.btn-success{background:rgba(34,197,94,.15);color:#86efac;border:1px solid rgba(34,197,94,.2);}
+.btn-success:hover{background:rgba(34,197,94,.25);}
+.btn-ghost{background:rgba(255,255,255,.06);color:var(--muted2);border:1px solid var(--border);}
+.btn-ghost:hover{color:#fff;background:rgba(255,255,255,.1);}
+.btn-sm{padding:.3rem .65rem;font-size:.75rem;}
+
+/* ── Broadcast ── */
+.broadcast-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.5rem;}
+.form-group{margin-bottom:1.1rem;}
+.form-group label{display:block;font-size:.78rem;color:var(--muted);font-weight:500;margin-bottom:.45rem;}
+.form-input,.form-select,.form-textarea{
+  width:100%;padding:.7rem 1rem;
+  background:rgba(255,255,255,.05);border:1px solid var(--border);
+  border-radius:10px;color:#fff;font-family:inherit;font-size:.88rem;outline:none;
+  transition:border-color .2s;
+}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--purple);}
+.form-textarea{resize:vertical;min-height:100px;}
+.form-select option{background:#1a1a2e;}
+.input-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+@media(max-width:600px){.input-grid{grid-template-columns:1fr;}}
+
+/* ── Logs table ── */
+.log-action{font-family:monospace;font-size:.75rem;color:var(--cyan);}
+
+/* ── SOS severity ── */
+.sos-active{animation:sosBlink 1.5s ease infinite;}
+@keyframes sosBlink{0%,100%{opacity:1}50%{opacity:.6}}
+
+/* ── Charts placeholder ── */
+.chart-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;}
+@media(max-width:768px){.chart-row{grid-template-columns:1fr;}.sidebar{transform:translateX(-100%)}.main{margin-left:0}}
+.mini-chart{
+  background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.25rem;
+}
+.mini-chart .chart-title{font-size:.82rem;font-weight:600;color:#fff;margin-bottom:1rem;}
+.bar-row{display:flex;align-items:center;gap:.75rem;margin-bottom:.6rem;}
+.bar-label{font-size:.75rem;color:var(--muted);width:80px;flex-shrink:0;}
+.bar-track{flex:1;height:8px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--purple),var(--pink));transition:width .8s ease;}
+.bar-val{font-size:.72rem;color:var(--muted2);width:30px;text-align:right;}
+
+/* ── Toast ── */
+#adminToast{
+  position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;
+  background:var(--card2);border:1px solid var(--border);
+  border-radius:12px;padding:.85rem 1.1rem;
+  display:flex;align-items:center;gap:.75rem;min-width:260px;
+  box-shadow:0 8px 30px rgba(0,0,0,.5);
+  transform:translateY(120%);transition:transform .3s ease;
+}
+#adminToast.show{transform:translateY(0);}
+#adminToast i{font-size:1rem;}
+
+/* ── Modal ── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);
+  z-index:200;display:none;align-items:center;justify-content:center;
+}
+.modal-overlay.show{display:flex;}
+.modal-box{
+  background:var(--card2);border:1px solid var(--border);border-radius:20px;
+  padding:2rem;width:100%;max-width:500px;margin:1rem;
+  box-shadow:0 24px 60px rgba(0,0,0,.6);
+}
+.modal-title{font-size:1rem;font-weight:700;color:#fff;margin-bottom:1.5rem;display:flex;align-items:center;gap:.5rem;}
+.modal-footer{display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;}
+
+/* ── Empty state ── */
+.empty{text-align:center;padding:3rem 1rem;color:var(--muted);}
+.empty i{font-size:2.5rem;opacity:.2;display:block;margin-bottom:.75rem;}
+
+/* ── Loading spinner ── */
+.spin{animation:spin .7s linear infinite;display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Recent Activity ── */
+.activity-list{display:flex;flex-direction:column;gap:.6rem;}
+.activity-item{
+  display:flex;align-items:start;gap:.75rem;
+  background:rgba(255,255,255,.03);border:1px solid var(--border);
+  border-radius:10px;padding:.75rem 1rem;
+}
+.activity-icon{
+  width:32px;height:32px;border-radius:8px;display:flex;align-items:center;
+  justify-content:center;font-size:.85rem;flex-shrink:0;
+}
+.activity-text{font-size:.82rem;color:var(--muted2);}
+.activity-text strong{color:#fff;}
+.activity-time{font-size:.73rem;color:var(--muted);margin-top:.2rem;}
+</style>
+</head>
+<body>
+
+<!-- ── Sidebar ── -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="badge">🛡️</div>
+    <div>
+      <h2>HerShield</h2>
+      <small>Admin Control Panel</small>
+    </div>
+  </div>
+  <div class="admin-info">
+    <div class="chip">
+      <i class="fas fa-user-shield"></i>
+      <span id="adminEmailDisplay">admin@hershield.app</span>
+    </div>
+  </div>
+  <nav>
+    <div class="nav-section">Dashboard</div>
+    <button class="nav-item active" onclick="showSection('overview',this)">
+      <i class="fas fa-chart-pie"></i> Overview
+    </button>
+    <div class="nav-section">Management</div>
+    <button class="nav-item" onclick="showSection('users',this)">
+      <i class="fas fa-users"></i> Users
+      <span class="nav-badge" id="navUserCount">—</span>
+    </button>
+    <button class="nav-item" onclick="showSection('posts',this)">
+      <i class="fas fa-comments"></i> Community Posts
+    </button>
+    <button class="nav-item" onclick="showSection('alerts',this)">
+      <i class="fas fa-bell"></i> Safety Alerts
+    </button>
+    <div class="nav-section">Safety</div>
+    <button class="nav-item" onclick="showSection('sos',this)">
+      <i class="fas fa-exclamation-triangle"></i> SOS Events
+      <span class="nav-badge" id="navSosCount" style="display:none;">!</span>
+    </button>
+    <button class="nav-item" onclick="showSection('incidents',this)">
+      <i class="fas fa-map-marker-exclamation"></i> Incidents
+    </button>
+    <button class="nav-item" onclick="showSection('tracking',this)">
+      <i class="fas fa-satellite-dish"></i> Live Tracking
+    </button>
+    <div class="nav-section">Admin Tools</div>
+    <button class="nav-item" onclick="showSection('broadcast',this)">
+      <i class="fas fa-bullhorn"></i> Broadcast Alert
+    </button>
+    <button class="nav-item" onclick="showSection('logs',this)">
+      <i class="fas fa-history"></i> Audit Logs
+    </button>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="logout-btn" onclick="adminLogout()">
+      <i class="fas fa-sign-out-alt"></i> Sign Out
+    </button>
+  </div>
+</aside>
+
+<!-- ── Main ── -->
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="topbarTitle">Overview</div>
+    <div class="topbar-right">
+      <div class="live-indicator"><span class="live-dot"></span>Live</div>
+      <button class="refresh-btn" onclick="refreshCurrent()">
+        <i class="fas fa-sync-alt"></i> Refresh
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ════ OVERVIEW ════ -->
+    <div class="section active" id="sec-overview">
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card"><div class="stat-icon" style="background:rgba(139,92,246,.15);color:var(--purple-lt);"><i class="fas fa-users"></i></div><div><div class="num" id="st-users">—</div><div class="lbl">Total Users</div><div class="trend up" id="st-users-new"></div></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:rgba(6,182,212,.12);color:var(--cyan);"><i class="fas fa-comments"></i></div><div><div class="num" id="st-posts">—</div><div class="lbl">Community Posts</div></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:rgba(239,68,68,.12);color:var(--red);"><i class="fas fa-exclamation-triangle"></i></div><div><div class="num" id="st-sos">—</div><div class="lbl">SOS Events</div><div class="trend alert" id="st-sos-active"></div></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:rgba(245,158,11,.12);color:var(--amber);"><i class="fas fa-file-alt"></i></div><div><div class="num" id="st-incidents">—</div><div class="lbl">Incident Reports</div></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:rgba(34,197,94,.12);color:var(--green);"><i class="fas fa-satellite-dish"></i></div><div><div class="num" id="st-tracking">—</div><div class="lbl">Active Tracking</div></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:rgba(236,72,153,.12);color:var(--pink);"><i class="fas fa-bell"></i></div><div><div class="num" id="st-alerts">—</div><div class="lbl">Safety Alerts</div></div></div>
+      </div>
+
+      <div class="chart-row">
+        <div class="mini-chart">
+          <div class="chart-title"><i class="fas fa-chart-bar me-2" style="color:var(--purple-lt);"></i>Activity Breakdown</div>
+          <div id="activityBars"><div class="empty"><i class="fas fa-spinner spin"></i></div></div>
+        </div>
+        <div class="mini-chart">
+          <div class="chart-title"><i class="fas fa-history me-2" style="color:var(--cyan);"></i>Recent Admin Actions</div>
+          <div id="recentActivityList"><div class="empty"><i class="fas fa-spinner spin"></i></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ USERS ════ -->
+    <div class="section" id="sec-users">
+      <div class="sec-header">
+        <div class="sec-title"><i class="fas fa-users"></i> User Management</div>
+        <div style="display:flex;gap:.5rem;">
+          <button class="btn btn-ghost" onclick="exportUsers()"><i class="fas fa-download"></i> Export</button>
+        </div>
+      </div>
+      <div class="table-card">
+        <div class="table-toolbar">
+          <div class="search-box"><i class="fas fa-search"></i><input type="text" placeholder="Search users…" id="userSearch" oninput="filterUsers()"></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>User</th><th>Email</th><th>Phone</th><th>Guardians</th><th>Joined</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="usersTableBody"><tr><td colspan="7" class="empty"><i class="fas fa-spinner spin"></i> Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ POSTS ════ -->
+    <div class="section" id="sec-posts">
+      <div class="sec-header">
+        <div class="sec-title"><i class="fas fa-comments"></i> Community Posts</div>
+        <button class="btn btn-primary" onclick="openNewPostModal()"><i class="fas fa-plus"></i> New Post</button>
+      </div>
+      <div class="table-card">
+        <div class="table-toolbar">
+          <div class="search-box"><i class="fas fa-search"></i><input type="text" placeholder="Search posts…" id="postSearch" oninput="filterPosts()"></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Author</th><th>Content</th><th>Category</th><th>Likes</th><th>Posted</th><th>Actions</th></tr></thead>
+            <tbody id="postsTableBody"><tr><td colspan="6" class="empty"><i class="fas fa-spinner spin"></i> Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ ALERTS ════ -->
+    <div class="section" id="sec-alerts">
+      <div class="sec-header">
+        <div class="sec-title"><i class="fas fa-bell"></i> Safety Alerts</div>
+      </div>
+      <div class="table-card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Title</th><th>Message</th><th>Severity</th><th>Location</th><th>Source</th><th>Time</th><th>Actions</th></tr></thead>
+            <tbody id="alertsTableBody"><tr><td colspan="7" class="empty"><i class="fas fa-spinner spin"></i> Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ SOS ════ -->
+    <div class="section" id="sec-sos">
+      <div class="sec-header">
+        <div class="sec-title"><i class="fas fa-exclamation-triangle" style="color:var(--red);"></i> SOS Emergency Events</div>
+      </div>
+      <div class="table-card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>User</th><th>Email</th><th>Status</th><th>Location</th><th>Triggered</th><th>Resolved</th><th>Guardians Notified</th></tr></thead>
+            <tbody id="sosTableBody"><tr><td colspan="7" class="empty"><i class="fas fa-spinner spin"></i> Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ INCIDENTS ════ -->
+    <div class="section" id="sec-incidents">
+      <div class="sec-header">
+        <div class="sec-title"><i class="fas fa-map-marker-alt"></i> Incident Reports</div>
+        <button class="btn btn-ghost" onclick="exportIncidents()"><i class="fas fa-download"></i> Export CSV</button>
+      </div>
+      <div class="table-card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Type</th><th>Description</th><th>Severity</th><th>Location</th><th>Reporter</th><th>Date</th></tr></thead>
+            <tbody id="incidentsTableBody"><tr><td colspan="6" class="empty"><i class="fas fa-spinner spin"></i> Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ TRACKING ════ -->
+    <div class="section" id="sec-tracking">
+      <div class="sec-header">
+        <div class="sec-title"><i class="fas fa-satellite-dish"></i> Live Tracking Sessions</div>
+      </div>
+      <div class="table-card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>User</th><th>Route</th><th>Transport</th><th>Status</th><th>Started</th><th>Guardians</th></tr></thead>
+            <tbody id="trackingTableBody"><tr><td colspan="6" class="empty"><i class="fas fa-spinner spin"></i> Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ BROADCAST ════ -->
+    <div class="section" id="sec-broadcast">
+      <div class="sec-header">
+        <div class="sec-title"><i class="fas fa-bullhorn"></i> Broadcast Alert to All Users</div>
+      </div>
+      <div class="broadcast-card">
+        <p style="font-size:.83rem;color:var(--muted);margin-bottom:1.25rem;">
+          Send an instant push notification to all currently connected users. Use this for urgent safety alerts, system announcements, or community messages.
+        </p>
+        <div class="input-grid">
+          <div class="form-group">
+            <label>Alert Title *</label>
+            <input type="text" class="form-input" id="bcastTitle" placeholder="e.g. Area Safety Warning">
+          </div>
+          <div class="form-group">
+            <label>Severity</label>
+            <select class="form-select" id="bcastSeverity">
+              <option value="info">ℹ️ Info</option>
+              <option value="low">🟡 Low</option>
+              <option value="medium" selected>🟠 Medium</option>
+              <option value="high">🔴 High</option>
+              <option value="critical">🚨 Critical</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Message *</label>
+          <textarea class="form-textarea" id="bcastMessage" placeholder="Describe the situation clearly and concisely…"></textarea>
+        </div>
+        <div class="input-grid">
+          <div class="form-group">
+            <label>Location (optional)</label>
+            <input type="text" class="form-input" id="bcastLocation" placeholder="e.g. Hubli, Station Road">
+          </div>
+          <div class="form-group" style="padding-top:1.5rem;">
+            <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;">
+              <input type="checkbox" id="bcastSaveAlert" checked style="accent-color:var(--purple);">
+              <span>Also save as community alert</span>
+            </label>
+          </div>
+        </div>
+        <div style="display:flex;gap:.75rem;flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="sendBroadcast()" id="bcastBtn">
+            <i class="fas fa-paper-plane"></i> Send Broadcast
+          </button>
+          <button class="btn btn-ghost" onclick="clearBroadcast()">
+            <i class="fas fa-times"></i> Clear
+          </button>
+        </div>
+        <div id="bcastResult" style="margin-top:1rem;display:none;"></div>
+      </div>
+    </div>
+
+    <!-- ════ LOGS ════ -->
+    <div class="section" id="sec-logs">
+      <div class="sec-header">
+        <div class="sec-title"><i class="fas fa-history"></i> Audit Logs</div>
+      </div>
+      <div class="table-card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Time</th><th>Admin</th><th>Action</th><th>Details</th><th>IP</th></tr></thead>
+            <tbody id="logsTableBody"><tr><td colspan="5" class="empty"><i class="fas fa-spinner spin"></i> Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</main>
+
+<!-- ── New Post Modal ── -->
+<div class="modal-overlay" id="newPostModal">
+  <div class="modal-box">
+    <div class="modal-title"><i class="fas fa-plus-circle" style="color:var(--purple-lt);"></i> Create Admin Post</div>
+    <div class="form-group">
+      <label>Content *</label>
+      <textarea class="form-textarea" id="newPostContent" placeholder="Write an important message for the community…"></textarea>
+    </div>
+    <div class="input-grid">
+      <div class="form-group">
+        <label>Category</label>
+        <select class="form-select" id="newPostCategory">
+          <option value="alert">Alert</option>
+          <option value="tip">Safety Tip</option>
+          <option value="general">General</option>
+          <option value="event">Event</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Location (optional)</label>
+        <input type="text" class="form-input" id="newPostLocation" placeholder="e.g. Mumbai">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('newPostModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitNewPost()"><i class="fas fa-paper-plane"></i> Publish</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── User Detail Modal ── -->
+<div class="modal-overlay" id="userDetailModal">
+  <div class="modal-box" style="max-width:600px;">
+    <div class="modal-title"><i class="fas fa-user" style="color:var(--purple-lt);"></i> User Profile</div>
+    <div id="userDetailContent"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('userDetailModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast ── -->
+<div id="adminToast"><i id="toastIcon" class="fas fa-check-circle" style="color:var(--green);"></i><span id="toastMsg">Done</span></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  AUTH GUARD
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const TOKEN = sessionStorage.getItem('hs_admin_token');
+if (!TOKEN) window.location.href = '/admin-login.html';
+const ADMIN_EMAIL = sessionStorage.getItem('hs_admin_email') || 'admin';
+document.getElementById('adminEmailDisplay').textContent = ADMIN_EMAIL;
+
+const api = async (path, opts = {}) => {
+    const r = await fetch('/api/admin' + path, {
+        ...opts,
+        headers: { 'Authorization': 'Bearer ' + TOKEN, 'Content-Type': 'application/json', ...(opts.headers || {}) },
+        body: opts.body ? (typeof opts.body === 'string' ? opts.body : JSON.stringify(opts.body)) : undefined,
+    });
+    const d = await r.json();
+    if (r.status === 401) { adminLogout(); throw new Error('Session expired'); }
+    return d;
+};
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  HELPERS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const esc = s => { const d = document.createElement('div'); d.innerText = s||''; return d.innerHTML; };
+const timeAgo = d => {
+    if (!d) return '—';
+    const m = Math.floor((Date.now() - new Date(d)) / 60000);
+    if (m < 1) return 'just now';
+    if (m < 60) return m + 'm ago';
+    const h = Math.floor(m/60);
+    if (h < 24) return h + 'h ago';
+    return Math.floor(h/24) + 'd ago';
+};
+const fmtDate = d => d ? new Date(d).toLocaleString('en-IN', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+const sevBadge = s => {
+    const map = {critical:'red',high:'red',medium:'amber',low:'green',info:'cyan',safe:'green',active:'red',expired:'gray'};
+    return `<span class="badge badge-${map[(s||'').toLowerCase()]||'gray'}">${esc(s||'—')}</span>`;
+};
+
+let toastTimer;
+function toast(msg, type = 'success') {
+    const t = document.getElementById('adminToast');
+    const icon = document.getElementById('toastIcon');
+    document.getElementById('toastMsg').textContent = msg;
+    icon.className = type === 'error' ? 'fas fa-times-circle' : 'fas fa-check-circle';
+    icon.style.color = type === 'error' ? 'var(--red)' : 'var(--green)';
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+function adminLogout() {
+    sessionStorage.removeItem('hs_admin_token');
+    sessionStorage.removeItem('hs_admin_email');
+    window.location.href = '/admin-login.html';
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  NAVIGATION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let currentSection = 'overview';
+const sectionTitles = {
+    overview:'Overview', users:'User Management', posts:'Community Posts',
+    alerts:'Safety Alerts', sos:'SOS Events', incidents:'Incident Reports',
+    tracking:'Live Tracking', broadcast:'Broadcast Alert', logs:'Audit Logs'
+};
+
+function showSection(name, btn) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    document.getElementById('sec-' + name).classList.add('active');
+    if (btn) btn.classList.add('active');
+    document.getElementById('topbarTitle').textContent = sectionTitles[name] || name;
+    currentSection = name;
+    loadSection(name);
+}
+
+function refreshCurrent() { loadSection(currentSection); }
+
+function loadSection(name) {
+    const loaders = {
+        overview: loadOverview, users: loadUsers, posts: loadPosts,
+        alerts: loadAlerts, sos: loadSos, incidents: loadIncidents,
+        tracking: loadTracking, logs: loadLogs,
+    };
+    if (loaders[name]) loaders[name]();
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  OVERVIEW
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+async function loadOverview() {
+    try {
+        const { stats } = await api('/stats');
+        document.getElementById('st-users').textContent     = stats.totalUsers;
+        document.getElementById('st-posts').textContent     = stats.totalPosts;
+        document.getElementById('st-sos').textContent       = stats.totalSosEvents;
+        document.getElementById('st-incidents').textContent = stats.totalIncidents;
+        document.getElementById('st-tracking').textContent  = stats.activeTracking;
+        document.getElementById('st-alerts').textContent    = stats.totalAlerts;
+        const nu = document.getElementById('st-users-new');
+        if (stats.newUsersToday > 0) nu.textContent = '+' + stats.newUsersToday + ' today';
+        const sa = document.getElementById('st-sos-active');
+        if (stats.activeSosNow > 0) {
+            sa.textContent = stats.activeSosNow + ' ACTIVE NOW';
+            document.getElementById('navSosCount').style.display = '';
+            document.getElementById('navSosCount').textContent = stats.activeSosNow;
+        }
+        const ub = document.getElementById('navUserCount');
+        if (ub) ub.textContent = stats.totalUsers;
+
+        // Activity bars
+        const max = Math.max(stats.totalUsers, stats.totalPosts, stats.totalSosEvents, stats.totalIncidents, 1);
+        document.getElementById('activityBars').innerHTML = [
+            ['Users', stats.totalUsers, 'var(--purple)'],
+            ['Posts', stats.totalPosts, 'var(--cyan)'],
+            ['SOS Events', stats.totalSosEvents, 'var(--red)'],
+            ['Incidents', stats.totalIncidents, 'var(--amber)'],
+            ['Alerts', stats.totalAlerts, 'var(--pink)'],
+        ].map(([label, val, color]) => `
+            <div class="bar-row">
+                <div class="bar-label">${label}</div>
+                <div class="bar-track"><div class="bar-fill" style="width:${Math.round((val/max)*100)}%;background:${color};"></div></div>
+                <div class="bar-val">${val}</div>
+            </div>`).join('');
+    } catch (e) { toast('Stats load failed: ' + e.message, 'error'); }
+
+    // Recent activity
+    try {
+        const { logs } = await api('/logs');
+        const actionIcons = { BROADCAST:'bullhorn', DELETE_POST:'trash', CREATE_POST:'plus', DELETE_ALERT:'times' };
+        document.getElementById('recentActivityList').innerHTML = (logs||[]).slice(0,6).map(l => `
+            <div class="activity-item">
+                <div class="activity-icon" style="background:rgba(139,92,246,.12);">
+                    <i class="fas fa-${actionIcons[l.action]||'cog'}" style="color:var(--purple-lt);font-size:.8rem;"></i>
+                </div>
+                <div>
+                    <div class="activity-text"><strong>${esc(l.action)}</strong> by ${esc(l.admin)}</div>
+                    <div class="activity-time">${timeAgo(l.timestamp)}</div>
+                </div>
+            </div>`).join('') || '<div class="empty"><i class="fas fa-history"></i>No actions yet</div>';
+    } catch(_) {}
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  USERS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let allUsers = [];
+async function loadUsers() {
+    const tbody = document.getElementById('usersTableBody');
+    tbody.innerHTML = '<tr><td colspan="7" class="empty"><i class="fas fa-spinner spin"></i> Loading…</td></tr>';
+    try {
+        const { users } = await api('/users');
+        allUsers = users || [];
+        renderUsersTable(allUsers);
+    } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="7" class="empty" style="color:var(--red);">Error: ${esc(e.message)}</td></tr>`;
+    }
+}
+
+function renderUsersTable(users) {
+    const tbody = document.getElementById('usersTableBody');
+    if (!users.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty"><i class="fas fa-users"></i>No users found</td></tr>'; return; }
+    tbody.innerHTML = users.map(u => {
+        const name = u.name || u.displayName || 'Unknown';
+        const guardians = (u.emergencyContacts || u.guardians || []).length;
+        const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+        return `<tr>
+            <td><div class="avatar-cell"><div class="avatar">${initials}</div><span class="td-main">${esc(name)}</span></div></td>
+            <td>${esc(u.email||'—')}</td>
+            <td>${esc(u.phone||u.phoneNumber||'—')}</td>
+            <td><span class="badge ${guardians>0?'badge-green':'badge-gray'}">${guardians} guardian${guardians!==1?'s':''}</span></td>
+            <td style="white-space:nowrap;">${timeAgo(u.createdAt)}</td>
+            <td>${sevBadge(u.status||'active')}</td>
+            <td><button class="btn btn-ghost btn-sm" onclick="viewUser('${esc(u._id)}')"><i class="fas fa-eye"></i> View</button></td>
+        </tr>`;
+    }).join('');
+}
+
+function filterUsers() {
+    const q = document.getElementById('userSearch').value.toLowerCase();
+    renderUsersTable(allUsers.filter(u =>
+        (u.name||'').toLowerCase().includes(q) ||
+        (u.email||'').toLowerCase().includes(q) ||
+        (u.phone||'').toLowerCase().includes(q)
+    ));
+}
+
+async function viewUser(id) {
+    const modal = document.getElementById('userDetailModal');
+    document.getElementById('userDetailContent').innerHTML = '<div class="empty"><i class="fas fa-spinner spin"></i></div>';
+    modal.classList.add('show');
+    try {
+        const { user } = await api('/users/' + id);
+        const contacts = user.emergencyContacts || user.guardians || [];
+        document.getElementById('userDetailContent').innerHTML = `
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1.25rem;">
+                ${[['Name',user.name||user.displayName||'—'],['Email',user.email||'—'],['Phone',user.phone||user.phoneNumber||'—'],
+                   ['Location',user.city||user.location||'—'],['Joined',fmtDate(user.createdAt)],['Status',user.status||'active']]
+                   .map(([k,v])=>`<div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;padding:.65rem;">
+                       <div style="font-size:.7rem;color:var(--muted);margin-bottom:.25rem;">${k}</div>
+                       <div style="font-size:.85rem;color:#fff;">${esc(String(v))}</div></div>`).join('')}
+            </div>
+            <div style="font-size:.78rem;color:var(--muted);margin-bottom:.6rem;font-weight:600;">GUARDIAN CONTACTS (${contacts.length})</div>
+            ${contacts.length ? contacts.map(c=>`
+                <div style="background:rgba(139,92,246,.06);border:1px solid rgba(139,92,246,.15);border-radius:8px;padding:.65rem .9rem;margin-bottom:.5rem;">
+                    <div style="font-weight:600;font-size:.85rem;">${esc(c.name||'Guardian')}</div>
+                    <div style="font-size:.78rem;color:var(--muted2);">${esc(c.email||'')} ${c.phone?'· '+esc(c.phone):''} ${c.relationship?'· '+esc(c.relationship):''}</div>
+                </div>`).join('')
+            : '<div style="color:var(--muted);font-size:.82rem;">No guardians registered</div>'}`;
+    } catch(e) {
+        document.getElementById('userDetailContent').innerHTML = `<div style="color:var(--red);">Error: ${esc(e.message)}</div>`;
+    }
+}
+
+function exportUsers() {
+    if (!allUsers.length) return toast('No users to export', 'error');
+    const rows = [['Name','Email','Phone','Guardians','Joined']];
+    allUsers.forEach(u => rows.push([u.name||'',u.email||'',u.phone||'',(u.emergencyContacts||[]).length,fmtDate(u.createdAt)]));
+    downloadCSV(rows, 'hershield_users.csv');
+    toast('Users exported');
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  POSTS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let allPosts = [];
+async function loadPosts() {
+    const tbody = document.getElementById('postsTableBody');
+    tbody.innerHTML = '<tr><td colspan="6" class="empty"><i class="fas fa-spinner spin"></i> Loading…</td></tr>';
+    try {
+        const { posts } = await api('/posts');
+        allPosts = posts || [];
+        renderPostsTable(allPosts);
+    } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="6" style="color:var(--red);padding:1rem;">${esc(e.message)}</td></tr>`;
+    }
+}
+
+function renderPostsTable(posts) {
+    const tbody = document.getElementById('postsTableBody');
+    if (!posts.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty"><i class="fas fa-comments"></i>No posts</td></tr>'; return; }
+    tbody.innerHTML = posts.map(p => `<tr>
+        <td><div class="avatar-cell"><div class="avatar" style="font-size:.65rem;">${(p.userName||'?')[0]}</div><span class="td-main">${esc(p.userName||'—')}</span></div></td>
+        <td style="max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc((p.content||'').substring(0,80))}${(p.content||'').length>80?'…':''}</td>
+        <td>${sevBadge(p.category||'general')}</td>
+        <td>${p.likes||0}</td>
+        <td style="white-space:nowrap;">${timeAgo(p.createdAt)}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="deletePost('${esc(p._id)}')"><i class="fas fa-trash"></i></button></td>
+    </tr>`).join('');
+}
+
+function filterPosts() {
+    const q = document.getElementById('postSearch').value.toLowerCase();
+    renderPostsTable(allPosts.filter(p => (p.content||'').toLowerCase().includes(q) || (p.userName||'').toLowerCase().includes(q)));
+}
+
+async function deletePost(id) {
+    if (!confirm('Delete this post? This cannot be undone.')) return;
+    try {
+        await api('/posts/' + id, { method: 'DELETE' });
+        toast('Post deleted');
+        loadPosts();
+    } catch (e) { toast('Delete failed: ' + e.message, 'error'); }
+}
+
+function openNewPostModal() { document.getElementById('newPostModal').classList.add('show'); }
+
+async function submitNewPost() {
+    const content  = document.getElementById('newPostContent').value.trim();
+    const category = document.getElementById('newPostCategory').value;
+    const location = document.getElementById('newPostLocation').value.trim();
+    if (!content) return toast('Content required', 'error');
+    try {
+        await api('/posts', { method: 'POST', body: { content, category, location } });
+        toast('Post published to community');
+        closeModal('newPostModal');
+        document.getElementById('newPostContent').value = '';
+        loadPosts();
+    } catch (e) { toast('Failed: ' + e.message, 'error'); }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  ALERTS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+async function loadAlerts() {
+    const tbody = document.getElementById('alertsTableBody');
+    tbody.innerHTML = '<tr><td colspan="7" class="empty"><i class="fas fa-spinner spin"></i> Loading…</td></tr>';
+    try {
+        const { alerts } = await api('/alerts');
+        if (!alerts.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty"><i class="fas fa-bell"></i>No alerts</td></tr>'; return; }
+        tbody.innerHTML = alerts.map(a => `<tr>
+            <td class="td-main">${esc(a.title||'—')}</td>
+            <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc((a.message||'').substring(0,70))}</td>
+            <td>${sevBadge(a.severity)}</td>
+            <td>${esc(a.location||'—')}</td>
+            <td><span class="badge badge-purple">${esc(a.source||'community')}</span></td>
+            <td style="white-space:nowrap;">${timeAgo(a.createdAt)}</td>
+            <td>${a.source!=='incident-report'?`<button class="btn btn-danger btn-sm" onclick="deleteAlert('${esc(a._id)}')"><i class="fas fa-trash"></i></button>`:'<span style="color:var(--muted);font-size:.75rem;">auto</span>'}</td>
+        </tr>`).join('');
+    } catch (e) { tbody.innerHTML = `<tr><td colspan="7" style="color:var(--red);padding:1rem;">${esc(e.message)}</td></tr>`; }
+}
+
+async function deleteAlert(id) {
+    if (!confirm('Delete this alert?')) return;
+    try { await api('/alerts/' + id, {method:'DELETE'}); toast('Alert deleted'); loadAlerts(); }
+    catch (e) { toast(e.message, 'error'); }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  SOS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+async function loadSos() {
+    const tbody = document.getElementById('sosTableBody');
+    tbody.innerHTML = '<tr><td colspan="7" class="empty"><i class="fas fa-spinner spin"></i> Loading…</td></tr>';
+    try {
+        const { events } = await api('/sos');
+        if (!events.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty"><i class="fas fa-check-circle"></i>No SOS events</td></tr>'; return; }
+        tbody.innerHTML = events.map(e => {
+            const isActive = e.status === 'active';
+            return `<tr class="${isActive?'sos-active':''}">
+                <td class="td-main">${esc(e.name||e.userName||'—')}</td>
+                <td>${esc(e.email||e.userEmail||'—')}</td>
+                <td>${sevBadge(e.status)}</td>
+                <td>${esc(e.location?.address||e.address||'—')}</td>
+                <td style="white-space:nowrap;">${fmtDate(e.triggeredAt)}</td>
+                <td style="white-space:nowrap;">${fmtDate(e.resolvedAt)||'—'}</td>
+                <td>${(e.emergencyContacts||[]).length} contact(s)</td>
+            </tr>`;
+        }).join('');
+    } catch(e2) { tbody.innerHTML = `<tr><td colspan="7" style="color:var(--red);padding:1rem;">${esc(e2.message)}</td></tr>`; }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  INCIDENTS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let allIncidents = [];
+async function loadIncidents() {
+    const tbody = document.getElementById('incidentsTableBody');
+    tbody.innerHTML = '<tr><td colspan="6" class="empty"><i class="fas fa-spinner spin"></i> Loading…</td></tr>';
+    try {
+        const { incidents } = await api('/incidents');
+        allIncidents = incidents || [];
+        if (!incidents.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty"><i class="fas fa-map-marker"></i>No incidents</td></tr>'; return; }
+        tbody.innerHTML = incidents.map(i => `<tr>
+            <td class="td-main">${esc(i.incidentType||'—')}</td>
+            <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc((i.description||'').substring(0,80))}</td>
+            <td>${sevBadge(i.severity)}</td>
+            <td>${esc(i.location?.address||'—')}</td>
+            <td>${esc(i.reporterName||'Anonymous')}</td>
+            <td style="white-space:nowrap;">${timeAgo(i.createdAt)}</td>
+        </tr>`).join('');
+    } catch (e) { tbody.innerHTML = `<tr><td colspan="6" style="color:var(--red);padding:1rem;">${esc(e.message)}</td></tr>`; }
+}
+
+function exportIncidents() {
+    if (!allIncidents.length) return toast('No incidents to export','error');
+    const rows = [['Type','Description','Severity','Location','Reporter','Date']];
+    allIncidents.forEach(i => rows.push([i.incidentType||'',i.description||'',i.severity||'',i.location?.address||'',i.reporterName||'',fmtDate(i.createdAt)]));
+    downloadCSV(rows, 'hershield_incidents.csv');
+    toast('Incidents exported');
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  TRACKING
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+async function loadTracking() {
+    const tbody = document.getElementById('trackingTableBody');
+    tbody.innerHTML = '<tr><td colspan="6" class="empty"><i class="fas fa-spinner spin"></i> Loading…</td></tr>';
+    try {
+        const { sessions } = await api('/tracking');
+        if (!sessions.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty"><i class="fas fa-satellite-dish"></i>No sessions</td></tr>'; return; }
+        tbody.innerHTML = sessions.map(s => `<tr>
+            <td class="td-main">${esc(s.name||s.userName||'—')}</td>
+            <td>${esc(s.source||'—')} → ${esc(s.destination||'—')}</td>
+            <td>${esc(s.transportMode||'—')}</td>
+            <td>${sevBadge(s.status||'unknown')}</td>
+            <td style="white-space:nowrap;">${timeAgo(s.startTime)}</td>
+            <td>${(s.emergencyContacts||[]).length} contact(s)</td>
+        </tr>`).join('');
+    } catch (e) { tbody.innerHTML = `<tr><td colspan="6" style="color:var(--red);padding:1rem;">${esc(e.message)}</td></tr>`; }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  BROADCAST
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+async function sendBroadcast() {
+    const title    = document.getElementById('bcastTitle').value.trim();
+    const message  = document.getElementById('bcastMessage').value.trim();
+    const severity = document.getElementById('bcastSeverity').value;
+    const location = document.getElementById('bcastLocation').value.trim();
+    const saveAsAlert = document.getElementById('bcastSaveAlert').checked;
+    if (!title || !message) return toast('Title and message are required','error');
+
+    const btn = document.getElementById('bcastBtn');
+    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner spin"></i> Sending…';
+    try {
+        const { connectedClients } = await api('/broadcast', {
+            method:'POST', body: { title, message, severity, location, saveAsAlert }
+        });
+        document.getElementById('bcastResult').style.display = 'block';
+        document.getElementById('bcastResult').innerHTML = `
+            <div style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:10px;padding:.85rem 1rem;">
+                <i class="fas fa-check-circle" style="color:var(--green);"></i>
+                <strong style="color:#86efac;"> Broadcast sent</strong>
+                <span style="color:var(--muted);font-size:.82rem;"> — reached ${connectedClients||0} connected user(s)</span>
+            </div>`;
+        toast('Broadcast sent to ' + (connectedClients||0) + ' users');
+    } catch (e) { toast('Broadcast failed: ' + e.message, 'error'); }
+    finally { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Broadcast'; }
+}
+
+function clearBroadcast() {
+    ['bcastTitle','bcastMessage','bcastLocation'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('bcastSeverity').value = 'medium';
+    document.getElementById('bcastResult').style.display = 'none';
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  LOGS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+async function loadLogs() {
+    const tbody = document.getElementById('logsTableBody');
+    tbody.innerHTML = '<tr><td colspan="5" class="empty"><i class="fas fa-spinner spin"></i> Loading…</td></tr>';
+    try {
+        const { logs } = await api('/logs');
+        if (!logs.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty"><i class="fas fa-history"></i>No logs yet</td></tr>'; return; }
+        tbody.innerHTML = logs.map(l => `<tr>
+            <td style="white-space:nowrap;">${timeAgo(l.timestamp)}</td>
+            <td>${esc(l.admin||'—')}</td>
+            <td><span class="log-action">${esc(l.action||'—')}</span></td>
+            <td style="font-size:.75rem;color:var(--muted);">${esc(JSON.stringify(l.detail||{}))}</td>
+            <td style="font-size:.75rem;">${esc(l.ip||'—')}</td>
+        </tr>`).join('');
+    } catch (e) { tbody.innerHTML = `<tr><td colspan="5" style="color:var(--red);padding:1rem;">${esc(e.message)}</td></tr>`; }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  UTILS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if(e.target===m) m.classList.remove('show'); }));
+
+function downloadCSV(rows, filename) {
+    const csv = rows.map(r => r.map(c => '"' + String(c).replace(/"/g,'""') + '"').join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+    a.download = filename;
+    a.click();
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  SOCKET.IO — receive admin broadcasts on this page too
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+try {
+    const socket = io({ transports: ['websocket','polling'] });
+    socket.on('admin:broadcast', data => toast('📢 Broadcast sent: ' + data.title));
+    socket.on('community:postDeleted', ({ postId }) => {
+        if (currentSection === 'posts') loadPosts();
+    });
+    socket.on('community:newPost', () => {
+        if (currentSection === 'posts') loadPosts();
+    });
+} catch(_) {}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  INIT
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+loadOverview();
+setInterval(loadOverview, 30000); // auto-refresh stats every 30s
+</script>
+</body>
+
+</html>

@@ -1,0 +1,361 @@
+'use strict';
+/**
+ * Admin API Routes — HerShield
+ * All routes are protected by adminAuth JWT middleware.
+ * Every write action is logged to hershield_admin_logs in Firestore.
+ */
+const express  = require('express');
+const bcrypt   = require('bcryptjs');
+const jwt      = require('jsonwebtoken');
+const router   = express.Router();
+const { adminAuth, ADMIN_JWT_SECRET } = require('../middleware/adminAuth');
+
+const {
+    isFirestoreConfigured,
+    usersListAll,
+    usersFindById,
+    incidentsFetchAll,
+    communityFindByKind,
+    communityInsert,
+    communityDeletePost,
+    communityDeleteAlert,
+    sosListAll,
+    sosFindActive,
+    liveSessionsListAll,
+    adminLogCreate,
+    adminLogsList,
+} = require('../services/firestoreRepository');
+
+// ── helpers ────────────────────────────────────────────────────────────────────
+function getIo(req) { return req.app.get('io') || null; }
+
+async function log(req, action, detail = {}) {
+    try {
+        await adminLogCreate({
+            admin:  req.admin?.email || 'unknown',
+            action,
+            detail,
+            ip:     req.ip,
+        });
+    } catch (_) { /* non-blocking */ }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  POST /api/admin/login  (public — no auth)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+router.post('/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        if (!email || !password) {
+            return res.status(400).json({ success: false, message: 'Email and password required' });
+        }
+
+        const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+        const ADMIN_HASH  = process.env.ADMIN_PASSWORD_HASH;
+
+        if (!ADMIN_EMAIL || !ADMIN_HASH) {
+            return res.status(503).json({
+                success: false,
+                message: 'Admin credentials not configured on server. Set ADMIN_EMAIL and ADMIN_PASSWORD_HASH in .env',
+            });
+        }
+
+        if (email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+        }
+
+        const valid = await bcrypt.compare(password, ADMIN_HASH);
+        if (!valid) {
+            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+        }
+
+        const token = jwt.sign(
+            { email: ADMIN_EMAIL, isAdmin: true, role: 'admin' },
+            ADMIN_JWT_SECRET,
+            { expiresIn: '10h' }
+        );
+
+        res.json({ success: true, token, email: ADMIN_EMAIL });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// ── All routes below require valid admin JWT ───────────────────────────────────
+router.use(adminAuth);
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  GET /api/admin/stats
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+router.get('/stats', async (req, res) => {
+    try {
+        const [users, posts, alerts, incidents, sosList, activeSos, liveSessions] = await Promise.allSettled([
+            usersListAll(1000),
+            communityFindByKind('post', 200),
+            communityFindByKind('alert', 200),
+            incidentsFetchAll(200),
+            sosListAll(200),
+            sosFindActive(),
+            liveSessionsListAll(100),
+        ]);
+
+        const val = (r) => (r.status === 'fulfilled' ? r.value : []);
+
+        const sosData    = val(sosList);
+        const activeNow  = (val(activeSos))?.userId ? [val(activeSos)] : (Array.isArray(val(activeSos)) ? val(activeSos) : []);
+        const liveSess   = val(liveSessions);
+
+        res.json({
+            success: true,
+            stats: {
+                totalUsers:        val(users).length,
+                totalPosts:        val(posts).length,
+                totalAlerts:       val(alerts).length,
+                totalIncidents:    val(incidents).length,
+                totalSosEvents:    sosData.length,
+                activeSosNow:      sosData.filter(s => s.status === 'active').length,
+                activeTracking:    liveSess.filter(s => s.status === 'active').length,
+                newUsersToday:     val(users).filter(u => {
+                    const d = new Date(u.createdAt || 0);
+                    return d.toDateString() === new Date().toDateString();
+                }).length,
+            },
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  GET /api/admin/users
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+router.get('/users', async (req, res) => {
+    try {
+        const users = await usersListAll(500);
+        // Strip password fields
+        const safe = users.map(({ password, passwordHash, ...u }) => u);
+        res.json({ success: true, users: safe });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  GET /api/admin/users/:id
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+router.get('/users/:id', async (req, res) => {
+    try {
+        const user = await usersFindById(req.params.id);
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+        const { password, passwordHash, ...safe } = user;
+        res.json({ success: true, user: safe });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  GET /api/admin/posts
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+router.get('/posts', async (req, res) => {
+    try {
+        const posts = await communityFindByKind('post', 200);
+        res.json({ success: true, posts });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  POST /api/admin/posts  (create broadcast post)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+router.post('/posts', async (req, res) => {
+    try {
+        const { content, category, location } = req.body;
+        if (!content?.trim()) return res.status(400).json({ success: false, message: 'Content required' });
+
+        const post = {
+            _id:       `${Date.now()}_admin_${Math.floor(Math.random() * 9999)}`,
+            kind:      'post',
+            content:   content.trim(),
+            userName:  'HerShield Admin',
+            userEmail: req.admin.email,
+            location:  location || '',
+            imageUrl:  '',
+            category:  category || 'alert',
+            isAdminPost: true,
+            likes:     0,
+            likedBy:   [],
+            comments:  0,
+            createdAt: new Date().toISOString(),
+        };
+
+        await communityInsert(post);
+        const io = getIo(req);
+        if (io) io.emit('community:newPost', post);
+
+        await log(req, 'CREATE_POST', { postId: post._id, category });
+        res.status(201).json({ success: true, post });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  DELETE /api/admin/posts/:id
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+router.delete('/posts/:id', async (req, res) => {
+    try {
+        await communityDeletePost(req.params.id);
+        const io = getIo(req);
+        if (io) io.emit('community:postDeleted', { postId: req.params.id });
+        await log(req, 'DELETE_POST', { postId: req.params.id });
+        res.json({ success: true, message: 'Post deleted' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  GET /api/admin/alerts
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+router.get('/alerts', async (req, res) => {
+    try {
+        const [communityAlerts, incidents] = await Promise.all([
+            communityFindByKind('alert', 100),
+            incidentsFetchAll(100),
+        ]);
+        const incidentAlerts = incidents.map(inc => ({
+            _id:      inc._id,
+            kind:     'alert',
+            source:   'incident-report',
+            title:    `${inc.incidentType || 'Incident'} — ${(inc.severity || 'medium').toUpperCase()}`,
+            message:  inc.description || '',
+            severity: inc.severity || 'medium',
+            location: inc?.location?.address || '',
+            userName: inc.reporterName || 'Anonymous',
+            createdAt: inc.createdAt,
+        }));
+        const all = [...communityAlerts, ...incidentAlerts]
+            .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+        res.json({ success: true, alerts: all });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  DELETE /api/admin/alerts/:id
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+router.delete('/alerts/:id', async (req, res) => {
+    try {
+        await communityDeleteAlert(req.params.id);
+        await log(req, 'DELETE_ALERT', { alertId: req.params.id });
+        res.json({ success: true, message: 'Alert deleted' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  GET /api/admin/incidents
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+router.get('/incidents', async (req, res) => {
+    try {
+        const incidents = await incidentsFetchAll(500);
+        incidents.sort((a,b) => new Date(b.createdAt||0) - new Date(a.createdAt||0));
+        res.json({ success: true, incidents });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  GET /api/admin/sos
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+router.get('/sos', async (req, res) => {
+    try {
+        const events = await sosListAll(300);
+        res.json({ success: true, events });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  GET /api/admin/tracking
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+router.get('/tracking', async (req, res) => {
+    try {
+        const sessions = await liveSessionsListAll(100);
+        res.json({ success: true, sessions });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  POST /api/admin/broadcast  (push alert to ALL users via Socket.IO)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+router.post('/broadcast', async (req, res) => {
+    try {
+        const { title, message, severity, location, saveAsAlert } = req.body;
+        if (!title || !message) {
+            return res.status(400).json({ success: false, message: 'Title and message required' });
+        }
+
+        const payload = {
+            _id:      `bcast_${Date.now()}`,
+            title,
+            message,
+            severity: severity || 'info',
+            location: location || '',
+            sentBy:   req.admin.email,
+            sentAt:   new Date().toISOString(),
+        };
+
+        // Push to ALL connected clients instantly
+        const io = getIo(req);
+        if (io) {
+            io.emit('admin:broadcast', payload);
+            console.log(`📢 Admin broadcast sent: "${title}" to ${io.engine.clientsCount} clients`);
+        }
+
+        // Optionally persist as a community alert
+        if (saveAsAlert) {
+            const alertDoc = {
+                _id:       payload._id,
+                kind:      'alert',
+                title,
+                message,
+                severity:  severity || 'medium',
+                location:  location || '',
+                source:    'admin-broadcast',
+                userName:  'HerShield Admin',
+                userEmail: req.admin.email,
+                createdAt: new Date().toISOString(),
+            };
+            await communityInsert(alertDoc);
+            if (io) io.emit('community:newAlert', alertDoc);
+        }
+
+        await log(req, 'BROADCAST', { title, severity });
+        res.json({ success: true, message: 'Broadcast sent', connectedClients: io?.engine?.clientsCount || 0 });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  GET /api/admin/logs
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+router.get('/logs', async (req, res) => {
+    try {
+        const logs = await adminLogsList(100);
+        res.json({ success: true, logs });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+module.exports = router;

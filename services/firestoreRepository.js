@@ -295,6 +295,35 @@ async function communityFindByKind(kind, limit) {
     return rows.slice(0, lim);
 }
 
+async function communityLikePost(docId, userId) {
+    const db = firestoreOrThrow();
+    const ref = db.collection(COL.COMMUNITY).doc(docId);
+    const snap = await ref.get();
+    if (!snap.exists) throw Object.assign(new Error('Post not found'), { statusCode: 404 });
+    const data = snap.data();
+    const likedBy = data.likedBy || [];
+    const alreadyLiked = likedBy.includes(userId);
+    if (alreadyLiked) {
+        // toggle off
+        await ref.update({
+            likedBy: admin.firestore.FieldValue.arrayRemove(userId),
+            likes: Math.max(0, (data.likes || 0) - 1),
+        });
+        return { liked: false, likes: Math.max(0, (data.likes || 0) - 1) };
+    } else {
+        await ref.update({
+            likedBy: admin.firestore.FieldValue.arrayUnion(userId),
+            likes: (data.likes || 0) + 1,
+        });
+        return { liked: true, likes: (data.likes || 0) + 1 };
+    }
+}
+
+async function communityUpdateImageUrl(docId, imageUrl) {
+    const db = firestoreOrThrow();
+    await db.collection(COL.COMMUNITY).doc(docId).update({ imageUrl });
+}
+
 async function liveSessionCreate(session, docId) {
     const db = firestoreOrThrow();
     const payload = {
@@ -506,6 +535,61 @@ async function sosFindByUserId(userId, limitN = 20) {
     return rows;
 }
 
+// ── Admin-only functions ───────────────────────────────────────────────────
+
+async function usersListAll(limitN = 500) {
+    const db  = firestoreOrThrow();
+    const snap = await db.collection(COL.USERS).limit(Math.min(limitN, 1000)).get();
+    const rows = snap.docs.map((d) => serializeDoc(d));
+    rows.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    return rows;
+}
+
+async function communityDeletePost(docId) {
+    const db = firestoreOrThrow();
+    await db.collection(COL.COMMUNITY).doc(docId).delete();
+}
+
+async function communityDeleteAlert(docId) {
+    const db = firestoreOrThrow();
+    await db.collection(COL.COMMUNITY).doc(docId).delete();
+}
+
+async function sosListAll(limitN = 200) {
+    const db  = firestoreOrThrow();
+    const snap = await db.collection(COL.SOS_EVENTS).limit(Math.min(limitN, 500)).get();
+    const rows = snap.docs.map((d) => serializeDoc(d));
+    rows.sort((a, b) => new Date(b.triggeredAt || 0) - new Date(a.triggeredAt || 0));
+    return rows;
+}
+
+async function liveSessionsListAll(limitN = 100) {
+    const db  = firestoreOrThrow();
+    const snap = await db.collection(COL.LIVE_TRACKER).limit(Math.min(limitN, 200)).get();
+    const rows = snap.docs.map((d) => serializeDoc(d));
+    rows.sort((a, b) => new Date(b.startTime || 0) - new Date(a.startTime || 0));
+    return rows;
+}
+
+async function adminLogCreate(entry) {
+    const db = firestoreOrThrow();
+    const id  = `${Date.now()}_${Math.floor(Math.random() * 99999)}`;
+    await db.collection('hershield_admin_logs').doc(id).set({
+        ...entry,
+        _id: id,
+        timestamp: admin.firestore.Timestamp.now(),
+    });
+    return id;
+}
+
+async function adminLogsList(limitN = 100) {
+    const db  = firestoreOrThrow();
+    const snap = await db.collection('hershield_admin_logs').limit(Math.min(limitN, 200)).get();
+    const rows = snap.docs.map((d) => serializeDoc(d));
+    rows.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+    return rows;
+}
+
 module.exports = {
     firestoreOrThrow,
     isFirestoreConfigured,
@@ -514,6 +598,7 @@ module.exports = {
     usersFindByEmail,
     usersCreate,
     usersSave,
+    usersListAll,
     trackingCodeExists,
     trackingCreate,
     trackingFindById,
@@ -526,11 +611,16 @@ module.exports = {
     incidentsSave,
     communityInsert,
     communityFindByKind,
+    communityLikePost,
+    communityUpdateImageUrl,
+    communityDeletePost,
+    communityDeleteAlert,
     liveSessionCreate,
     liveSessionGetByUserId,
     liveSessionSetVerified,
     liveSessionPushLocation,
     liveSessionStop,
+    liveSessionsListAll,
     safetyLocationsList,
     safetyLocationsAdd,
     safetyLocationsSeedFromCsvIfEmpty,
@@ -539,4 +629,8 @@ module.exports = {
     sosMarkSafe,
     sosMarkExpired,
     sosFindByUserId,
+    sosListAll,
+    adminLogCreate,
+    adminLogsList,
 };
+

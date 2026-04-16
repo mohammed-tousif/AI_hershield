@@ -42,6 +42,7 @@ const io = socketIo(server, {
     pingTimeout: 60000,
     pingInterval: 25000
 });
+app.set('io', io); // expose to routes
 
 // Middleware
 app.use(helmet({
@@ -72,6 +73,8 @@ app.use('/api/', limiter);
 
 // Serve static files from the project root (always use __dirname, not '.')
 app.use(express.static(__dirname));
+// Uploaded community images (created by multer)
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 
 // Root route → landing page
 app.get('/', (req, res) => {
@@ -87,15 +90,26 @@ const safetyRoutes = require('./routes/safety');
 const safetyLocationsRoutes = require('./routes/safetyLocations');
 const usersRoutes = require('./routes/users');
 const communityRoutes = require('./routes/community');
+const adminRoutes     = require('./routes/admin');
+
+// Admin-specific strict rate limiter (20 req / min)
+const adminLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 20,
+    message: 'Too many admin requests',
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
 // API Routes
 app.use('/api/emergency', emergencyRoutes);
 app.use('/api/tracking', trackingRoutes);
 app.use('/api/safety', safetyRoutes);
-app.use('/api/safety', safetyLocationsRoutes); // Safety locations (Firestore; optional one-time CSV seed)
+app.use('/api/safety', safetyLocationsRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/live-tracker', require('./routes/liveTracker'));
 app.use('/api/community', communityRoutes);
+app.use('/api/admin',    adminLimiter, adminRoutes);
 
 // ── Re-hydrate SOS timers on startup ────────────────────────────────────────
 // If the server restarts while users have active SOS sessions, we reschedule

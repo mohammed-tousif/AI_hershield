@@ -182,14 +182,15 @@ router.post('/report', async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message:
-                    'Missing required fields: issue type, description, and either a location name or GPS coordinates (use “Use GPS”) are required.',
+                    'Missing required fields: issue type, description, and either a location name or GPS coordinates (use "Use GPS") are required.',
             });
         }
 
+        const severityNorm = String(severity || 'medium').toLowerCase();
         const incidentData = {
             _id: `${Date.now()}_${Math.floor(Math.random() * 10000)}`,
             incidentType: String(type).toLowerCase().replace(/ /g, '_'),
-            severity: String(severity || 'medium').toLowerCase(),
+            severity: severityNorm,
             location: {
                 address: addr || (typeof location === 'string' ? location : ''),
                 coordinates: hasCoords ? { latitude: Number(lat), longitude: Number(lng) } : null,
@@ -204,6 +205,33 @@ router.post('/report', async (req, res) => {
 
         await incidentsCreate(incidentData);
         console.log('✅ Incident report stored in Firestore:', incidentData.incidentType, incidentData.location.address);
+
+        // ── Real-time heatmap update via Socket.IO ──────────────────────────
+        // Only emit if the incident has valid GPS coords (required for heatmap)
+        if (hasCoords) {
+            const severityToRiskLevel = { critical: 3, high: 3, medium: 2, low: 1 };
+            const heatmapPoint = {
+                latitude:   Number(lat),
+                longitude:  Number(lng),
+                risk_level: severityToRiskLevel[severityNorm] ?? 2,
+                location:   addr || `${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)}`,
+                category:   'user_report',
+                incidentType: incidentData.incidentType,
+                severity:   severityNorm,
+                reportId:   incidentData._id,
+                description: desc.slice(0, 120),
+                createdAt:  incidentData.timestamp,
+            };
+            try {
+                const io = req.app.get('io');
+                if (io) {
+                    io.emit('incident:new', heatmapPoint);
+                    console.log('📡 Broadcast incident:new to all connected clients');
+                }
+            } catch (ioErr) {
+                console.warn('Socket.IO emit skipped:', ioErr.message);
+            }
+        }
 
         res.json({
             success: true,
@@ -224,6 +252,59 @@ router.post('/report', async (req, res) => {
         });
     }
 });
+
+/**
+ * @route   GET /api/safety/incident-points
+ * @desc    Return all user-submitted incidents as map-compatible points
+ *          Format: { latitude, longitude, risk_level, location, category, severity, incidentType }
+ *          risk_level: 1=low, 2=medium, 3=high (matches static safety locations schema)
+ * @access  Public
+ */
+router.get('/incident-points', async (req, res) => {
+    try {
+        if (!isFirestoreConfigured()) {
+            return res.json({ success: true, points: [], count: 0, degraded: true });
+        }
+
+        const SEVERITY_TO_RISK = { critical: 3, high: 3, medium: 2, low: 1 };
+        const ACTIVE = new Set(['verified', 'investigating', 'pending']);
+
+        const all = await incidentsFetchAll();
+        const points = all
+            .filter((inc) => {
+                if (!ACTIVE.has(inc.status)) return false;
+                const lat = inc?.location?.coordinates?.latitude;
+                const lng = inc?.location?.coordinates?.longitude;
+                return (
+                    lat != null && lng != null &&
+                    Number.isFinite(Number(lat)) && Number.isFinite(Number(lng)) &&
+                    Math.abs(Number(lat)) <= 90 && Math.abs(Number(lng)) <= 180
+                );
+            })
+            .map((inc) => ({
+                latitude:     Number(inc.location.coordinates.latitude),
+                longitude:    Number(inc.location.coordinates.longitude),
+                risk_level:   SEVERITY_TO_RISK[inc.severity] ?? 2,
+                location:     inc.location.address || `${inc.location.coordinates.latitude}, ${inc.location.coordinates.longitude}`,
+                category:     'user_report',
+                incidentType: inc.incidentType || 'other',
+                severity:     inc.severity || 'medium',
+                description:  (inc.description || '').slice(0, 120),
+                reportId:     inc._id,
+                createdAt:    inc.timestamp || inc.createdAt,
+            }));
+
+        res.json({ success: true, points, count: points.length });
+    } catch (error) {
+        console.error('Error fetching incident points:', error);
+        const status = error.statusCode || 500;
+        res.status(status).json({
+            success: false,
+            error: error.code === 'FIRESTORE_NOT_CONFIGURED' ? error.message : 'Failed to fetch incident points',
+        });
+    }
+});
+
 
 /**
  * @route   POST /api/safety/report-full

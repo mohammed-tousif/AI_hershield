@@ -920,24 +920,65 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="reportModalLabel">Report an Issue</h5>
+                    <h5 class="modal-title" id="reportModalLabel">
+                        <i class="fas fa-exclamation-triangle text-danger me-2"></i>Report an Issue
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <form id="reportForm">
+                        <!-- Type of Issue -->
                         <div class="mb-3">
-                            <label for="reportType" class="form-label">Type of Issue</label>
-                            <input type="text" class="form-control" id="reportType" required>
+                            <label for="reportType" class="form-label fw-bold">Type of Issue</label>
+                            <input type="text" class="form-control" id="reportType"
+                                placeholder="e.g. Harassment, Suspicious Activity..." required>
                         </div>
+                        <!-- Severity -->
                         <div class="mb-3">
-                            <label for="reportLocation" class="form-label">Location</label>
-                            <input type="text" class="form-control" id="reportLocation" required>
+                            <label for="reportSeverity" class="form-label fw-bold">Severity Level</label>
+                            <select class="form-select" id="reportSeverity" required>
+                                <option value="">Select severity...</option>
+                                <option value="Low">Low — Minor concern</option>
+                                <option value="Medium">Medium — Needs attention</option>
+                                <option value="High">High — Urgent</option>
+                            </select>
                         </div>
+                        <!-- Location with autocomplete -->
+                        <div class="mb-3" style="position:relative;">
+                            <label for="reportLocation" class="form-label fw-bold">Location</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="reportLocation"
+                                    placeholder="Start typing a location…" required
+                                    autocomplete="off" aria-autocomplete="list" aria-owns="idx-locationSuggestions">
+                                <span class="input-group-text bg-white" id="idx-locationSpinner" style="display:none;">
+                                    <span class="spinner-border spinner-border-sm text-secondary" role="status"></span>
+                                </span>
+                                <button type="button" class="btn btn-outline-primary" id="idx-getLocationBtn">
+                                    <i class="fas fa-crosshairs"></i>
+                                </button>
+                            </div>
+                            <ul id="idx-locationSuggestions" role="listbox"
+                                style="display:none;list-style:none;padding:0;margin:0;
+                                       position:absolute;z-index:9999;width:100%;max-height:200px;
+                                       overflow-y:auto;background:#fff;border:1px solid #ced4da;
+                                       border-top:none;border-radius:0 0 8px 8px;
+                                       box-shadow:0 6px 18px rgba(0,0,0,.12);">
+                            </ul>
+                            <small class="text-muted mt-1 d-block">
+                                <span id="idx-locationStatus">Type a location or tap the GPS icon</span>
+                            </small>
+                            <input type="hidden" id="idx-reportLat">
+                            <input type="hidden" id="idx-reportLng">
+                        </div>
+                        <!-- Description -->
                         <div class="mb-3">
-                            <label for="reportDescription" class="form-label">Description</label>
-                            <textarea class="form-control" id="reportDescription" rows="3" required></textarea>
+                            <label for="reportDescription" class="form-label fw-bold">Description</label>
+                            <textarea class="form-control" id="reportDescription" rows="3"
+                                placeholder="Describe the incident..." required></textarea>
                         </div>
-                        <button type="submit" class="btn btn-primary">Submit Report</button>
+                        <button type="submit" class="btn btn-danger w-100">
+                            <i class="fas fa-paper-plane me-2"></i>Submit Report
+                        </button>
                     </form>
                 </div>
             </div>
@@ -1173,6 +1214,118 @@
                 const reportModal = new bootstrap.Modal(document.getElementById('reportModal'));
                 reportModal.show();
             });
+
+            // GPS button in index.html report modal
+            document.getElementById('idx-getLocationBtn').addEventListener('click', function() {
+                const btn = this;
+                const inp = document.getElementById('reportLocation');
+                const lat = document.getElementById('idx-reportLat');
+                const lng = document.getElementById('idx-reportLng');
+                const st  = document.getElementById('idx-locationStatus');
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                if (!navigator.geolocation) {
+                    st.textContent = 'Geolocation not supported.';
+                    btn.disabled = false; btn.innerHTML = '<i class="fas fa-crosshairs"></i>'; return;
+                }
+                navigator.geolocation.getCurrentPosition(
+                    pos => {
+                        lat.value = pos.coords.latitude.toFixed(7);
+                        lng.value = pos.coords.longitude.toFixed(7);
+                        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat.value}&lon=${lng.value}`,
+                            { headers: { 'User-Agent': 'HerShield-SafetyApp/1.0' } })
+                            .then(r => r.json()).then(d => { inp.value = d.display_name || `${lat.value}, ${lng.value}`; })
+                            .catch(() => { inp.value = `${lat.value}, ${lng.value}`; });
+                        st.textContent = '✓ GPS location captured';
+                        st.className = 'text-success mt-1 d-block';
+                        btn.disabled = false; btn.innerHTML = '<i class="fas fa-crosshairs"></i>';
+                    },
+                    () => {
+                        st.textContent = 'Could not get GPS location.';
+                        st.className = 'text-danger mt-1 d-block';
+                        btn.disabled = false; btn.innerHTML = '<i class="fas fa-crosshairs"></i>';
+                    },
+                    { enableHighAccuracy: true, timeout: 10000 }
+                );
+            });
+
+            // Location autocomplete for index.html report modal
+            (function() {
+                const input    = document.getElementById('reportLocation');
+                const list     = document.getElementById('idx-locationSuggestions');
+                const spnr     = document.getElementById('idx-locationSpinner');
+                const latI     = document.getElementById('idx-reportLat');
+                const lngI     = document.getElementById('idx-reportLng');
+                const statusEl = document.getElementById('idx-locationStatus');
+                let timer = null, activeIdx = -1, suggs = [];
+                const API = 'https://nominatim.openstreetmap.org/search';
+
+                function hide() { list.innerHTML=''; list.style.display='none'; activeIdx=-1; suggs=[]; }
+                function spin(on) { if(spnr) spnr.style.display = on?'':'none'; }
+
+                function buildLi(p, i) {
+                    const li = document.createElement('li');
+                    li.setAttribute('data-idx', i);
+                    li.style.cssText='padding:9px 13px;cursor:pointer;font-size:.85rem;' +
+                        'border-bottom:1px solid #f0f0f0;list-style:none;';
+                    li.innerHTML = '<i class="fas fa-map-marker-alt me-2" style="color:#9B8EC7;"></i>' +
+                        ((p.display_name||'').length>85 ? p.display_name.slice(0,85)+'…' : p.display_name);
+                    li.onmouseenter = () => { li.style.background='rgba(155,142,199,.12)'; activeIdx=i; };
+                    li.onmouseleave = () => { li.style.background=''; };
+                    li.onmousedown = e => { e.preventDefault(); pick(i); };
+                    return li;
+                }
+
+                function pick(i) {
+                    if (!suggs[i]) return;
+                    input.value = suggs[i].display_name;
+                    latI.value  = parseFloat(suggs[i].lat).toFixed(7);
+                    lngI.value  = parseFloat(suggs[i].lon).toFixed(7);
+                    statusEl.textContent = '✓ Location selected'; statusEl.className='text-success mt-1 d-block';
+                    hide(); input.focus();
+                }
+
+                async function search(q) {
+                    spin(true);
+                    try {
+                        const r = await fetch(`${API}?`+new URLSearchParams({q,format:'json',limit:6,'accept-language':'en'}),
+                            {headers:{'User-Agent':'HerShield-SafetyApp/1.0'}});
+                        suggs = await r.json();
+                        list.innerHTML='';
+                        if (!suggs.length) {
+                            const li=document.createElement('li'); li.style.padding='9px 13px'; li.style.color='#888';
+                            li.textContent='No results found.'; list.appendChild(li);
+                        } else suggs.forEach((p,i)=>list.appendChild(buildLi(p,i)));
+                        list.style.display='block';
+                    } catch(_){hide();} finally{spin(false);}
+                }
+
+                input.addEventListener('input', () => {
+                    latI.value=''; lngI.value='';
+                    clearTimeout(timer);
+                    const q=input.value.trim();
+                    if(q.length<3){hide();spin(false);return;}
+                    timer=setTimeout(()=>search(q),380);
+                });
+
+                input.addEventListener('keydown', e => {
+                    const items=list.querySelectorAll('li[data-idx]');
+                    if(!items.length) return;
+                    if(e.key==='ArrowDown'){e.preventDefault();activeIdx=Math.min(activeIdx+1,items.length-1);}
+                    else if(e.key==='ArrowUp'){e.preventDefault();activeIdx=Math.max(activeIdx-1,0);}
+                    else if(e.key==='Enter'&&activeIdx>=0){e.preventDefault();pick(activeIdx);return;}
+                    else if(e.key==='Escape'){hide();return;}
+                    items.forEach((li,i)=>{ li.style.background=i===activeIdx?'rgba(155,142,199,.2)':''; });
+                });
+
+                document.addEventListener('click', e => {
+                    if(!input.contains(e.target)&&!list.contains(e.target)) hide();
+                });
+
+                document.getElementById('reportModal').addEventListener('hide.bs.modal', () => {
+                    hide(); spin(false);
+                });
+            })();
 
             // Handle form submission
             document.getElementById('reportForm').addEventListener('submit', function(event) {

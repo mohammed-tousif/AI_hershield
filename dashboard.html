@@ -519,14 +519,27 @@
                             </label>
                             <div class="input-group">
                                 <input type="text" class="form-control form-control-lg" id="reportLocation"
-                                    placeholder="Enter location or use GPS..." required>
+                                    placeholder="Start typing a location…" required
+                                    autocomplete="off" aria-autocomplete="list" aria-owns="locationSuggestions">
+                                <span class="input-group-text bg-white border-start-0" id="locationSpinner"
+                                    style="display:none;border-left:0;">
+                                    <span class="spinner-border spinner-border-sm text-secondary" role="status"></span>
+                                </span>
                                 <button type="button" class="btn btn-outline-primary" id="getLocationButton">
                                     <i class="fas fa-crosshairs me-2"></i>Use GPS
                                 </button>
                             </div>
-                            <small class="text-muted">
+                            <!-- Autocomplete suggestions list -->
+                            <ul id="locationSuggestions" role="listbox"
+                                style="display:none;list-style:none;padding:0;margin:0;
+                                       position:absolute;z-index:9999;width:100%;max-height:220px;
+                                       overflow-y:auto;background:#fff;border:1px solid #ced4da;
+                                       border-top:none;border-radius:0 0 8px 8px;
+                                       box-shadow:0 6px 18px rgba(0,0,0,.12);">
+                            </ul>
+                            <small class="text-muted mt-1 d-block">
                                 <i class="fas fa-info-circle me-1"></i>
-                                <span id="locationStatus">Click "Use GPS" to get your current location</span>
+                                <span id="locationStatus">Type an address or use GPS to auto-fill</span>
                             </small>
                             <!-- Hidden fields for coordinates -->
                             <input type="hidden" id="reportLat">
@@ -1073,8 +1086,176 @@
                 }
             });
 
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            // Location Autocomplete — Nominatim (OpenStreetMap, free)
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            (function initLocationAutocomplete() {
+                const input     = document.getElementById('reportLocation');
+                const list      = document.getElementById('locationSuggestions');
+                const spinner   = document.getElementById('locationSpinner');
+                const latInput  = document.getElementById('reportLat');
+                const lngInput  = document.getElementById('reportLng');
+                const statusEl  = document.getElementById('locationStatus');
+
+                let debounceTimer = null;
+                let activeIndex   = -1;
+                let suggestions   = [];
+
+                const NOMINATIM   = 'https://nominatim.openstreetmap.org/search';
+                const MIN_CHARS   = 3;
+                const DEBOUNCE_MS = 380;
+
+                function showSpinner(on) { if (spinner) spinner.style.display = on ? '' : 'none'; }
+
+                function clearSuggestions() {
+                    list.innerHTML = '';
+                    list.style.display = 'none';
+                    activeIndex = -1;
+                    suggestions = [];
+                }
+
+                function iconForType(typeStr) {
+                    const t = (typeStr || '').toLowerCase();
+                    if (['city','town','municipality'].some(k => t.includes(k))) return 'city';
+                    if (['road','street','avenue'].some(k => t.includes(k)))     return 'road';
+                    if (t.includes('hospital'))                                    return 'hospital';
+                    if (t.includes('school') || t.includes('college'))            return 'school';
+                    if (t.includes('police'))                                      return 'shield-halved';
+                    if (t.includes('country') || t.includes('state'))             return 'globe';
+                    return 'map-marker-alt';
+                }
+
+                function buildItem(place, idx) {
+                    const li = document.createElement('li');
+                    li.setAttribute('role', 'option');
+                    li.setAttribute('data-idx', idx);
+                    li.style.cssText = 'padding:10px 14px;cursor:pointer;font-size:.875rem;' +
+                        'border-bottom:1px solid #f3f3f3;display:flex;align-items:flex-start;gap:9px;' +
+                        'transition:background .1s;line-height:1.4;';
+                    const icon = iconForType(place.type || place.addresstype || '');
+                    const name = (place.display_name || '').length > 85
+                        ? place.display_name.slice(0, 85) + '…' : place.display_name;
+                    li.innerHTML =
+                        `<i class="fas fa-${icon}" style="color:#9B8EC7;margin-top:3px;flex-shrink:0;font-size:.8rem;"></i>` +
+                        `<span>${name.replace(/</g,'&lt;')}</span>`;
+                    li.addEventListener('mouseenter', () => {
+                        li.style.background = 'rgba(155,142,199,.13)';
+                        activeIndex = idx;
+                    });
+                    li.addEventListener('mouseleave', () => { li.style.background = ''; });
+                    li.addEventListener('mousedown', e => { e.preventDefault(); selectSuggestion(idx); });
+                    return li;
+                }
+
+                function renderSuggestions(places) {
+                    list.innerHTML = '';
+                    if (!places.length) {
+                        const li = document.createElement('li');
+                        li.style.cssText = 'padding:10px 14px;font-size:.85rem;color:#6c757d;';
+                        li.textContent = 'No locations found. Try a broader search.';
+                        list.appendChild(li);
+                        list.style.display = 'block';
+                        return;
+                    }
+                    suggestions = places;
+                    places.forEach((p, i) => list.appendChild(buildItem(p, i)));
+                    list.style.display = 'block';
+                    positionList();
+                }
+
+                function selectSuggestion(idx) {
+                    const place = suggestions[idx];
+                    if (!place) return;
+                    input.value    = place.display_name;
+                    latInput.value = parseFloat(place.lat).toFixed(7);
+                    lngInput.value = parseFloat(place.lon).toFixed(7);
+                    statusEl.textContent = '✓ Location selected';
+                    statusEl.className   = 'text-success';
+                    clearSuggestions();
+                    input.focus();
+                }
+
+                async function fetchSuggestions(query) {
+                    showSpinner(true);
+                    try {
+                        const url = `${NOMINATIM}?` + new URLSearchParams({
+                            q: query, format: 'json',
+                            addressdetails: 1, limit: 7,
+                            'accept-language': 'en'
+                        });
+                        const res = await fetch(url, {
+                            headers: { 'User-Agent': 'HerShield-SafetyApp/1.0' }
+                        });
+                        if (!res.ok) throw new Error('network');
+                        renderSuggestions(await res.json());
+                    } catch (_) {
+                        statusEl.textContent = 'Location search unavailable — use GPS button instead.';
+                        statusEl.className   = 'text-warning';
+                        clearSuggestions();
+                    } finally {
+                        showSpinner(false);
+                    }
+                }
+
+                // ── Event listeners ──
+                input.addEventListener('input', () => {
+                    latInput.value = ''; lngInput.value = '';
+                    statusEl.textContent = 'Type an address or use GPS to auto-fill';
+                    statusEl.className   = 'text-muted';
+                    clearTimeout(debounceTimer);
+                    const q = input.value.trim();
+                    if (q.length < MIN_CHARS) { clearSuggestions(); showSpinner(false); return; }
+                    debounceTimer = setTimeout(() => fetchSuggestions(q), DEBOUNCE_MS);
+                });
+
+                input.addEventListener('keydown', e => {
+                    const items = list.querySelectorAll('li[data-idx]');
+                    if (!items.length) return;
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        activeIndex = Math.min(activeIndex + 1, items.length - 1);
+                        highlightItem(items);
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        activeIndex = Math.max(activeIndex - 1, 0);
+                        highlightItem(items);
+                    } else if (e.key === 'Enter' && activeIndex >= 0) {
+                        e.preventDefault();
+                        selectSuggestion(activeIndex);
+                    } else if (e.key === 'Escape') {
+                        clearSuggestions();
+                    }
+                });
+
+                function highlightItem(items) {
+                    items.forEach((li, i) => {
+                        li.style.background = i === activeIndex ? 'rgba(155,142,199,.22)' : '';
+                        if (i === activeIndex) li.scrollIntoView({ block: 'nearest' });
+                    });
+                }
+
+                function positionList() {
+                    const grp = input.closest('.input-group');
+                    if (grp) list.style.width = grp.getBoundingClientRect().width + 'px';
+                }
+
+                document.addEventListener('click', e => {
+                    if (!input.contains(e.target) && !list.contains(e.target)) clearSuggestions();
+                });
+
+                window.addEventListener('resize', positionList);
+
+                // Clear on modal close
+                document.getElementById('reportModal').addEventListener('hide.bs.modal', () => {
+                    clearSuggestions(); showSpinner(false);
+                    statusEl.textContent = 'Type an address or use GPS to auto-fill';
+                    statusEl.className   = 'text-muted';
+                });
+            })();
+
             // Handle form submission
             document.getElementById('reportForm').addEventListener('submit', async function (event) {
+
                 event.preventDefault(); // Prevent the default form submission
 
                 // Get form data

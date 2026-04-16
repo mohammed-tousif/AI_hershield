@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HerShield — Admin Login</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        :root{
+            --bg:#0f0f1a;
+            --card:#16162a;
+            --border:#252540;
+            --purple:#8b5cf6;
+            --purple-lt:#a78bfa;
+            --accent:#ec4899;
+            --text:#e2e8f0;
+            --muted:#64748b;
+            --danger:#ef4444;
+            --success:#22c55e;
+        }
+        body{
+            font-family:'Inter',sans-serif;
+            background:var(--bg);
+            color:var(--text);
+            min-height:100vh;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            position:relative;
+            overflow:hidden;
+        }
+        /* animated bg */
+        body::before{
+            content:'';position:absolute;inset:0;
+            background:radial-gradient(ellipse at 20% 50%,rgba(139,92,246,.15) 0%,transparent 60%),
+                        radial-gradient(ellipse at 80% 20%,rgba(236,72,153,.1) 0%,transparent 60%);
+            pointer-events:none;
+        }
+        .orb{
+            position:absolute;border-radius:50%;filter:blur(80px);pointer-events:none;
+            animation:float 8s ease-in-out infinite;
+        }
+        .orb-1{width:400px;height:400px;background:rgba(139,92,246,.12);top:-100px;left:-100px;}
+        .orb-2{width:300px;height:300px;background:rgba(236,72,153,.08);bottom:-80px;right:-80px;animation-delay:-4s;}
+        @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-20px)}}
+
+        .login-wrap{
+            position:relative;z-index:1;width:100%;max-width:440px;padding:1rem;
+        }
+        .login-card{
+            background:var(--card);
+            border:1px solid var(--border);
+            border-radius:24px;
+            padding:2.5rem;
+            box-shadow:0 25px 60px rgba(0,0,0,.5);
+        }
+        .logo-area{text-align:center;margin-bottom:2rem;}
+        .logo-badge{
+            display:inline-flex;align-items:center;justify-content:center;
+            width:64px;height:64px;border-radius:18px;
+            background:linear-gradient(135deg,#8b5cf6,#ec4899);
+            font-size:1.8rem;margin-bottom:1rem;
+            box-shadow:0 8px 24px rgba(139,92,246,.4);
+        }
+        .logo-area h1{font-size:1.5rem;font-weight:700;color:#fff;margin-bottom:.25rem;}
+        .logo-area p{font-size:.85rem;color:var(--muted);}
+        .admin-badge{
+            display:inline-block;background:rgba(139,92,246,.15);
+            border:1px solid rgba(139,92,246,.3);
+            color:var(--purple-lt);border-radius:50px;
+            font-size:.72rem;font-weight:600;padding:.2rem .75rem;
+            margin-top:.5rem;letter-spacing:.5px;text-transform:uppercase;
+        }
+
+        .form-group{margin-bottom:1.25rem;}
+        label{display:block;font-size:.8rem;font-weight:500;color:var(--muted);margin-bottom:.5rem;letter-spacing:.3px;}
+        .input-wrap{position:relative;}
+        .input-wrap i{
+            position:absolute;left:1rem;top:50%;transform:translateY(-50%);
+            color:var(--muted);font-size:.9rem;
+        }
+        input{
+            width:100%;padding:.85rem 1rem .85rem 2.8rem;
+            background:rgba(255,255,255,.05);
+            border:1px solid var(--border);
+            border-radius:12px;color:#fff;font-family:inherit;font-size:.9rem;
+            transition:border-color .2s,box-shadow .2s;outline:none;
+        }
+        input:focus{
+            border-color:var(--purple);
+            box-shadow:0 0 0 3px rgba(139,92,246,.15);
+        }
+        .toggle-pass{
+            position:absolute;right:1rem;top:50%;transform:translateY(-50%);
+            background:none;border:none;color:var(--muted);cursor:pointer;
+            font-size:.9rem;padding:.2rem;
+        }
+
+        .btn-login{
+            width:100%;padding:.9rem;
+            background:linear-gradient(135deg,#8b5cf6,#ec4899);
+            border:none;border-radius:12px;
+            color:#fff;font-family:inherit;font-size:.95rem;font-weight:600;
+            cursor:pointer;margin-top:.5rem;
+            transition:opacity .2s,transform .15s,box-shadow .2s;
+            box-shadow:0 4px 20px rgba(139,92,246,.35);
+        }
+        .btn-login:hover:not(:disabled){
+            opacity:.92;transform:translateY(-1px);
+            box-shadow:0 8px 28px rgba(139,92,246,.45);
+        }
+        .btn-login:disabled{opacity:.5;cursor:not-allowed;}
+
+        .error-msg{
+            background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);
+            border-radius:10px;padding:.75rem 1rem;
+            font-size:.83rem;color:#fca5a5;
+            display:none;margin-bottom:1rem;
+        }
+        .error-msg.show{display:flex;align-items:center;gap:.5rem;}
+
+        .divider{text-align:center;margin:1.5rem 0 1rem;color:var(--muted);font-size:.78rem;}
+        .back-link{
+            display:block;text-align:center;color:var(--muted);
+            font-size:.82rem;text-decoration:none;transition:color .2s;
+        }
+        .back-link:hover{color:var(--purple-lt);}
+
+        .security-note{
+            display:flex;align-items:center;gap:.5rem;
+            background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.15);
+            border-radius:10px;padding:.65rem .9rem;
+            font-size:.75rem;color:#86efac;margin-top:1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+
+    <div class="login-wrap">
+        <div class="login-card">
+            <div class="logo-area">
+                <div class="logo-badge">🛡️</div>
+                <h1>HerShield</h1>
+                <p>Women Safety Platform</p>
+                <span class="admin-badge">Admin Portal</span>
+            </div>
+
+            <div class="error-msg" id="errorMsg">
+                <i class="fas fa-exclamation-circle"></i>
+                <span id="errorText">Invalid credentials</span>
+            </div>
+
+            <form id="loginForm" autocomplete="off">
+                <div class="form-group">
+                    <label>Admin Email</label>
+                    <div class="input-wrap">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="adminEmail" placeholder="admin@hershield.app" required autocomplete="username">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <div class="input-wrap">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="adminPassword" placeholder="••••••••••••" required autocomplete="current-password">
+                        <button type="button" class="toggle-pass" onclick="togglePass()">
+                            <i class="fas fa-eye" id="eyeIcon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-login" id="loginBtn">
+                    <span id="btnText"><i class="fas fa-sign-in-alt me-2"></i> Sign In to Admin Panel</span>
+                </button>
+            </form>
+
+            <div class="divider">— or —</div>
+            <a href="/index.html" class="back-link">
+                <i class="fas fa-arrow-left me-1"></i> Back to HerShield
+            </a>
+
+            <div class="security-note">
+                <i class="fas fa-shield-alt"></i>
+                Secure admin access. All actions are logged and audited.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // If already logged in, redirect
+        const existingToken = sessionStorage.getItem('hs_admin_token');
+        if (existingToken) window.location.href = '/admin-dashboard.html';
+
+        function togglePass() {
+            const inp  = document.getElementById('adminPassword');
+            const icon = document.getElementById('eyeIcon');
+            if (inp.type === 'password') {
+                inp.type = 'text';
+                icon.className = 'fas fa-eye-slash';
+            } else {
+                inp.type = 'password';
+                icon.className = 'fas fa-eye';
+            }
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('errorMsg');
+            document.getElementById('errorText').textContent = msg;
+            el.classList.add('show');
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn  = document.getElementById('loginBtn');
+            const text = document.getElementById('btnText');
+            btn.disabled = true;
+            text.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying…';
+            document.getElementById('errorMsg').classList.remove('show');
+
+            try {
+                const resp = await fetch('/api/admin/login', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({
+                        email:    document.getElementById('adminEmail').value.trim(),
+                        password: document.getElementById('adminPassword').value,
+                    }),
+                });
+                const data = await resp.json();
+                if (!resp.ok || !data.success) throw new Error(data.message || 'Login failed');
+
+                sessionStorage.setItem('hs_admin_token', data.token);
+                sessionStorage.setItem('hs_admin_email', data.email);
+                text.innerHTML = '<i class="fas fa-check"></i> Success! Redirecting…';
+                setTimeout(() => window.location.href = '/admin-dashboard.html', 600);
+            } catch (err) {
+                showError(err.message);
+                btn.disabled = false;
+                text.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In to Admin Panel';
+            }
+        });
+    </script>
+</body>
+</html>
