@@ -110,6 +110,7 @@ app.use('/api/users', usersRoutes);
 app.use('/api/live-tracker', require('./routes/liveTracker'));
 app.use('/api/community', communityRoutes);
 app.use('/api/admin',    adminLimiter, adminRoutes);
+app.use('/api/legal',    require('./routes/legalChat'));   // 🛡️ LexaShield legal chatbot
 
 // ── Re-hydrate SOS timers on startup ────────────────────────────────────────
 // If the server restarts while users have active SOS sessions, we reschedule

@@ -398,6 +398,71 @@ async function safetyLocationsList() {
     });
 }
 
+/**
+ * Bulk-import an array of safety location objects into Firestore.
+ * Uses batch writes with automatic 450-op chunking to stay within Firestore limits.
+ * Returns { imported, skipped }.
+ */
+async function safetyLocationsBulkImport(entries) {
+    const db = firestoreOrThrow();
+    let imported = 0;
+    let skipped  = 0;
+    let batch = db.batch();
+    let ops   = 0;
+
+    for (const entry of entries) {
+        const lat = parseFloat(entry.latitude);
+        const lng = parseFloat(entry.longitude);
+        const rsk = parseInt(entry.risk_level, 10);
+        const loc = (entry.location || '').trim();
+
+        if (isNaN(lat) || isNaN(lng) || isNaN(rsk) || !loc) { skipped++; continue; }
+        if (rsk < 1 || rsk > 3) { skipped++; continue; }
+
+        const ref = db.collection(COL.SAFETY_LOCATIONS).doc();
+        batch.set(ref, {
+            latitude:     lat,
+            longitude:    lng,
+            risk_level:   rsk,
+            location:     loc,
+            category:     (entry.category || 'csv_import').trim(),
+            last_updated: (entry.last_updated || new Date().toISOString().split('T')[0]),
+            source:       'admin_csv_upload',
+            createdAt:    admin.firestore.Timestamp.now(),
+        });
+        imported++;
+        ops++;
+
+        if (ops >= 450) {
+            await batch.commit();
+            batch = db.batch();
+            ops   = 0;
+        }
+    }
+    if (ops > 0) await batch.commit();
+    return { imported, skipped };
+}
+
+/**
+ * Delete ALL documents in the safety_locations collection.
+ * Used before a full CSV re-import so old data is replaced.
+ * Returns { deleted }.
+ */
+async function safetyLocationsDeleteAll() {
+    const db = firestoreOrThrow();
+    let deleted = 0;
+    let snap;
+    do {
+        snap = await db.collection(COL.SAFETY_LOCATIONS).limit(400).get();
+        if (snap.empty) break;
+        let batch = db.batch();
+        snap.docs.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+        deleted += snap.size;
+    } while (snap.size === 400);
+    return { deleted };
+}
+
 async function safetyLocationsAdd(entry) {
     const db = firestoreOrThrow();
     const id = `${Date.now()}_${Math.floor(Math.random() * 10000)}`;
@@ -623,6 +688,8 @@ module.exports = {
     liveSessionsListAll,
     safetyLocationsList,
     safetyLocationsAdd,
+    safetyLocationsBulkImport,
+    safetyLocationsDeleteAll,
     safetyLocationsSeedFromCsvIfEmpty,
     sosCreate,
     sosFindActive,

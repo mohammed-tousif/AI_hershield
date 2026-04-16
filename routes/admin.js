@@ -7,6 +7,9 @@
 const express  = require('express');
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
+const multer   = require('multer');
+const { Readable } = require('stream');
+const csvParser = require('csv-parser');
 const router   = express.Router();
 const { adminAuth, ADMIN_JWT_SECRET } = require('../middleware/adminAuth');
 
@@ -24,7 +27,23 @@ const {
     liveSessionsListAll,
     adminLogCreate,
     adminLogsList,
+    safetyLocationsList,
+    safetyLocationsBulkImport,
+    safetyLocationsDeleteAll,
 } = require('../services/firestoreRepository');
+
+// Multer: store in memory only, max 10 MB, CSV only
+const csvUpload = multer({
+    storage: multer.memoryStorage(),
+    limits:  { fileSize: 10 * 1024 * 1024 },
+    fileFilter(req, file, cb) {
+        if (file.mimetype === 'text/csv' || file.originalname.endsWith('.csv')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only CSV files are accepted'));
+        }
+    },
+});
 
 // ── helpers ────────────────────────────────────────────────────────────────────
 function getIo(req) { return req.app.get('io') || null; }
@@ -353,6 +372,158 @@ router.get('/logs', async (req, res) => {
     try {
         const logs = await adminLogsList(100);
         res.json({ success: true, logs });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  SAFETY DATA — CSV UPLOAD & MANAGEMENT
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+/**
+ * GET /api/admin/safety-data/template
+ * Returns a blank CSV template the admin can fill in
+ */
+router.get('/safety-data/template', (req, res) => {
+    const header = 'latitude,longitude,risk_level,location,category\n';
+    const sample = [
+        '12.9716,77.5946,2,"Bangalore - MG Road",incident',
+        '15.3573,75.1232,3,"Hubli - Railway Station",transport',
+        '13.0827,80.2707,1,"Chennai - Safe Zone",safe',
+    ].join('\n');
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="hershield_safety_template.csv"');
+    res.send(header + sample + '\n');
+});
+
+/**
+ * GET /api/admin/safety-data/stats
+ * Returns count of safety locations grouped by risk level
+ */
+router.get('/safety-data/stats', async (req, res) => {
+    try {
+        const locs = await safetyLocationsList(5000);
+        const stats = {
+            total:  locs.length,
+            high:   locs.filter(l => l.risk_level === 3).length,
+            medium: locs.filter(l => l.risk_level === 2).length,
+            low:    locs.filter(l => l.risk_level === 1).length,
+            byCategory: {},
+        };
+        locs.forEach(l => {
+            const cat = l.category || 'unknown';
+            stats.byCategory[cat] = (stats.byCategory[cat] || 0) + 1;
+        });
+        res.json({ success: true, ...stats });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+/**
+ * POST /api/admin/safety-data/upload
+ * Accepts multipart CSV file, parses it in-memory, batch-writes to Firestore.
+ * Query param ?mode=replace  wipes existing data first (default: append)
+ */
+router.post(
+    '/safety-data/upload',
+    csvUpload.single('csvFile'),
+    async (req, res) => {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'No CSV file provided. Field name must be "csvFile".' });
+        }
+
+        const mode = (req.query.mode || 'append').toLowerCase(); // 'replace' | 'append'
+
+        try {
+            // ── 1. Parse CSV from buffer ──────────────────────────────────
+            const rows = await new Promise((resolve, reject) => {
+                const results = [];
+                const stream  = Readable.from(req.file.buffer.toString('utf8'));
+                stream
+                    .pipe(csvParser({ skipLines: 0 }))
+                    .on('data', row => {
+                        // Skip comment lines (rows where latitude starts with #)
+                        const lat = (row.latitude || '').trim();
+                        if (!lat || lat.startsWith('#')) return;
+                        results.push(row);
+                    })
+                    .on('end', () => resolve(results))
+                    .on('error', reject);
+            });
+
+            if (rows.length === 0) {
+                return res.status(422).json({
+                    success: false,
+                    message: 'CSV parsed successfully but contains no valid data rows. Check headers: latitude,longitude,risk_level,location',
+                });
+            }
+
+            // ── 2. Optional: wipe existing data ───────────────────────────
+            let deleted = 0;
+            if (mode === 'replace') {
+                const result = await safetyLocationsDeleteAll();
+                deleted = result.deleted;
+                console.log(`🗑️  Admin CSV upload (replace mode): deleted ${deleted} existing records`);
+            }
+
+            // ── 3. Batch import to Firestore ──────────────────────────────
+            const { imported, skipped } = await safetyLocationsBulkImport(rows);
+
+            // ── 4. Broadcast via Socket.IO so live map refreshes ──────────
+            const io = getIo(req);
+            if (io) {
+                io.emit('safetyData:updated', {
+                    mode,
+                    imported,
+                    skipped,
+                    deleted,
+                    timestamp: new Date().toISOString(),
+                });
+                console.log(`📡 Broadcast safetyData:updated to ${io.engine.clientsCount} clients`);
+            }
+
+            // ── 5. Audit log ──────────────────────────────────────────────
+            await log(req, 'CSV_SAFETY_UPLOAD', {
+                filename: req.file.originalname,
+                mode,
+                imported,
+                skipped,
+                deleted,
+                sizeBytes: req.file.size,
+            });
+
+            console.log(`✅ Safety CSV imported: ${imported} rows, ${skipped} skipped (mode: ${mode})`);
+
+            res.json({
+                success:  true,
+                message:  `Import complete: ${imported} records imported, ${skipped} skipped${mode === 'replace' ? `, ${deleted} old records deleted` : ''}.`,
+                imported,
+                skipped,
+                deleted,
+                mode,
+                filename: req.file.originalname,
+            });
+
+        } catch (err) {
+            console.error('❌ CSV upload error:', err);
+            res.status(500).json({ success: false, message: err.message });
+        }
+    }
+);
+
+/**
+ * DELETE /api/admin/safety-data
+ * Wipes ALL safety location records (use before a full re-import)
+ */
+router.delete('/safety-data', async (req, res) => {
+    try {
+        const { deleted } = await safetyLocationsDeleteAll();
+        await log(req, 'DELETE_ALL_SAFETY_DATA', { deleted });
+        const io = getIo(req);
+        if (io) io.emit('safetyData:updated', { mode: 'wipe', imported: 0, deleted, timestamp: new Date().toISOString() });
+        res.json({ success: true, message: `Deleted ${deleted} safety location records.`, deleted });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
