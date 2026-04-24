@@ -10,12 +10,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary:   #9B8EC7;
-            --primary-lt:#BDA6CE;
-            --accent:    #B4D3D9;
-            --bg:        #F2EAE0;
+            --primary:   #FFB399;
+            --primary-lt:#FF9A86;
+            --accent:    #FFD6A6;
+            --bg:        #FFF0BE;
             --card-bg:   rgba(255,255,255,0.97);
-            --shadow:    0 4px 24px rgba(155,142,199,0.13);
+            --shadow:    0 4px 24px rgba(255,154,134,0.13);
             --radius:    18px;
             --sidebar:   280px;
         }
@@ -23,12 +23,12 @@
 
         /* ── scrollbar ── */
         ::-webkit-scrollbar{width:7px}
-        ::-webkit-scrollbar-track{background:rgba(189,166,206,0.1)}
+        ::-webkit-scrollbar-track{background:rgba(255,179,153,0.1)}
         ::-webkit-scrollbar-thumb{background:var(--primary-lt);border-radius:4px}
 
         /* ── header banner ── */
         .community-header {
-            background: linear-gradient(135deg,#BDA6CE,#9B8EC7,#8B7EB8);
+            background: linear-gradient(135deg,#FF9A86,#FFB399,#FF7A6A);
             padding: 2.4rem 2rem;
             border-radius: var(--radius);
             color: #fff;
@@ -49,11 +49,11 @@
             padding:1.5rem;
             margin-bottom:1.25rem;
             box-shadow:var(--shadow);
-            border:1px solid rgba(189,166,206,0.18);
+            border:1px solid rgba(255,179,153,0.18);
             transition:transform .2s,box-shadow .2s;
             animation: fadeSlide .35s ease both;
         }
-        .post-card:hover { transform:translateY(-3px); box-shadow:0 10px 32px rgba(155,142,199,0.2); }
+        .post-card:hover { transform:translateY(-3px); box-shadow:0 10px 32px rgba(255,154,134,0.2); }
         @keyframes fadeSlide{ from{opacity:0;transform:translateY(-12px)} to{opacity:1;transform:translateY(0)} }
 
         /* ── avatar ── */
@@ -64,7 +64,7 @@
             font-size:.72rem;font-weight:600;padding:.27rem .7rem;border-radius:50px;
             text-transform:capitalize;letter-spacing:.4px;
         }
-        .cat-general  {background:rgba(155,142,199,.15);color:#7A6B99;}
+        .cat-general  {background:rgba(255,154,134,.15);color:#FF9A86;}
         .cat-alert    {background:rgba(255,193,7,.15);color:#b8860b;}
         .cat-tip      {background:rgba(40,167,69,.15);color:#1d6b34;}
         .cat-experience{background:rgba(0,123,255,.15);color:#0056b3;}
@@ -84,7 +84,7 @@
             color:#636e72;transition:all .18s;
             display:inline-flex;align-items:center;gap:5px;
         }
-        .btn-action:hover { background:rgba(155,142,199,.12); color:var(--primary); }
+        .btn-action:hover { background:rgba(255,154,134,.12); color:var(--primary); }
         .btn-action.liked { color:#e84393; }
         .btn-action.liked i { animation:heartPop .25s ease; }
         @keyframes heartPop{0%{transform:scale(1)}50%{transform:scale(1.4)}100%{transform:scale(1)}}
@@ -93,11 +93,11 @@
         .composer-card {
             background:var(--card-bg);border-radius:var(--radius);
             padding:1.25rem;margin-bottom:1.25rem;
-            box-shadow:var(--shadow);border:1px solid rgba(189,166,206,0.18);
+            box-shadow:var(--shadow);border:1px solid rgba(255,179,153,0.18);
         }
         .composer-trigger {
             background:#f8f5ff;border-radius:50px;padding:.75rem 1.25rem;
-            cursor:pointer;border:1.5px solid rgba(155,142,199,.2);
+            cursor:pointer;border:1.5px solid rgba(255,154,134,.2);
             color:#b2bec3;font-size:.95rem;
             transition:border-color .2s;
         }
@@ -131,31 +131,31 @@
             transition:all .15s;display:inline-flex;align-items:center;gap:5px;
             cursor:pointer;
         }
-        .composer-icons button:hover { background:rgba(155,142,199,.12);color:var(--primary); }
-        .composer-icons button.active { background:rgba(155,142,199,.18);color:var(--primary); }
+        .composer-icons button:hover { background:rgba(255,154,134,.12);color:var(--primary); }
+        .composer-icons button.active { background:rgba(255,154,134,.18);color:var(--primary); }
 
         /* location chip */
         #locationChip {
             display:none;align-items:center;gap:6px;
-            background:rgba(155,142,199,.12);border-radius:50px;
+            background:rgba(255,154,134,.12);border-radius:50px;
             padding:.3rem .9rem;font-size:.82rem;color:var(--primary);margin-top:.5rem;
         }
 
         /* ── submit button ── */
         .btn-post {
-            background:linear-gradient(135deg,#BDA6CE,#9B8EC7);
+            background:linear-gradient(135deg,#FF9A86,#FFB399);
             border:none;color:#fff;border-radius:10px;
             padding:.55rem 1.6rem;font-weight:600;font-size:.9rem;
             transition:all .2s;
         }
-        .btn-post:hover { transform:translateY(-1px);box-shadow:0 6px 18px rgba(155,142,199,.35);color:#fff; }
+        .btn-post:hover { transform:translateY(-1px);box-shadow:0 6px 18px rgba(255,154,134,.35);color:#fff; }
         .btn-post:disabled { opacity:.6;cursor:not-allowed; }
 
         /* ── sidebar ── */
         .sidebar-card {
             background:var(--card-bg);border-radius:var(--radius);
             padding:1.25rem;margin-bottom:1.25rem;
-            box-shadow:var(--shadow);border:1px solid rgba(189,166,206,0.18);
+            box-shadow:var(--shadow);border:1px solid rgba(255,179,153,0.18);
         }
         .section-title {
             font-weight:700;font-size:1rem;color:var(--primary);
@@ -163,10 +163,10 @@
         }
         .alert-item {
             padding:.75rem;border-radius:12px;margin-bottom:.6rem;
-            background:rgba(189,166,206,0.08);border-left:3px solid var(--primary-lt);
+            background:rgba(255,179,153,0.08);border-left:3px solid var(--primary-lt);
             transition:background .15s;
         }
-        .alert-item:hover{background:rgba(189,166,206,.16);}
+        .alert-item:hover{background:rgba(255,179,153,.16);}
 
         /* ── empty / loading states ── */
         .empty-state { text-align:center;padding:3rem 1rem; }
@@ -198,7 +198,7 @@
             transform:translateY(120%);transition:transform .3s ease;
         }
         #liveToast.show{transform:translateY(0);}
-        .toast-bar { height:4px;background:linear-gradient(90deg,#BDA6CE,#9B8EC7); }
+        .toast-bar { height:4px;background:linear-gradient(90deg,#FF9A86,#FFB399); }
         .toast-body { padding:.85rem 1rem;font-size:.875rem; }
     </style>
 </head>
@@ -237,7 +237,7 @@
                     <div id="composerCollapsed">
                         <div class="d-flex align-items-center gap-3">
                             <img id="composerAvatar"
-                                src="https://ui-avatars.com/api/?name=You&background=BDA6CE&color=fff"
+                                src="https://ui-avatars.com/api/?name=You&background=FF9A86&color=fff"
                                 class="post-avatar" alt="You">
                             <div class="composer-trigger flex-grow-1" onclick="openComposer()">
                                 What's on your mind? Share a safety tip, experience…
@@ -260,7 +260,7 @@
                     <div id="composerExpanded">
                         <div class="d-flex align-items-start gap-3 mb-1">
                             <img id="composerAvatarExp"
-                                src="https://ui-avatars.com/api/?name=You&background=BDA6CE&color=fff"
+                                src="https://ui-avatars.com/api/?name=You&background=FF9A86&color=fff"
                                 class="post-avatar" alt="You">
                             <div class="flex-grow-1">
                                 <div class="fw-semibold" id="composerName" style="font-size:.9rem;">Community Member</div>
@@ -435,7 +435,7 @@
         const name = userName();
         ['composerAvatar','composerAvatarExp'].forEach(id => {
             const el = document.getElementById(id);
-            if (el) el.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=BDA6CE&color=fff`;
+            if (el) el.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=FF9A86&color=fff`;
         });
         const cn = document.getElementById('composerName');
         if (cn) cn.textContent = name;
@@ -670,7 +670,7 @@
         return `
             <div class="post-card" data-post-id="${esc(post._id)}">
                 <div class="d-flex align-items-center mb-2">
-                    <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(post.userName||'User')}&background=BDA6CE&color=fff"
+                    <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(post.userName||'User')}&background=FF9A86&color=fff"
                         alt="" class="post-avatar me-3">
                     <div class="flex-grow-1">
                         <div class="fw-semibold" style="font-size:.9rem;">${esc(post.userName||'Community Member')}</div>

@@ -20,9 +20,9 @@
     </script>
     <style>
         :root {
-            --gradient-start: #BDA6CE;
-            --gradient-middle: #9B8EC7;
-            --gradient-end: #B4D3D9;
+            --gradient-start: #FF9A86;
+            --gradient-middle: #FFB399;
+            --gradient-end: #FFD6A6;
             --text-dark: #2D3436;
             --text-light: #ffffff;
             --sidebar-width: 280px;
@@ -36,7 +36,7 @@
             -moz-osx-font-smoothing: grayscale;
             color: var(--text-dark);
             line-height: 1.6;
-            background: #F2EAE0;
+            background: var(--bg-base, #1C0F0A);
             overflow-x: hidden;
             display: flex;
             min-height: 100vh;
@@ -64,8 +64,8 @@
             height: 100%;
             z-index: -1;
             background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
-                    rgba(255, 255, 255, 0.1) 0%,
-                    rgba(255, 255, 255, 0.05) 25%,
+                    rgba(255,154,134,0.07) 0%,
+                    rgba(255,154,134,0.04) 25%,
                     transparent 50%);
             pointer-events: none;
         }
@@ -95,7 +95,7 @@
         /* Sidebar Styling */
         .sidebar {
             width: var(--sidebar-width);
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(38,21,16,0.90);
             backdrop-filter: blur(10px);
             height: 100vh;
             position: fixed;
@@ -186,14 +186,14 @@
             top: 15px;
             right: 15px;
             z-index: 1000;
-            background: white;
+            background: #261510;
             padding: 8px;
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
 
         .time-slider-container {
-            background: white;
+            background: #261510;
             padding: 15px;
             border-radius: 8px;
             margin-top: 10px;
@@ -292,7 +292,7 @@
             right: 0;
             width: 300px;
             height: 100vh;
-            background: white;
+            background: #261510;
             box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
             z-index: 1000;
             padding: 2rem;
@@ -448,14 +448,21 @@
             <div class="row">
                 <div class="col-lg-6">
                     <div class="glass-card mb-4">
-                        <h5 class="mb-3">Route Planning</h5>
+                        <h5 class="mb-1">Route Planning</h5>
+                        <!-- ── Tagline ── -->
+                        <p class="text-muted mb-3" style="font-size:.78rem;display:flex;align-items:center;gap:.4rem;">
+                            <span style="color:#7c5cbf;">⚡</span>
+                            <em>Finding the shortest path as well as the safest path possible</em>
+                        </p>
+
                         <div class="mb-3">
                             <label for="startLocation" class="form-label">Start Location</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span>
                                 <input type="text" class="form-control" id="startLocation"
-                                    placeholder="Enter start location">
-                                <button class="btn btn-outline-secondary" type="button" id="useCurrentLocation">
+                                    placeholder="Enter start location or use GPS">
+                                <button class="btn btn-outline-secondary" type="button" id="useCurrentLocation"
+                                    title="Use my current GPS location">
                                     <i class="fas fa-location-arrow"></i>
                                 </button>
                             </div>
@@ -468,10 +475,44 @@
                                     placeholder="Enter destination">
                             </div>
                         </div>
-                        <button class="btn w-100" id="findSafeRoute"
-                            style="background: linear-gradient(135deg, var(--gradient-start), var(--gradient-middle)); color: white;">
-                            <i class="fas fa-route me-2"></i>Find Safest Route
-                        </button>
+
+                        <!-- Travel mode + safety weight -->
+                        <div class="row mb-3 g-2">
+                            <div class="col-7">
+                                <label class="form-label" style="font-size:.78rem;">Travel Mode</label>
+                                <select class="form-select form-select-sm" id="travelMode">
+                                    <option value="WALKING">🚶 Walking</option>
+                                    <option value="DRIVING" selected>🚗 Driving</option>
+                                    <option value="TRANSIT">🚌 Transit</option>
+                                    <option value="BICYCLING">🚲 Cycling</option>
+                                </select>
+                            </div>
+                            <div class="col-5">
+                                <label class="form-label" style="font-size:.78rem;">
+                                    Safety Priority
+                                    <span id="safetyWeightLabel" style="color:#7c5cbf;font-weight:600;">70%</span>
+                                </label>
+                                <input type="range" class="form-range" id="safetyWeightSlider"
+                                    min="0" max="100" value="70" step="10"
+                                    oninput="document.getElementById('safetyWeightLabel').textContent=this.value+'%'">
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button class="btn flex-fill" id="findSafeRoute"
+                                style="background:linear-gradient(135deg,var(--gradient-start),var(--gradient-middle));color:white;">
+                                <i class="fas fa-route me-2"></i>Find Safe + Short Route
+                            </button>
+                            <button class="btn btn-outline-secondary" id="clearRouteBtn" title="Clear route">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+
+                        <!-- Route result panel -->
+                        <div id="routeResultPanel" style="display:none;margin-top:1rem;padding:.9rem 1rem;
+                            background:rgba(124,92,191,.08);border:1px solid rgba(124,92,191,.2);
+                            border-radius:12px;font-size:.82rem;">
+                        </div>
                     </div>
                 </div>
 
@@ -1003,177 +1044,204 @@
             });
         }
 
-        // Find safe route functionality with actual implementation
+        // ── "Find Safe + Short Route" button ─────────────────────────────────────
         document.getElementById('findSafeRoute').addEventListener('click', async function () {
             const startValue = document.getElementById('startLocation').value.trim();
-            const endValue = document.getElementById('endLocation').value.trim();
+            const endValue   = document.getElementById('endLocation').value.trim();
 
             if (!startValue || !endValue) {
-                alert('Please enter both start and destination locations');
+                showRouteResult('error', '⚠️ Please enter both a start location and a destination.');
                 return;
             }
 
-            // Show loading state
             const btn = document.getElementById('findSafeRoute');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Calculating Route...';
-            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Calculating…';
+            btn.disabled  = true;
+            showRouteResult('loading', '⚡ Finding the shortest path as well as the safest path possible…');
 
             try {
                 let startCoords, endCoords;
 
-                // Try to use place objects first, then geocode if needed
                 if (startPlace && startPlace.geometry) {
-                    const location = startPlace.geometry.location;
-                    startCoords = { lat: location.lat(), lng: location.lng() };
+                    const loc = startPlace.geometry.location;
+                    startCoords = { lat: loc.lat(), lng: loc.lng() };
                 } else {
-                    // Geocode the start location
-                    try {
-                        startCoords = await geocodeLocation(startValue);
-                    } catch (error) {
-                        alert("Could not find start location: " + startValue + ". Please select a location from the dropdown or enter a valid address.");
-                        btn.innerHTML = originalText;
-                        btn.disabled = false;
-                        return;
-                    }
+                    startCoords = await geocodeLocation(startValue);
                 }
 
                 if (endPlace && endPlace.geometry) {
-                    const location = endPlace.geometry.location;
-                    endCoords = { lat: location.lat(), lng: location.lng() };
+                    const loc = endPlace.geometry.location;
+                    endCoords = { lat: loc.lat(), lng: loc.lng() };
                 } else {
-                    // Geocode the destination
-                    try {
-                        endCoords = await geocodeLocation(endValue);
-                    } catch (error) {
-                        alert("Could not find destination: " + endValue + ". Please select a location from the dropdown or enter a valid address.");
-                        btn.innerHTML = originalText;
-                        btn.disabled = false;
-                        return;
-                    }
+                    endCoords = await geocodeLocation(endValue);
                 }
 
-                // Calculate route with waypoints avoiding high-risk areas
-                calculateSafeRoute(startCoords, endCoords);
-                btn.innerHTML = originalText;
-                btn.disabled = false;
+                await calculateSafeRoute(startCoords, endCoords);
+
             } catch (error) {
                 console.error('Route calculation error:', error);
-                alert('Error calculating route: ' + error.message);
-                btn.innerHTML = originalText;
-                btn.disabled = false;
+                showRouteResult('error', '❌ ' + (error.message || 'Could not calculate route. Please check your locations.'));
+            } finally {
+                btn.innerHTML = '<i class="fas fa-route me-2"></i>Find Safe + Short Route';
+                btn.disabled  = false;
             }
         });
 
-        // Function to calculate safe route
-        function calculateSafeRoute(start, end) {
-            // Get high-risk and medium-risk areas for current time
-            const highRiskAreas = crimeData
-                .filter(point => getTimeBasedRiskLevel(point.risk_level, currentHour) === 3)
-                .map(point => ({ lat: point.latitude, lng: point.longitude, level: 3 }));
+        // ── Clear route button ────────────────────────────────────────────────────
+        document.getElementById('clearRouteBtn').addEventListener('click', function () {
+            if (directionsRenderer) directionsRenderer.setDirections({ routes: [] });
+            document.getElementById('routeResultPanel').style.display = 'none';
+            document.getElementById('startLocation').value = '';
+            document.getElementById('endLocation').value   = '';
+            startPlace = null;
+            endPlace   = null;
+        });
 
-            const mediumRiskAreas = crimeData
-                .filter(point => getTimeBasedRiskLevel(point.risk_level, currentHour) === 2)
-                .map(point => ({ lat: point.latitude, lng: point.longitude, level: 2 }));
+        /** Show state inside the route result panel */
+        function showRouteResult(type, html) {
+            const panel = document.getElementById('routeResultPanel');
+            panel.style.display = 'block';
+            if (type === 'loading') {
+                panel.innerHTML = `<div style="color:var(--muted2);">${html}</div>`;
+            } else if (type === 'error') {
+                panel.innerHTML = `<div style="color:#f87171;">${html}</div>`;
+            } else {
+                panel.innerHTML = html;
+            }
+        }
 
-            // Request route from Google Directions Service with alternatives
+        /**
+         * calculateSafeRoute — composite safety + distance scoring.
+         *
+         * For each candidate route Google returns:
+         *   compositeScore = safetyWeight × normalised_riskScore
+         *                  + (1 − safetyWeight) × normalised_distance
+         *
+         * Lower composite score → better (safer AND shorter).
+         * The winning route is rendered and a summary card is shown.
+         */
+        async function calculateSafeRoute(start, end) {
+            const safetyWeight = parseInt(document.getElementById('safetyWeightSlider').value, 10) / 100; // 0..1
+            const modeKey      = document.getElementById('travelMode').value;
+            const travelMode   = google.maps.TravelMode[modeKey] || google.maps.TravelMode.DRIVING;
+
+            // Build risk point arrays from BOTH static + user incidents
+            const allData = mergedData();
+            const riskPoints = allData.map(p => ({
+                lat: p.latitude, lng: p.longitude,
+                level: getTimeBasedRiskLevel(p.risk_level, currentHour),
+            }));
+
             const request = {
-                origin: start,
-                destination: end,
-                travelMode: google.maps.TravelMode.DRIVING,
-                provideRouteAlternatives: true, // Request multiple route options
-                avoidHighways: false,
-                avoidTolls: false
+                origin:                   start,
+                destination:              end,
+                travelMode:               travelMode,
+                provideRouteAlternatives: true,
+                avoidHighways:            false,
+                avoidTolls:               false,
             };
 
-            directionsService.route(request, (result, status) => {
-                if (status === google.maps.DirectionsStatus.OK) {
-                    // Evaluate all available routes and pick the safest one
-                    let safestRoute = null;
-                    let lowestRiskScore = Infinity;
-                    let routeAnalysis = [];
+            return new Promise((resolve, reject) => {
+                directionsService.route(request, (result, status) => {
+                    if (status !== google.maps.DirectionsStatus.OK) {
+                        const msgs = {
+                            ZERO_RESULTS:    'No route found between these locations.',
+                            NOT_FOUND:       'One or both locations could not be found.',
+                            INVALID_REQUEST: 'Invalid route request. Please check your locations.',
+                        };
+                        return reject(new Error(msgs[status] || `Route error: ${status}`));
+                    }
 
-                    result.routes.forEach((route, index) => {
-                        let riskScore = 0;
-                        let highRiskCount = 0;
-                        let mediumRiskCount = 0;
+                    // ── Score every candidate route ──────────────────────────────
+                    const analysed = result.routes.map((route, idx) => {
+                        let riskScore = 0, highSeg = 0, medSeg = 0;
 
-                        // Check each point along the route
-                        route.overview_path.forEach(point => {
-                            // Count nearby high-risk areas (within 500m)
-                            highRiskAreas.forEach(riskPoint => {
-                                const distance = google.maps.geometry.spherical.computeDistanceBetween(
-                                    point,
-                                    new google.maps.LatLng(riskPoint.lat, riskPoint.lng)
+                        // Walk every overview_path point and accumulate nearby risk
+                        route.overview_path.forEach(pt => {
+                            riskPoints.forEach(rp => {
+                                const d = google.maps.geometry.spherical.computeDistanceBetween(
+                                    pt, new google.maps.LatLng(rp.lat, rp.lng)
                                 );
-                                if (distance < 500) { // 500 meters
-                                    riskScore += 10; // Heavy penalty for high-risk
-                                    highRiskCount++;
-                                }
-                            });
-
-                            // Count nearby medium-risk areas (within 300m)
-                            mediumRiskAreas.forEach(riskPoint => {
-                                const distance = google.maps.geometry.spherical.computeDistanceBetween(
-                                    point,
-                                    new google.maps.LatLng(riskPoint.lat, riskPoint.lng)
-                                );
-                                if (distance < 300) { // 300 meters
-                                    riskScore += 3; // Moderate penalty for medium-risk
-                                    mediumRiskCount++;
-                                }
+                                if (rp.level === 3 && d < 500) { riskScore += 10; highSeg++; }
+                                else if (rp.level === 2 && d < 350) { riskScore += 3;  medSeg++;  }
+                                else if (rp.level === 3 && d < 200) { riskScore += 2; }  // lighter incident penalty
                             });
                         });
 
-                        routeAnalysis.push({
-                            route: route,
-                            index: index,
-                            riskScore: riskScore,
-                            highRiskCount: highRiskCount,
-                            mediumRiskCount: mediumRiskCount,
-                            distance: route.legs.reduce((total, leg) => total + leg.distance.value, 0),
-                            duration: route.legs.reduce((total, leg) => total + leg.duration.value, 0)
-                        });
+                        const distM = route.legs.reduce((s, l) => s + l.distance.value, 0);
+                        const durS  = route.legs.reduce((s, l) => s + l.duration.value, 0);
 
-                        // Select route with lowest risk score
-                        if (riskScore < lowestRiskScore) {
-                            lowestRiskScore = riskScore;
-                            safestRoute = route;
-                        }
+                        return { route, idx, riskScore, highSeg, medSeg, distM, durS };
                     });
 
-                    // Display the safest route
-                    const safestAnalysis = routeAnalysis.find(r => r.route === safestRoute);
-                    directionsRenderer.setDirections({
-                        ...result,
-                        routes: [safestRoute]
+                    // Normalise risk and distance across candidates (0..1 each)
+                    const maxRisk = Math.max(...analysed.map(a => a.riskScore), 1);
+                    const maxDist = Math.max(...analysed.map(a => a.distM),    1);
+
+                    analysed.forEach(a => {
+                        const normRisk = a.riskScore / maxRisk;
+                        const normDist = a.distM    / maxDist;
+                        a.composite = safetyWeight * normRisk + (1 - safetyWeight) * normDist;
                     });
 
-                    const distance = safestAnalysis.distance / 1000; // Convert to km
-                    const duration = safestAnalysis.duration / 60; // Convert to minutes
+                    // Pick the route with lowest composite score
+                    analysed.sort((a, b) => a.composite - b.composite);
+                    const best = analysed[0];
 
-                    // Create route info alert with safety details
-                    const routeAlert = document.createElement('div');
-                    routeAlert.className = 'alert alert-success alert-dismissible fade show mt-3';
-                    routeAlert.innerHTML = `
-                        <strong>✅ Safest Route Selected!</strong><br>
-                        Distance: ${distance.toFixed(1)} km<br>
-                        Estimated Time: ${duration.toFixed(0)} minutes<br>
-                        <span class="text-danger">High-risk areas nearby: ${safestAnalysis.highRiskCount}</span><br>
-                        <span class="text-warning">Medium-risk areas nearby: ${safestAnalysis.mediumRiskCount}</span><br>
-                        <small class="text-muted">Evaluated ${result.routes.length} route(s) and selected the safest option</small><br>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    `;
-                    document.querySelector('.glass-card').appendChild(routeAlert);
-                } else if (status === google.maps.DirectionsStatus.ZERO_RESULTS) {
-                    alert('No route found between these locations. Please try different locations.');
-                } else if (status === google.maps.DirectionsStatus.NOT_FOUND) {
-                    alert('One or both locations could not be found. Please check your entries and try again.');
-                } else if (status === google.maps.DirectionsStatus.INVALID_REQUEST) {
-                    alert('Invalid route request. Please ensure both locations are valid addresses or places.');
-                } else {
-                    alert('Error: Could not calculate route. ' + status + '. Please try again.');
-                }
+                    // ── Render winning route ─────────────────────────────────────
+                    directionsRenderer.setOptions({ routeIndex: best.idx });
+                    directionsRenderer.setDirections(result);
+                    // Force-show only the best route
+                    directionsRenderer.setRouteIndex(best.idx);
+
+                    const distKm  = (best.distM / 1000).toFixed(1);
+                    const durMins = Math.round(best.durS / 60);
+                    const safetyScore = Math.max(0, 100 - Math.round((best.riskScore / maxRisk) * 100));
+                    const scoreColor  = safetyScore >= 70 ? '#4ade80' : safetyScore >= 40 ? '#facc15' : '#f87171';
+                    const scoreLabel  = safetyScore >= 70 ? 'Safe' : safetyScore >= 40 ? 'Moderate' : 'Caution';
+
+                    const altNote = analysed.length > 1
+                        ? `Evaluated <b>${analysed.length}</b> alternative route${analysed.length > 1 ? 's' : ''}.`
+                        : 'Only one route available.';
+
+                    const highWarn = best.highSeg > 0
+                        ? `<div style="margin-top:.5rem;padding:.4rem .6rem;background:rgba(239,68,68,.1);border-radius:6px;color:#f87171;font-size:.78rem;">
+                            ⚠️ Route passes near <b>${best.highSeg}</b> high-risk location${best.highSeg > 1 ? 's' : ''} — stay alert.
+                           </div>`
+                        : '';
+
+                    showRouteResult('ok', `
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem;">
+                            <div style="font-weight:700;color:#fff;">✅ Optimal route found</div>
+                            <div style="background:${scoreColor}22;border:1px solid ${scoreColor}44;border-radius:99px;
+                                        padding:.15rem .6rem;font-size:.75rem;font-weight:700;color:${scoreColor};">
+                                ${scoreLabel} · ${safetyScore}/100
+                            </div>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.4rem;text-align:center;margin-bottom:.5rem;">
+                            <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:.4rem;">
+                                <div style="font-size:.72rem;color:var(--muted);">Distance</div>
+                                <div style="font-weight:600;color:#fff;">${distKm} km</div>
+                            </div>
+                            <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:.4rem;">
+                                <div style="font-size:.72rem;color:var(--muted);">ETA</div>
+                                <div style="font-weight:600;color:#fff;">${durMins} min</div>
+                            </div>
+                            <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:.4rem;">
+                                <div style="font-size:.72rem;color:var(--muted);">Risk zones</div>
+                                <div style="font-weight:600;color:#fff;">
+                                    <span style="color:#f87171;">${best.highSeg}H</span>
+                                    &nbsp;<span style="color:#facc15;">${best.medSeg}M</span>
+                                </div>
+                            </div>
+                        </div>
+                        ${highWarn}
+                        <div style="font-size:.72rem;color:var(--muted);margin-top:.4rem;">${altNote}
+                            Safety weight: <b>${Math.round(safetyWeight * 100)}%</b>.</div>
+                    `);
+
+                    resolve(best);
+                });
             });
         }
 
@@ -1184,6 +1252,43 @@
             );
         }
 
+        // ── Socket.IO: live refresh when admin uploads new CSV ────────────────────
+        (function initSafetyDataSocket() {
+            let _socket;
+            function connect() {
+                try {
+                    _socket = window._safetyMapSocket || io({ transports: ['websocket', 'polling'] });
+                    window._safetyMapSocket = _socket;
+
+                    _socket.on('safetyData:updated', async (payload) => {
+                        console.log('📡 safetyData:updated — reloading heatmap data', payload);
+                        const banner = document.createElement('div');
+                        banner.style.cssText = 'position:fixed;top:72px;left:50%;transform:translateX(-50%);' +
+                            'z-index:9999;background:rgba(124,92,191,.9);backdrop-filter:blur(8px);' +
+                            'color:#fff;padding:.45rem 1.1rem;border-radius:99px;font-size:.8rem;font-weight:600;';
+                        banner.textContent = `🗺️ Safety data updated — refreshing map…`;
+                        document.body.appendChild(banner);
+                        setTimeout(() => banner.remove(), 3500);
+
+                        // Re-fetch both data sources and rebuild heatmap + markers
+                        await loadSafetyData();
+                        if (map) {
+                            createHeatmap();
+                            createMarkers();
+                            updateStatistics();
+                        }
+                    });
+                } catch (e) {
+                    console.warn('Safety data socket init failed:', e.message);
+                }
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', connect);
+            } else {
+                connect();
+            }
+        })();
+
         // Use current location with improved error handling
         document.getElementById('useCurrentLocation').addEventListener('click', function () {
             if (navigator.geolocation) {
@@ -1193,46 +1298,34 @@
                 btn.disabled = true;
 
                 navigator.geolocation.getCurrentPosition(
-                    // Success callback
                     position => {
                         const lat = position.coords.latitude;
                         const lng = position.coords.longitude;
 
-                        // Update the map view
-                        map.setCenter({ lat: lat, lng: lng });
-                        map.setZoom(15); // Zoom in closer to show the area better
+                        map.setCenter({ lat, lng });
+                        map.setZoom(15);
 
-                        // Remove any existing current location marker
-                        if (window.currentLocationMarker) {
-                            window.currentLocationMarker.setMap(null);
-                        }
+                        if (window.currentLocationMarker) window.currentLocationMarker.setMap(null);
 
-                        // Add a marker for current location with custom icon
                         window.currentLocationMarker = new google.maps.Marker({
-                            position: { lat: lat, lng: lng },
-                            map: map,
+                            position: { lat, lng },
+                            map,
                             title: 'Your Current Location',
                             icon: {
                                 path: google.maps.SymbolPath.CIRCLE,
-                                fillColor: '#4285F4',
-                                fillOpacity: 1,
-                                strokeColor: '#ffffff',
-                                strokeWeight: 2,
-                                scale: 12
+                                fillColor: '#4285F4', fillOpacity: 1,
+                                strokeColor: '#ffffff', strokeWeight: 2, scale: 12
                             },
                             animation: google.maps.Animation.DROP
                         });
 
-                        // Add info window for current location
                         const infoWindow = new google.maps.InfoWindow({
                             content: '<strong>Your Current Location</strong>'
                         });
+                        window.currentLocationMarker.addListener('click', () =>
+                            infoWindow.open(map, window.currentLocationMarker)
+                        );
 
-                        window.currentLocationMarker.addListener('click', () => {
-                            infoWindow.open(map, window.currentLocationMarker);
-                        });
-
-                        // Reverse geocode to get address
                         geocoder.geocode({ location: { lat, lng } }, (results, status) => {
                             if (status === google.maps.GeocoderStatus.OK && results[0]) {
                                 document.getElementById('startLocation').value = results[0].formatted_address;
@@ -1241,77 +1334,27 @@
                                     formatted_address: results[0].formatted_address
                                 };
                             } else {
-                                // Fallback to coordinates
                                 document.getElementById('startLocation').value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-                                startPlace = {
-                                    geometry: { location: { lat: () => lat, lng: () => lng } }
-                                };
+                                startPlace = { geometry: { location: { lat: () => lat, lng: () => lng } } };
                             }
-
-                            // Show success message
-                            const successAlert = document.createElement('div');
-                            successAlert.className = 'alert alert-success alert-dismissible fade show';
-                            successAlert.innerHTML = `
-                                <strong>Location found!</strong> Your current location has been set.
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                            `;
-
-                            // Remove any existing alerts first
-                            const existingAlerts = document.querySelectorAll('.glass-card .alert');
-                            existingAlerts.forEach(alert => {
-                                if (alert.textContent.includes('Location found')) {
-                                    alert.remove();
-                                }
-                            });
-
-                            document.querySelector('.glass-card').insertBefore(successAlert, document.querySelector('.mb-3'));
-
-                            // ALWAYS reset button state
                             btn.innerHTML = originalHTML;
-                            btn.disabled = false;
+                            btn.disabled  = false;
                         });
                     },
-                    // Error callback
                     error => {
-                        console.error('Error getting location:', error);
-                        let errorMessage = 'Unable to retrieve your location. ';
-
-                        switch (error.code) {
-                            case error.PERMISSION_DENIED:
-                                errorMessage += 'Please enable location access in your browser settings.';
-                                break;
-                            case error.POSITION_UNAVAILABLE:
-                                errorMessage += 'Location information is unavailable.';
-                                break;
-                            case error.TIMEOUT:
-                                errorMessage += 'The request to get location timed out.';
-                                break;
-                            default:
-                                errorMessage += 'Please enter your location manually.';
-                        }
-
-                        // Show error message in a bootstrap alert
-                        const errorAlert = document.createElement('div');
-                        errorAlert.className = 'alert alert-danger alert-dismissible fade show';
-                        errorAlert.innerHTML = `
-                            <strong>Error!</strong> ${errorMessage}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        `;
-                        document.querySelector('.glass-card').insertBefore(errorAlert, document.querySelector('.mb-3'));
-
-                        // ALWAYS reset button state on error too
+                        const msgs = {
+                            1: 'Please enable location access in your browser settings.',
+                            2: 'Location information is unavailable.',
+                            3: 'Location request timed out.',
+                        };
+                        showRouteResult('error', '❌ ' + (msgs[error.code] || 'Please enter your location manually.'));
                         btn.innerHTML = originalHTML;
-                        btn.disabled = false;
+                        btn.disabled  = false;
                     },
-                    // Options
-                    {
-                        enableHighAccuracy: true,
-                        timeout: 10000,
-                        maximumAge: 0
-                    }
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
                 );
             } else {
-                alert('Geolocation is not supported by your browser. Please enter your location manually.');
+                showRouteResult('error', '❌ Geolocation is not supported by your browser.');
             }
         });
     </script>

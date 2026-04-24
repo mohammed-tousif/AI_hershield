@@ -32,6 +32,8 @@ const {
     safetyLocationsDeleteAll,
 } = require('../services/firestoreRepository');
 
+const smsService = require('../services/smsService');
+
 // Multer: store in memory only, max 10 MB, CSV only
 const csvUpload = multer({
     storage: multer.memoryStorage(),
@@ -526,6 +528,38 @@ router.delete('/safety-data', async (req, res) => {
         res.json({ success: true, message: `Deleted ${deleted} safety location records.`, deleted });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  SMS — Admin endpoints
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+/**
+ * GET /api/admin/sms/status
+ * Returns current Twilio configuration status (no secrets).
+ */
+router.get('/sms/status', (req, res) => {
+    res.json({ success: true, sms: smsService.status() });
+});
+
+/**
+ * POST /api/admin/sms/test
+ * Body: { phone: "+919876543210" }
+ * Sends a test SMS to the given number so the admin can verify Twilio works.
+ */
+router.post('/sms/test', async (req, res) => {
+    const { phone } = req.body || {};
+    if (!phone) {
+        return res.status(400).json({ success: false, message: '"phone" is required in request body' });
+    }
+    try {
+        const result = await smsService.testSend(phone);
+        await log(req, 'SMS_TEST', { phone, success: result.success, sid: result.sid || null });
+        const statusCode = result.success ? 200 : 422;
+        return res.status(statusCode).json({ success: result.success, result });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: err.message });
     }
 });
 

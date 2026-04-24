@@ -14,9 +14,9 @@
         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBGXF_WodaMeP10oziYhG0NdqHw2fJogxM&libraries=visualization,geometry"></script>
     <style>
         :root {
-            --gradient-start: #BDA6CE;
-            --gradient-middle: #9B8EC7;
-            --gradient-end: #B4D3D9;
+            --gradient-start: #FF9A86;
+            --gradient-middle: #FFB399;
+            --gradient-end: #FFD6A6;
             --text-dark: #2D3436;
             --text-light: #ffffff;
             --sidebar-width: 280px;
@@ -26,7 +26,7 @@
             font-family: 'Poppins', sans-serif;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            background: #F2EAE0;
+            background: #FFF0BE;
             min-height: 100vh;
             overflow-x: hidden;
         }
@@ -121,7 +121,7 @@
             background: linear-gradient(135deg, var(--gradient-start), var(--gradient-middle));
             color: white;
             transform: translateY(-3px);
-            box-shadow: 0 20px 40px rgba(155, 142, 199, 0.2);
+            box-shadow: 0 20px 40px rgba(255, 179, 153, 0.2);
         }
 
         .action-button i {
@@ -177,8 +177,8 @@
 
         .alert-item:hover {
             transform: translateX(5px);
-            border-color: #9B8EC7;
-            background: linear-gradient(135deg, #BDA6CE, #9B8EC7);
+            border-color: #FFB399;
+            background: linear-gradient(135deg, #FF9A86, #FFB399);
             color: white;
         }
 
@@ -270,7 +270,7 @@
         }
 
         #reportButton {
-            background-color: #9B8EC7;
+            background-color: #FFB399;
             color: white;
             border: none;
             border-radius: 5px;
@@ -474,7 +474,7 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
                 <div class="modal-header border-0 text-white"
-                    style="background: linear-gradient(135deg, #9B8EC7, #7A6B99); border-radius: 20px 20px 0 0;">
+                    style="background: linear-gradient(135deg, #FFB399, #7A6B99); border-radius: 20px 20px 0 0;">
                     <h5 class="modal-title fw-bold" id="reportModalLabel">
                         <i class="fas fa-exclamation-triangle me-2"></i>Report Safety Issue
                     </h5>
@@ -559,7 +559,7 @@
 
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-lg text-white fw-bold"
-                                style="background: linear-gradient(135deg, #BDA6CE, #9B8EC7); border: none; border-radius: 12px;">
+                                style="background: linear-gradient(135deg, #FF9A86, #FFB399); border: none; border-radius: 12px;">
                                 <i class="fas fa-paper-plane me-2"></i>Submit Report
                             </button>
                         </div>
@@ -574,7 +574,7 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg" style="border-radius: 24px; overflow: hidden;">
                 <div class="modal-header border-0 text-white"
-                    style="background: linear-gradient(135deg, #9B8EC7, #7A6B99);">
+                    style="background: linear-gradient(135deg, #FFB399, #7A6B99);">
                     <h5 class="modal-title fw-bold">Confirm Emergency Alert</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                         aria-label="Close"></button>
@@ -1136,10 +1136,10 @@
                     const name = (place.display_name || '').length > 85
                         ? place.display_name.slice(0, 85) + '…' : place.display_name;
                     li.innerHTML =
-                        `<i class="fas fa-${icon}" style="color:#9B8EC7;margin-top:3px;flex-shrink:0;font-size:.8rem;"></i>` +
+                        `<i class="fas fa-${icon}" style="color:#FFB399;margin-top:3px;flex-shrink:0;font-size:.8rem;"></i>` +
                         `<span>${name.replace(/</g,'&lt;')}</span>`;
                     li.addEventListener('mouseenter', () => {
-                        li.style.background = 'rgba(155,142,199,.13)';
+                        li.style.background = 'rgba(255,154,134,.13)';
                         activeIndex = idx;
                     });
                     li.addEventListener('mouseleave', () => { li.style.background = ''; });
@@ -1229,7 +1229,7 @@
 
                 function highlightItem(items) {
                     items.forEach((li, i) => {
-                        li.style.background = i === activeIndex ? 'rgba(155,142,199,.22)' : '';
+                        li.style.background = i === activeIndex ? 'rgba(255,154,134,.22)' : '';
                         if (i === activeIndex) li.scrollIntoView({ block: 'nearest' });
                     });
                 }
@@ -1481,6 +1481,14 @@
                     const contacts = savedContacts.map(c => c.email);
 
                     try {
+                        // Get userId from multiple sources for Firestore contact lookup
+                        const userId = (
+                            (window.authService?.getCurrentUser?.()?.uid) ||
+                            localStorage.getItem('hershield_backend_user_id') ||
+                            localStorage.getItem('hershield_user_uid') ||
+                            null
+                        );
+
                         const response = await fetch('/api/live-tracker/dashboard-alert', {
                             method: 'POST',
                             headers: {
@@ -1490,7 +1498,8 @@
                                 location,
                                 userName,
                                 userEmail,
-                                contacts
+                                contacts,
+                                userId
                             })
                         });
 

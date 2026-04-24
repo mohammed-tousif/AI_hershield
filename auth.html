@@ -12,9 +12,9 @@
     <link rel="stylesheet" href="styles.css">
     <style>
         :root {
-            --gradient-start: #BDA6CE;
-            --gradient-middle: #9B8EC7;
-            --gradient-end: #B4D3D9;
+            --gradient-start: #FF9A86;
+            --gradient-middle: #FFB399;
+            --gradient-end: #FFD6A6;
         }
 
         body {
@@ -25,7 +25,7 @@
             padding: 0;
             min-height: 100vh;
             overflow-x: hidden;
-            background: #F2EAE0;
+            background: var(--bg-base, #1C0F0A);
         }
 
         .gradient-background {
@@ -47,7 +47,7 @@
             width: 100%;
             height: 100%;
             background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
-                    rgba(255, 255, 255, 0.1) 0%,
+                    rgba(255,154,134,0.07) 0%,
                     rgba(7, 0, 0, 0.05) 25%,
                     transparent 50%);
             pointer-events: none;
@@ -77,7 +77,7 @@
         }
 
         .auth-card {
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(38,21,16,0.90);
             backdrop-filter: blur(10px);
             border-radius: 24px;
             padding: 2.5rem;
@@ -166,7 +166,7 @@
 
         .form-control:focus {
             border-color: var(--gradient-middle);
-            box-shadow: 0 0 0 4px rgba(155, 142, 199, 0.1);
+            box-shadow: 0 0 0 4px rgba(255, 179, 153, 0.1);
         }
 
         .form-floating>label {
@@ -189,7 +189,7 @@
 
         .btn-modern:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(155, 142, 199, 0.2);
+            box-shadow: 0 10px 20px rgba(255, 179, 153, 0.2);
         }
 
         .btn-modern:disabled {
@@ -211,7 +211,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: white;
+            background: #261510;
             color: var(--text-dark);
             text-decoration: none;
             transition: all 0.3s ease;

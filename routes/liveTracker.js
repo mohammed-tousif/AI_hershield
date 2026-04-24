@@ -11,7 +11,10 @@ const {
     liveSessionPushLocation,
     liveSessionStop,
     communityInsert,
+    usersFindById,
 } = require('../services/firestoreRepository');
+
+const smsService = require('../services/smsService');
 
 function hasEmailConfig() {
     const u = process.env.EMAIL_USER && String(process.env.EMAIL_USER).trim();
@@ -286,70 +289,92 @@ router.post('/stop', async (req, res) => {
 
 router.post('/dashboard-alert', async (req, res) => {
     try {
-        const { location, userEmail, userName, contacts } = req.body;
+        const { location, userEmail, userName, contacts, userId } = req.body;
 
         const mapLink = location
             ? `https://maps.google.com/?q=${location.lat},${location.lng}`
             : 'Location not available';
 
-        const recipients = contacts && contacts.length > 0 ? contacts : process.env.EMAIL_USER;
-
-        if (!hasEmailConfig()) {
-            return res.status(503).json({
-                success: false,
-                message:
-                    'Email is not configured. Set EMAIL_USER and EMAIL_PASS in .env to send dashboard SOS emails.',
-            });
+        // ── 1. Fetch real contacts from Firestore (has phone numbers) ────────
+        let firestoreContacts = [];
+        if (userId) {
+            try {
+                const userDoc = await usersFindById(userId);
+                if (userDoc && userDoc.emergencyContacts) {
+                    firestoreContacts = userDoc.emergencyContacts.filter(c => c.phone || c.email);
+                }
+            } catch (e) {
+                console.warn('dashboard-alert: could not fetch user from Firestore:', e.message);
+            }
         }
 
-        const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to: recipients,
-            subject: `🚨 URGENT: Emergency Alert from ${userName || 'User'}`,
-            html: `
-                <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
-                    <div style="background: linear-gradient(135deg, #9B8EC7, #7A6B99); color: white; padding: 30px; text-align: center;">
-                        <h1 style="margin: 0; font-size: 28px; text-transform: uppercase; letter-spacing: 2px;">SOS Alert</h1>
-                        <p style="margin: 10px 0 0; font-size: 16px; opacity: 0.9;">Immediate Assistance Requested</p>
-                    </div>
-                    
-                    <div style="padding: 30px; background-color: #fff;">
-                        <p style="font-size: 18px; color: #333; line-height: 1.6; text-align: center; margin-bottom: 30px;">
-                            <strong>${userName || 'A Her Shield User'}</strong> has triggered an emergency alert from their dashboard.
-                        </p>
-                        
-                        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 12px; border-left: 5px solid #7A6B99; margin-bottom: 30px;">
-                            <h3 style="margin-top: 0; color: #2d3436; font-size: 18px; margin-bottom: 15px;">📍 Current Status</h3>
-                            <p style="margin: 8px 0;"><strong>User:</strong> ${userName || 'Unknown'}</p>
-                            <p style="margin: 8px 0;"><strong>Email:</strong> ${userEmail || 'Not provided'}</p>
-                            <p style="margin: 8px 0;"><strong>Time:</strong> ${new Date().toLocaleString()}</p>
-                            <p style="margin: 8px 0;"><strong>Location:</strong> ${location ? `${location.lat}, ${location.lng}` : 'Unknown'}</p>
-                        </div>
+        // Fall back to contacts passed from frontend (email-only) if no Firestore data
+        const emailRecipients = firestoreContacts.length > 0
+            ? firestoreContacts.map(c => c.email).filter(Boolean)
+            : (contacts && contacts.length > 0 ? contacts : [process.env.EMAIL_USER]);
 
-                        <div style="text-align: center; margin-bottom: 30px;">
-                            <a href="${mapLink}" style="background: linear-gradient(135deg, #007bff, #0056b3); color: white; padding: 15px 30px; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 15px rgba(0,123,255,0.3);">
-                                📍 View Live Location
-                            </a>
-                        </div>
-                        
-                        <p style="font-size: 14px; color: #666; text-align: center; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
-                            This alert was sent via the Her Shield Dashboard. Please verify the user's safety immediately.
-                        </p>
-                    </div>
-                </div>
-            `,
-        };
-
-        try {
-            await transporter.sendMail(mailOptions);
-        } catch (mailErr) {
-            console.error('sendMail (dashboard-alert):', mailErr);
-            return res.status(502).json({
-                success: false,
-                message: `Email send failed: ${mailErr.message || 'check EMAIL_USER / EMAIL_PASS'}`,
-            });
+        // ── 2. Send SMS to all contacts that have a phone number ─────────────
+        const smsResults = [];
+        if (firestoreContacts.length > 0) {
+            const loc = location
+                ? { latitude: location.lat, longitude: location.lng }
+                : null;
+            const smsRes = await smsService.sendBulkEmergencyAlerts(
+                firestoreContacts,
+                userName || 'User',
+                loc,
+                null
+            );
+            smsResults.push(...smsRes);
+            const sent    = smsRes.filter(r => r.success).length;
+            const skipped = smsRes.filter(r => !r.success).length;
+            console.log(`📱 dashboard-alert SMS: ${sent} sent, ${skipped} failed/skipped`);
+        } else {
+            console.log('ℹ️  dashboard-alert: no Firestore contacts — SMS skipped');
         }
 
+        // ── 3. Send Email ────────────────────────────────────────────────────
+        let emailSent = false;
+        if (hasEmailConfig() && emailRecipients.length > 0) {
+            const mailOptions = {
+                from: process.env.EMAIL_USER,
+                to: emailRecipients,
+                subject: `🚨 URGENT: Emergency Alert from ${userName || 'User'}`,
+                html: `
+                    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                        <div style="background: linear-gradient(135deg, #9B8EC7, #7A6B99); color: white; padding: 30px; text-align: center;">
+                            <h1 style="margin: 0; font-size: 28px; text-transform: uppercase; letter-spacing: 2px;">SOS Alert</h1>
+                            <p style="margin: 10px 0 0; font-size: 16px; opacity: 0.9;">Immediate Assistance Requested</p>
+                        </div>
+                        <div style="padding: 30px; background-color: #fff;">
+                            <p style="font-size: 18px; color: #333; line-height: 1.6; text-align: center; margin-bottom: 30px;">
+                                <strong>${userName || 'A HerShield User'}</strong> has triggered an emergency alert.
+                            </p>
+                            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 12px; border-left: 5px solid #7A6B99; margin-bottom: 30px;">
+                                <h3 style="margin-top: 0; color: #2d3436; font-size: 18px; margin-bottom: 15px;">📍 Current Status</h3>
+                                <p style="margin: 8px 0;"><strong>User:</strong> ${userName || 'Unknown'}</p>
+                                <p style="margin: 8px 0;"><strong>Email:</strong> ${userEmail || 'Not provided'}</p>
+                                <p style="margin: 8px 0;"><strong>Time:</strong> ${new Date().toLocaleString()}</p>
+                                <p style="margin: 8px 0;"><strong>Location:</strong> ${location ? `${location.lat}, ${location.lng}` : 'Unknown'}</p>
+                            </div>
+                            <div style="text-align: center; margin-bottom: 30px;">
+                                <a href="${mapLink}" style="background: linear-gradient(135deg, #007bff, #0056b3); color: white; padding: 15px 30px; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 16px; display: inline-block;">📍 View Location on Map</a>
+                            </div>
+                            <p style="font-size: 14px; color: #666; text-align: center; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
+                                This alert was sent via HerShield. Please verify the user's safety immediately.
+                            </p>
+                        </div>
+                    </div>`,
+            };
+            try {
+                await transporter.sendMail(mailOptions);
+                emailSent = true;
+            } catch (mailErr) {
+                console.error('sendMail (dashboard-alert):', mailErr.message);
+            }
+        }
+
+        // ── 4. Persist to community alerts ───────────────────────────────────
         let alertPersisted = true;
         try {
             await communityInsert({
@@ -358,37 +383,32 @@ router.post('/dashboard-alert', async (req, res) => {
                 title: `Emergency Alert: ${userName || 'User'}`,
                 message: `${userName || 'User'} triggered an emergency alert from dashboard.`,
                 severity: 'high',
-                location: location ? `${location.lat}, ${location.lng}` : '',
-                source: 'dashboard-sos',
-                userName: userName || 'Her Shield User',
-                userEmail: userEmail || '',
-                createdAt: new Date().toISOString(),
+                userId,
+                userEmail,
+                location,
+                createdAt: new Date(),
             });
-        } catch (persistErr) {
-            if (persistErr.code === 'FIRESTORE_NOT_CONFIGURED') {
-                alertPersisted = false;
-                console.warn(
-                    'SOS email sent but alert not saved to Firestore (set FIREBASE_SERVICE_ACCOUNT_PATH or FIREBASE_SERVICE_ACCOUNT_JSON).'
-                );
-            } else {
-                throw persistErr;
-            }
+        } catch (e) {
+            console.warn('dashboard-alert: communityInsert failed:', e.message);
+            alertPersisted = false;
         }
 
-        res.json({
+        const smsSent    = smsResults.filter(r => r.success).length;
+        const smsFailed  = smsResults.filter(r => !r.success).length;
+
+        return res.json({
             success: true,
-            message: 'Emergency alert sent successfully',
-            ...(!alertPersisted && {
-                warning: 'Email was sent, but the alert was not stored (configure Firestore for admin visibility).',
-            }),
+            message: 'Emergency alert dispatched.',
+            notifications: {
+                sms:   { sent: smsSent, failed: smsFailed },
+                email: { sent: emailSent ? emailRecipients.length : 0 },
+            },
+            alertPersisted,
         });
-    } catch (error) {
-        console.error('Error sending dashboard alert:', error);
-        const status = error.statusCode || 500;
-        res.status(status).json({
-            success: false,
-            message: error.code === 'FIRESTORE_NOT_CONFIGURED' ? error.message : 'Failed to send alert',
-        });
+
+    } catch (err) {
+        console.error('dashboard-alert error:', err);
+        return res.status(500).json({ success: false, message: err.message });
     }
 });
 

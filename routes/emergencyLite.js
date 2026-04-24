@@ -254,7 +254,7 @@ router.post(
             // Schedule auto-expiry timer if set
             if (expiresAt) scheduleSosTimer(userId, sosId, expiresAt);
 
-            // Send alerts to all emergency contacts
+            // ── Notify emergency contacts ────────────────────────────────────
             const alertResults = [];
             const userName = user.name || 'HerShield User';
 
@@ -273,6 +273,30 @@ router.post(
                 // Always send email to contacts that have an email address
                 const emailRes = await sendBulkSosEmails(sorted, userName, user.email || '', location, trackingLink);
                 alertResults.push(...emailRes);
+            }
+
+            // ── Also notify the user themselves via SMS ──────────────────────
+            const userPhone = (user.phone || '').trim();
+            if (userPhone) {
+                try {
+                    const selfSms = await smsService.sendSosConfirmationToUser({
+                        to:           userPhone,
+                        userName,
+                        trackingCode,
+                        trackingLink,
+                        timerMinutes: timerMinutes || null,
+                    });
+                    alertResults.push({ contactName: 'You (self)', method: 'sms_self', ...selfSms });
+                    if (selfSms.success) {
+                        console.log(`✅ SOS self-SMS sent to user ${userId} at ${userPhone}`);
+                    } else {
+                        console.warn(`⚠️  SOS self-SMS failed for ${userId}:`, selfSms.error);
+                    }
+                } catch (smsErr) {
+                    console.error('Self-SMS error (non-fatal):', smsErr.message);
+                }
+            } else {
+                console.log(`ℹ️  SOS self-SMS skipped — user ${userId} has no phone on file`);
             }
 
             return res.status(201).json({
@@ -326,7 +350,40 @@ router.post(
             await sosMarkSafe(sosSession._id, new Date());
             await liveSessionStop(userId);
 
-            return res.json({ success: true, message: "You're marked safe. Location sharing has stopped." });
+            // ── Send "safe" SMS to user + all contacts ───────────────────────
+            const safeResults = [];
+            try {
+                const user = await usersFindById(userId);
+                const safeName = user?.name || 'HerShield User';
+                const contacts = user?.emergencyContacts || [];
+
+                // Notify user themselves
+                const userPhone = (user?.phone || '').trim();
+                if (userPhone) {
+                    const r = await smsService.sendSafeConfirmation({ to: userPhone, userName: safeName });
+                    safeResults.push({ to: 'self', ...r });
+                    console.log(r.success ? `✅ Safe SMS → user (${userPhone})` : `⚠️  Safe SMS failed → user`);
+                }
+
+                // Notify each contact
+                const contactSafeRes = await smsService.sendBulkSafeConfirmations(contacts, safeName);
+                safeResults.push(...contactSafeRes);
+
+                const emailSafeSent = contacts.filter(c => c.email).length;
+                if (emailSafeSent > 0) {
+                    // Re-use sendBulkSosEmails with a "safe" subject override isn't available,
+                    // so skip email here — safe status is self-evident from the cease of alerts.
+                    console.log(`ℹ️  Safe email not sent (contacts already received SOS email)`);
+                }
+            } catch (safeNotifyErr) {
+                console.error('Safe notification error (non-fatal):', safeNotifyErr.message);
+            }
+
+            return res.json({
+                success: true,
+                message: "You're marked safe. Location sharing has stopped.",
+                safeNotifications: safeResults,
+            });
         } catch (err) {
             console.error('SOS safe error:', err);
             return res.status(err.statusCode || 500).json({ error: err.message || 'Failed to mark safe' });

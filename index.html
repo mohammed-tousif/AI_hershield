@@ -1,13 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Her Shield - Women Safety & Security Network</title>
+    <title>HerShield - Women Safety & Security Network</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
@@ -15,18 +17,18 @@
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <style>
         :root {
-            --primary-color: #BDA6CE;
-            --secondary-color: #9B8EC7;
-            --accent-color: #B4D3D9;
-            --peach-light: #F2EAE0;
-            --peach-dark: #8B7EB8;
+            --primary-color: #FF9A86;
+            --secondary-color: #FFB399;
+            --accent-color: #FFD6A6;
+            --peach-light: #FFF0BE;
+            --peach-dark: #FF7A6A;
             --text-dark: #2D3436;
             --text-light: #ffffff;
-            --gradient-1: linear-gradient(135deg, #BDA6CE 0%, #9B8EC7 100%);
-            --gradient-2: linear-gradient(45deg, #B4D3D9 0%, #BDA6CE 100%);
+            --gradient-1: linear-gradient(135deg, #FF9A86 0%, #FFB399 100%);
+            --gradient-2: linear-gradient(45deg, #FFD6A6 0%, #FFB399 100%);
             --success-color: #98FB98;
             --warning-color: #FFD700;
-            --danger-color: #9B8EC7;
+            --danger-color: #FF9A86;
         }
 
         body {
@@ -34,7 +36,7 @@
             color: var(--text-dark);
             line-height: 1.6;
             overflow-x: hidden;
-            background-color: #F2EAE0;
+            background-color: #FFF0BE;
         }
 
         .cursor-dot {
@@ -88,10 +90,10 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), 
-                rgba(124, 58, 237, 0.1) 0%,
-                rgba(59, 130, 246, 0.05) 50%,
-                transparent 100%);
+            background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+                    rgba(255, 154, 134, 0.12) 0%,
+                    rgba(255, 214, 166, 0.06) 50%,
+                    transparent 100%);
             pointer-events: none;
             z-index: 0;
             opacity: 0.5;
@@ -123,7 +125,7 @@
             position: relative;
             overflow: hidden;
             border-radius: 65px;
-            background: linear-gradient(135deg, rgba(189, 166, 206, 0.2) 0%, rgba(155, 142, 199, 0.2) 100%);
+            background: linear-gradient(135deg, rgba(255, 154, 134, 0.15) 0%, rgba(255, 179, 153, 0.15) 100%);
         }
 
         .hero-section::before {
@@ -133,13 +135,18 @@
             height: 200%;
             top: -50%;
             left: -50%;
-            background: radial-gradient(circle at center, rgba(189, 166, 206, 0.1) 0%, transparent 70%);
+            background: radial-gradient(circle at center, rgba(255, 154, 134, 0.1) 0%, transparent 70%);
             animation: rotate 20s linear infinite;
         }
 
         @keyframes rotate {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .feature-card {
@@ -149,15 +156,15 @@
             background: rgba(255, 255, 255, 0.95);
             border-radius: 24px;
             padding: 2rem;
-            box-shadow: 0 10px 30px rgba(189, 166, 206, 0.1);
+            box-shadow: 0 10px 30px rgba(255, 154, 134, 0.1);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(189, 166, 206, 0.1);
+            border: 1px solid rgba(255, 154, 134, 0.1);
             will-change: transform;
         }
 
         .feature-card:hover {
             transform: translateY(-20px) rotateX(10deg) rotateY(10deg);
-            box-shadow: 0 20px 40px rgba(189, 166, 206, 0.2);
+            box-shadow: 0 20px 40px rgba(255, 154, 134, 0.2);
         }
 
         .feature-card::before {
@@ -167,7 +174,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: linear-gradient(45deg, rgba(189, 166, 206, 0.1), rgba(155, 142, 199, 0.1));
+            background: linear-gradient(45deg, rgba(255, 154, 134, 0.08), rgba(255, 179, 153, 0.08));
             border-radius: 24px;
             transform: translateZ(-10px);
             transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
@@ -192,7 +199,7 @@
             margin-bottom: 1.5rem;
             transform: translateZ(50px);
             transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-            text-shadow: 2px 2px 4px rgba(189, 166, 206, 0.2);
+            text-shadow: 2px 2px 4px rgba(255, 154, 134, 0.2);
             will-change: transform;
         }
 
@@ -202,9 +209,17 @@
         }
 
         @keyframes float {
-            0% { transform: translateY(0px) translateZ(0) rotateX(0) rotateY(0); }
-            50% { transform: translateY(-20px) translateZ(50px) rotateX(5deg) rotateY(5deg); }
-            100% { transform: translateY(0px) translateZ(0) rotateX(0) rotateY(0); }
+            0% {
+                transform: translateY(0px) translateZ(0) rotateX(0) rotateY(0);
+            }
+
+            50% {
+                transform: translateY(-20px) translateZ(50px) rotateX(5deg) rotateY(5deg);
+            }
+
+            100% {
+                transform: translateY(0px) translateZ(0) rotateX(0) rotateY(0);
+            }
         }
 
         .btn {
@@ -227,7 +242,7 @@
 
         .btn-primary:hover {
             transform: translateY(-5px) translateZ(20px);
-            box-shadow: 0 10px 20px rgba(189, 166, 206, 0.3);
+            box-shadow: 0 10px 20px rgba(255, 154, 134, 0.4);
         }
 
         .btn-outline-light {
@@ -267,7 +282,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
             transform: translateX(-100%);
             transition: 0.5s;
         }
@@ -286,13 +301,13 @@
             transition: all 0.3s ease;
             backdrop-filter: blur(10px);
             border-radius: 0 0 45px 45px;
-            background: rgba(56, 9, 1, 0.8) !important;
+            background: rgba(255, 154, 134, 0.88) !important;
         }
 
         .navbar.scrolled {
-            background: rgba(104, 4, 4, 0.3) !important;
+            background: rgba(255, 154, 134, 0.75) !important;
             padding: 15px 30px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 20px rgba(255, 154, 134, 0.25);
             width: fit-content;
             position: fixed;
             left: 50%;
@@ -333,14 +348,14 @@
         .form-control {
             border-radius: 16px;
             padding: 15px 20px;
-            border: 2px solid rgba(124, 58, 237, 0.1);
+            border: 2px solid rgba(255, 154, 134, 0.15);
             transition: all 0.3s ease;
             font-size: 1rem;
             font-weight: 400;
         }
 
         .form-control:focus {
-            box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.1);
+            box-shadow: 0 0 0 4px rgba(255, 154, 134, 0.15);
             border-color: var(--primary-color);
         }
 
@@ -396,9 +411,17 @@
         }
 
         @keyframes gradient-animation {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
         }
 
         .floating-image-container {
@@ -426,12 +449,10 @@
             pointer-events: none;
             z-index: 0;
             opacity: 0.7;
-            background: radial-gradient(
-                circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
-                rgba(189, 166, 206, 0.15) 0%,
-                rgba(155, 142, 199, 0.1) 30%,
-                transparent 70%
-            );
+            background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+                    rgba(255, 154, 134, 0.15) 0%,
+                    rgba(255, 179, 153, 0.1) 30%,
+                    transparent 70%);
             transform: translateZ(-100px);
             will-change: transform;
             mix-blend-mode: soft-light;
@@ -487,7 +508,7 @@
             .navbar {
                 padding: 15px 0;
             }
-            
+
             .hero-section {
                 text-align: center;
                 padding: 100px 0;
@@ -505,7 +526,7 @@
             .stats-box {
                 margin-bottom: 20px;
             }
-            
+
             .perspective-container {
                 perspective: none;
             }
@@ -534,20 +555,23 @@
             border-radius: 8px;
             margin-bottom: 1rem;
             background: #fff;
-            border: 1px solid #ddd;
+            border: 1px solid rgba(255, 154, 134, 0.2);
             transition: all 0.3s ease;
         }
+
         .alert-item:hover {
             transform: translateX(5px);
-            border-color: #9B8EC7;
-            background: linear-gradient(135deg, #BDA6CE, #9B8EC7);
+            border-color: #FF9A86;
+            background: linear-gradient(135deg, #FF9A86, #FFB399);
             color: white;
         }
+
         .alert-item:hover .text-muted {
             color: rgba(255, 255, 255, 0.8) !important;
         }
     </style>
 </head>
+
 <body>
     <div class="cursor-dot"></div>
     <div class="cursor-outline"></div>
@@ -555,9 +579,9 @@
     <div class="background-gradient"></div>
     <div class="content-wrapper">
         <!-- Navigation -->
-        <nav class="navbar navbar-expand-lg navbar-dark fixed-top" style="background-color: rgba(124, 58, 237, 0.9);">
+        <nav class="navbar navbar-expand-lg navbar-dark fixed-top" style="background-color: rgba(255, 154, 134, 0.9);">
             <div class="container">
-                <a class="navbar-brand gradient-text" href="#">Her Shield</a>
+                <a class="navbar-brand gradient-text" href="#">HerShield</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                     <span class="navbar-toggler-icon"></span>
                 </button>
@@ -569,7 +593,8 @@
                         <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
                         <!-- User Account Dropdown -->
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+                                data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="fas fa-user"></i> Account
                             </a>
                             <ul class="dropdown-menu" aria-labelledby="userDropdown">
@@ -587,19 +612,24 @@
             <div class="container">
                 <div class="row align-items-center">
                     <div class="col-lg-6" data-aos="fade-right" data-aos-duration="1000">
-                        <h1 class="display-4 fw-bold mb-4">Predictive <span class="gradient-text">Safety Analytics</span> for Public Spaces</h1>
-                        <p class="lead mb-4">Using data on crowd density, lighting, crime reports, and user inputs to assess safety in public spaces, providing safety alerts and suggesting safer routes.</p>
+                        <h1 class="display-4 fw-bold mb-4">Predictive <span class="gradient-text">Safety
+                                Analytics</span> for Public Spaces</h1>
+                        <p class="lead mb-4">Using data on crowd density, lighting, crime reports, and user inputs to
+                            assess safety in public spaces, providing safety alerts and suggesting safer routes.</p>
                         <div class="d-flex gap-3">
-                            <button class="btn btn-light btn-lg" data-aos="fade-up" data-aos-delay="200" onclick="window.location.href='safety-map.html'">
+                            <button class="btn btn-light btn-lg" data-aos="fade-up" data-aos-delay="200"
+                                onclick="window.location.href='safety-map.html'">
                                 <i class="fas fa-shield-alt me-2"></i>Get Safer Routes
                             </button>
-                            <button class="btn btn-outline-light btn-lg" data-aos="fade-up" data-aos-delay="400" onclick="window.location.href='live-tracker.html'">
+                            <button class="btn btn-outline-light btn-lg" data-aos="fade-up" data-aos-delay="400"
+                                onclick="window.location.href='live-tracker.html'">
                                 <i class="fas fa-info-circle me-2"></i>Report Incidents
                             </button>
                         </div>
                     </div>
                     <div class="col-lg-6" data-aos="fade-left" data-aos-duration="1000">
-                        <img src="front.png" alt="Safety Network Illustration" class="img-fluid rounded-3 floating-image">
+                        <img src="download (1).jpg" alt="Safety Network Illustration"
+                            class="img-fluid rounded-3 floating-image">
                     </div>
                 </div>
             </div>
@@ -616,7 +646,9 @@
                                 <div class="zoom-content text-center">
                                     <i class="fas fa-map-marked-alt feature-icon"></i>
                                     <h3 class="card-title">Predictive Analytics</h3>
-                                    <p class="card-text">Advanced AI algorithms analyze crowd density, lighting conditions, and historical crime data to predict potential safety risks in real-time.</p>
+                                    <p class="card-text">Advanced AI algorithms analyze crowd density, lighting
+                                        conditions, and historical crime data to predict potential safety risks in
+                                        real-time.</p>
                                     <button class="btn btn-primary mt-3">View Safety Map</button>
                                 </div>
                             </div>
@@ -628,7 +660,9 @@
                                 <div class="zoom-content text-center">
                                     <i class="fas fa-route feature-icon"></i>
                                     <h3 class="card-title">Safer Routes</h3>
-                                    <p class="card-text">Get personalized route suggestions that prioritize well-lit areas, avoid high-crime zones, and consider current crowd density levels for optimal safety.</p>
+                                    <p class="card-text">Get personalized route suggestions that prioritize well-lit
+                                        areas, avoid high-crime zones, and consider current crowd density levels for
+                                        optimal safety.</p>
                                     <button class="btn btn-primary mt-3">Plan Safe Journey</button>
                                 </div>
                             </div>
@@ -640,7 +674,8 @@
                                 <div class="zoom-content text-center">
                                     <i class="fas fa-bell feature-icon"></i>
                                     <h3 class="card-title">Real-time Alerts</h3>
-                                    <p class="card-text">Receive instant safety notifications about changing conditions in your vicinity, with actionable recommendations to enhance your security.</p>
+                                    <p class="card-text">Receive instant safety notifications about changing conditions
+                                        in your vicinity, with actionable recommendations to enhance your security.</p>
                                     <button class="btn btn-primary mt-3">Enable Alerts</button>
                                 </div>
                             </div>
@@ -651,7 +686,8 @@
         </section>
 
         <!-- Data Sources Section -->
-        <section class="section-padding" style="background: linear-gradient(135deg, rgba(189, 166, 206, 0.1) 0%, rgba(155, 142, 199, 0.1) 100%);">
+        <section class="section-padding"
+            style="background: linear-gradient(135deg, rgba(255, 154, 134, 0.08) 0%, rgba(255, 214, 166, 0.08) 100%);">
             <div class="container">
                 <h2 class="text-center mb-5 gradient-text" data-aos="fade-up">Smart Data Integration</h2>
                 <div class="row g-4">
@@ -662,28 +698,32 @@
                                 <i class="fas fa-video text-primary me-3 fa-2x"></i>
                                 <div>
                                     <h5 class="mb-1">Crowd Density Monitoring</h5>
-                                    <p class="mb-0 text-muted">Anonymous crowd analysis using privacy-preserving computer vision</p>
+                                    <p class="mb-0 text-muted">Anonymous crowd analysis using privacy-preserving
+                                        computer vision</p>
                                 </div>
                             </div>
                             <div class="d-flex align-items-center mb-3">
                                 <i class="fas fa-lightbulb text-warning me-3 fa-2x"></i>
                                 <div>
                                     <h5 class="mb-1">Lighting Assessment</h5>
-                                    <p class="mb-0 text-muted">Real-time monitoring of street lighting and environmental visibility</p>
+                                    <p class="mb-0 text-muted">Real-time monitoring of street lighting and environmental
+                                        visibility</p>
                                 </div>
                             </div>
                             <div class="d-flex align-items-center mb-3">
                                 <i class="fas fa-exclamation-triangle text-danger me-3 fa-2x"></i>
                                 <div>
                                     <h5 class="mb-1">Crime Reports</h5>
-                                    <p class="mb-0 text-muted">Integration with official crime data and anonymous community reports</p>
+                                    <p class="mb-0 text-muted">Integration with official crime data and anonymous
+                                        community reports</p>
                                 </div>
                             </div>
                             <div class="d-flex align-items-center">
                                 <i class="fas fa-users text-success me-3 fa-2x"></i>
                                 <div>
                                     <h5 class="mb-1">User Feedback</h5>
-                                    <p class="mb-0 text-muted">Real-time community inputs on safety perceptions and concerns</p>
+                                    <p class="mb-0 text-muted">Real-time community inputs on safety perceptions and
+                                        concerns</p>
                                 </div>
                             </div>
                         </div>
@@ -695,28 +735,32 @@
                                 <i class="fas fa-universal-access text-primary me-3 fa-2x"></i>
                                 <div>
                                     <h5 class="mb-1">Accessible Interface</h5>
-                                    <p class="mb-0 text-muted">WCAG-compliant design with screen reader support and voice commands</p>
+                                    <p class="mb-0 text-muted">WCAG-compliant design with screen reader support and
+                                        voice commands</p>
                                 </div>
                             </div>
                             <div class="d-flex align-items-center mb-3">
                                 <i class="fas fa-globe text-warning me-3 fa-2x"></i>
                                 <div>
                                     <h5 class="mb-1">Multi-language Support</h5>
-                                    <p class="mb-0 text-muted">Interface available in 12+ languages to serve diverse communities</p>
+                                    <p class="mb-0 text-muted">Interface available in 12+ languages to serve diverse
+                                        communities</p>
                                 </div>
                             </div>
                             <div class="d-flex align-items-center mb-3">
                                 <i class="fas fa-megaphone text-danger me-3 fa-2x"></i>
                                 <div>
                                     <h5 class="mb-1">Community Reporting</h5>
-                                    <p class="mb-0 text-muted">Easy-to-use system for reporting safety concerns with minimal friction</p>
+                                    <p class="mb-0 text-muted">Easy-to-use system for reporting safety concerns with
+                                        minimal friction</p>
                                 </div>
                             </div>
                             <div class="d-flex align-items-center">
                                 <i class="fas fa-hands-helping text-success me-3 fa-2x"></i>
                                 <div>
                                     <h5 class="mb-1">Resource Optimization</h5>
-                                    <p class="mb-0 text-muted">Tools for authorities to allocate resources based on predictive analytics</p>
+                                    <p class="mb-0 text-muted">Tools for authorities to allocate resources based on
+                                        predictive analytics</p>
                                 </div>
                             </div>
                         </div>
@@ -726,7 +770,7 @@
         </section>
 
         <!-- Stats Section -->
-        <section class="section-padding" style="background: #F2EAE0;">
+        <section class="section-padding" style="background: #FFF0BE;">
             <div class="container">
                 <div class="row g-4">
                     <div class="col-md-4" data-aos="zoom-in" data-aos-delay="100">
@@ -759,11 +803,13 @@
             <div class="container">
                 <div class="row align-items-center">
                     <div class="col-lg-6" data-aos="fade-right">
-                        <img src="https://images.unsplash.com/photo-1573164574511-73c773193279?q=80&w=600&auto=format&fit=crop" alt="About Us" class="img-fluid rounded-3 floating-image">
+                        <img src="https://images.unsplash.com/photo-1573164574511-73c773193279?q=80&w=600&auto=format&fit=crop"
+                            alt="About Us" class="img-fluid rounded-3 floating-image">
                     </div>
                     <div class="col-lg-6" data-aos="fade-left">
                         <h2 class="mb-4 gradient-text">About Our Safety Platform</h2>
-                        <p class="lead">We're dedicated to creating safer public spaces by leveraging data analytics, community reporting, and advanced technology.</p>
+                        <p class="lead">We're dedicated to creating safer public spaces by leveraging data analytics,
+                            community reporting, and advanced technology.</p>
                         <div class="d-flex align-items-center mb-4">
                             <i class="fas fa-check-circle text-success me-3 fa-2x"></i>
                             <p class="mb-0">Multi-source data integration for comprehensive safety assessment</p>
@@ -785,14 +831,16 @@
         </section>
 
         <!-- Safety Map Visualization -->
-        <section class="section-padding" style="background: #F2EAE0;">
+        <section class="section-padding" style="background: #1C0F0A;">
             <div class="container">
                 <h2 class="text-center mb-5 gradient-text" data-aos="fade-up">Safety Map Visualization</h2>
                 <div class="row align-items-center">
                     <div class="col-lg-6" data-aos="fade-right">
                         <div class="card border-0 shadow-lg rounded-4 p-0 overflow-hidden">
-                            <img src="https://images.unsplash.com/photo-1536599018102-9f803c140fc1?q=80&w=600&auto=format&fit=crop" alt="Safety Map" class="img-fluid">
-                            <div class="position-absolute bottom-0 start-0 end-0 p-4" style="background: rgba(0,0,0,0.7);">
+                            <img src="https://images.unsplash.com/photo-1536599018102-9f803c140fc1?q=80&w=600&auto=format&fit=crop"
+                                alt="Safety Map" class="img-fluid">
+                            <div class="position-absolute bottom-0 start-0 end-0 p-4"
+                                style="background: rgba(0,0,0,0.7);">
                                 <h4 class="text-white mb-2">Live Safety Heatmap</h4>
                                 <p class="text-white-50 mb-0">Visualizing real-time safety metrics across the city</p>
                             </div>
@@ -800,28 +848,31 @@
                     </div>
                     <div class="col-lg-6" data-aos="fade-left">
                         <h3 class="mb-4">Visual Safety Assessment</h3>
-                        <p class="lead mb-4">Our interactive safety map combines multiple data sources to provide a comprehensive view of safety conditions in your area.</p>
-                        
+                        <p class="lead mb-4">Our interactive safety map combines multiple data sources to provide a
+                            comprehensive view of safety conditions in your area.</p>
+
                         <div class="d-flex align-items-center mb-3">
-                            <div class="me-3" style="width: 30px; height: 30px; background: linear-gradient(to right, green, yellow, red); border-radius: 4px;"></div>
+                            <div class="me-3"
+                                style="width: 30px; height: 30px; background: linear-gradient(to right, green, yellow, red); border-radius: 4px;">
+                            </div>
                             <p class="mb-0">Color-coded safety indicators based on real-time analysis</p>
                         </div>
-                        
+
                         <div class="d-flex align-items-center mb-3">
                             <div class="me-3"><i class="fas fa-map-marker-alt text-danger fa-2x"></i></div>
                             <p class="mb-0">Location-specific safety insights and recommendations</p>
                         </div>
-                        
+
                         <div class="d-flex align-items-center mb-3">
                             <div class="me-3"><i class="fas fa-clock text-primary fa-2x"></i></div>
                             <p class="mb-0">Time-based safety forecasting for journey planning</p>
                         </div>
-                        
+
                         <div class="d-flex align-items-center mb-4">
                             <div class="me-3"><i class="fas fa-sliders-h text-success fa-2x"></i></div>
                             <p class="mb-0">Customizable filters to adjust map visualization to your needs</p>
                         </div>
-                        
+
                         <button class="btn btn-primary">
                             <i class="fas fa-map-marked-alt me-2"></i>Explore Safety Map
                         </button>
@@ -831,7 +882,7 @@
         </section>
 
         <!-- Contact Section -->
-        <section id="contact" class="section-padding" style="background: #F2EAE0;">
+        <section id="contact" class="section-padding" style="background: #1C0F0A;">
             <div class="container">
                 <h2 class="text-center mb-5 gradient-text" data-aos="fade-up">Get in Touch</h2>
                 <div class="row justify-content-center">
@@ -858,7 +909,8 @@
                                 </div>
                                 <div class="mb-4">
                                     <label class="form-label">Message</label>
-                                    <textarea class="form-control" rows="5" placeholder="Describe your safety concern or feedback"></textarea>
+                                    <textarea class="form-control" rows="5"
+                                        placeholder="Describe your safety concern or feedback"></textarea>
                                 </div>
                                 <button type="submit" class="btn btn-primary w-100">
                                     <i class="fas fa-paper-plane me-2"></i>Submit Report
@@ -876,7 +928,8 @@
                 <div class="row">
                     <div class="col-md-4 mb-4">
                         <h5 class="gradient-text h4 mb-4">Her Shield</h5>
-                        <p class="mb-4">Empowering communities through predictive safety analytics and collaborative safety networks.</p>
+                        <p class="mb-4">Empowering communities through predictive safety analytics and collaborative
+                            safety networks.</p>
                         <div class="social-links">
                             <a href="#" class="text-light"><i class="fab fa-facebook"></i></a>
                             <a href="#" class="text-light"><i class="fab fa-twitter"></i></a>
@@ -888,16 +941,19 @@
                         <h6 class="mb-4">Quick Links</h6>
                         <ul class="list-unstyled">
                             <li><a href="#home" class="text-light text-decoration-none mb-2 d-block">Home</a></li>
-                            <li><a href="#features" class="text-light text-decoration-none mb-2 d-block">Features</a></li>
+                            <li><a href="#features" class="text-light text-decoration-none mb-2 d-block">Features</a>
+                            </li>
                             <li><a href="#about" class="text-light text-decoration-none mb-2 d-block">About</a></li>
-                            <li><a href="#contact" class="text-light text-decoration-none mb-2 d-block">Report Incident</a></li>
+                            <li><a href="#contact" class="text-light text-decoration-none mb-2 d-block">Report
+                                    Incident</a></li>
                         </ul>
                     </div>
                     <div class="col-md-3 mb-4">
                         <h6 class="mb-4">Contact Info</h6>
                         <p class="mb-2"><i class="fas fa-envelope me-2"></i> info@safetypredictive.com</p>
                         <p class="mb-2"><i class="fas fa-phone me-2"></i> +1 (555) 456-7890</p>
-                        <p class="mb-0"><i class="fas fa-map-marker-alt me-2"></i> 101 Safety Analytics Ave, CA 94105</p>
+                        <p class="mb-0"><i class="fas fa-map-marker-alt me-2"></i> 101 Safety Analytics Ave, CA 94105
+                        </p>
                     </div>
                     <div class="col-md-3 mb-4">
                         <h6 class="mb-4">Newsletter</h6>
@@ -948,8 +1004,8 @@
                             <label for="reportLocation" class="form-label fw-bold">Location</label>
                             <div class="input-group">
                                 <input type="text" class="form-control" id="reportLocation"
-                                    placeholder="Start typing a location…" required
-                                    autocomplete="off" aria-autocomplete="list" aria-owns="idx-locationSuggestions">
+                                    placeholder="Start typing a location…" required autocomplete="off"
+                                    aria-autocomplete="list" aria-owns="idx-locationSuggestions">
                                 <span class="input-group-text bg-white" id="idx-locationSpinner" style="display:none;">
                                     <span class="spinner-border spinner-border-sm text-secondary" role="status"></span>
                                 </span>
@@ -957,8 +1013,7 @@
                                     <i class="fas fa-crosshairs"></i>
                                 </button>
                             </div>
-                            <ul id="idx-locationSuggestions" role="listbox"
-                                style="display:none;list-style:none;padding:0;margin:0;
+                            <ul id="idx-locationSuggestions" role="listbox" style="display:none;list-style:none;padding:0;margin:0;
                                        position:absolute;z-index:9999;width:100%;max-height:200px;
                                        overflow-y:auto;background:#fff;border:1px solid #ced4da;
                                        border-top:none;border-radius:0 0 8px 8px;
@@ -991,7 +1046,7 @@
     </button>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
 
             // Custom cursor functionality
@@ -1009,20 +1064,20 @@
                     duration: 0.1,
                     ease: 'power1.out'
                 });
-                
+
                 gsap.to(cursorOutline, {
                     x: e.clientX,
                     y: e.clientY,
                     duration: 0.3,
                     ease: 'power2.out'
                 });
-                
+
                 // Update background gradient position
                 if (depthBg) {
                     depthBg.style.setProperty('--mouse-x', `${e.clientX}px`);
                     depthBg.style.setProperty('--mouse-y', `${e.clientY}px`);
                 }
-                
+
                 document.documentElement.style.setProperty('--mouse-x', `${e.clientX}px`);
                 document.documentElement.style.setProperty('--mouse-y', `${e.clientY}px`);
             });
@@ -1034,7 +1089,7 @@
                     cursorDot.classList.add('active');
                     cursorOutline.classList.add('active');
                 });
-                
+
                 el.addEventListener('mouseleave', () => {
                     cursorDot.classList.remove('active');
                     cursorOutline.classList.remove('active');
@@ -1073,7 +1128,7 @@
             // Enhanced parallax effect
             gsap.utils.toArray('.parallax-section').forEach((section, i) => {
                 const heightRatio = i % 2 ? 1.2 : 0.8;
-                
+
                 gsap.to(section, {
                     scrollTrigger: {
                         trigger: section,
@@ -1085,7 +1140,7 @@
                             const y = progress * 100;
                             const scale = 1 + (progress * 0.1);
                             const rotation = progress * 5;
-                            
+
                             section.style.transform = `
                                 perspective(1000px)
                                 translateY(${y}px)
@@ -1104,13 +1159,13 @@
                     const rect = card.getBoundingClientRect();
                     const x = e.clientX - rect.left;
                     const y = e.clientY - rect.top;
-                    
+
                     const centerX = rect.width / 2;
                     const centerY = rect.height / 2;
-                    
+
                     const deltaX = (x - centerX) / centerX;
                     const deltaY = (y - centerY) / centerY;
-                    
+
                     gsap.to(card, {
                         duration: 0.5,
                         transform: `
@@ -1121,7 +1176,7 @@
                         `,
                         ease: 'power2.out'
                     });
-                    
+
                     const icon = card.querySelector('.feature-icon');
                     if (icon) {
                         gsap.to(icon, {
@@ -1143,7 +1198,7 @@
                         transform: 'perspective(1000px) rotateY(0) rotateX(0) translateZ(0)',
                         ease: 'power3.out'
                     });
-                    
+
                     const icon = card.querySelector('.feature-icon');
                     if (icon) {
                         gsap.to(icon, {
@@ -1161,15 +1216,15 @@
                 const target = parseInt(counter.textContent.replace(/[^\d]/g, ''));
                 const prefix = counter.textContent.replace(/[\d]/g, '').split('+')[0] || '';
                 const suffix = counter.textContent.includes('+') ? '+' : '';
-                
+
                 gsap.fromTo(
-                    counter, 
+                    counter,
                     { innerText: 0 },
                     {
                         innerText: target,
                         duration: 2,
                         ease: 'power2.out',
-                        onUpdate: function() {
+                        onUpdate: function () {
                             counter.textContent = prefix + Math.floor(this.targets()[0].innerText) + suffix;
                         }
                     }
@@ -1192,7 +1247,7 @@
 
             // Smooth scroll with enhanced 3D effect
             document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-                anchor.addEventListener('click', function(e) {
+                anchor.addEventListener('click', function (e) {
                     e.preventDefault();
                     const target = document.querySelector(this.getAttribute('href'));
                     if (target) {
@@ -1210,18 +1265,18 @@
             });
 
             // Show the modal when the report button is clicked
-            document.getElementById('reportButton').addEventListener('click', function() {
+            document.getElementById('reportButton').addEventListener('click', function () {
                 const reportModal = new bootstrap.Modal(document.getElementById('reportModal'));
                 reportModal.show();
             });
 
             // GPS button in index.html report modal
-            document.getElementById('idx-getLocationBtn').addEventListener('click', function() {
+            document.getElementById('idx-getLocationBtn').addEventListener('click', function () {
                 const btn = this;
                 const inp = document.getElementById('reportLocation');
                 const lat = document.getElementById('idx-reportLat');
                 const lng = document.getElementById('idx-reportLng');
-                const st  = document.getElementById('idx-locationStatus');
+                const st = document.getElementById('idx-locationStatus');
                 btn.disabled = true;
                 btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
                 if (!navigator.geolocation) {
@@ -1250,28 +1305,28 @@
             });
 
             // Location autocomplete for index.html report modal
-            (function() {
-                const input    = document.getElementById('reportLocation');
-                const list     = document.getElementById('idx-locationSuggestions');
-                const spnr     = document.getElementById('idx-locationSpinner');
-                const latI     = document.getElementById('idx-reportLat');
-                const lngI     = document.getElementById('idx-reportLng');
+            (function () {
+                const input = document.getElementById('reportLocation');
+                const list = document.getElementById('idx-locationSuggestions');
+                const spnr = document.getElementById('idx-locationSpinner');
+                const latI = document.getElementById('idx-reportLat');
+                const lngI = document.getElementById('idx-reportLng');
                 const statusEl = document.getElementById('idx-locationStatus');
                 let timer = null, activeIdx = -1, suggs = [];
                 const API = 'https://nominatim.openstreetmap.org/search';
 
-                function hide() { list.innerHTML=''; list.style.display='none'; activeIdx=-1; suggs=[]; }
-                function spin(on) { if(spnr) spnr.style.display = on?'':'none'; }
+                function hide() { list.innerHTML = ''; list.style.display = 'none'; activeIdx = -1; suggs = []; }
+                function spin(on) { if (spnr) spnr.style.display = on ? '' : 'none'; }
 
                 function buildLi(p, i) {
                     const li = document.createElement('li');
                     li.setAttribute('data-idx', i);
-                    li.style.cssText='padding:9px 13px;cursor:pointer;font-size:.85rem;' +
+                    li.style.cssText = 'padding:9px 13px;cursor:pointer;font-size:.85rem;' +
                         'border-bottom:1px solid #f0f0f0;list-style:none;';
-                    li.innerHTML = '<i class="fas fa-map-marker-alt me-2" style="color:#9B8EC7;"></i>' +
-                        ((p.display_name||'').length>85 ? p.display_name.slice(0,85)+'…' : p.display_name);
-                    li.onmouseenter = () => { li.style.background='rgba(155,142,199,.12)'; activeIdx=i; };
-                    li.onmouseleave = () => { li.style.background=''; };
+                    li.innerHTML = '<i class="fas fa-map-marker-alt me-2" style="color:#FFB399;"></i>' +
+                        ((p.display_name || '').length > 85 ? p.display_name.slice(0, 85) + '…' : p.display_name);
+                    li.onmouseenter = () => { li.style.background = 'rgba(255,154,134,.12)'; activeIdx = i; };
+                    li.onmouseleave = () => { li.style.background = ''; };
                     li.onmousedown = e => { e.preventDefault(); pick(i); };
                     return li;
                 }
@@ -1279,47 +1334,47 @@
                 function pick(i) {
                     if (!suggs[i]) return;
                     input.value = suggs[i].display_name;
-                    latI.value  = parseFloat(suggs[i].lat).toFixed(7);
-                    lngI.value  = parseFloat(suggs[i].lon).toFixed(7);
-                    statusEl.textContent = '✓ Location selected'; statusEl.className='text-success mt-1 d-block';
+                    latI.value = parseFloat(suggs[i].lat).toFixed(7);
+                    lngI.value = parseFloat(suggs[i].lon).toFixed(7);
+                    statusEl.textContent = '✓ Location selected'; statusEl.className = 'text-success mt-1 d-block';
                     hide(); input.focus();
                 }
 
                 async function search(q) {
                     spin(true);
                     try {
-                        const r = await fetch(`${API}?`+new URLSearchParams({q,format:'json',limit:6,'accept-language':'en'}),
-                            {headers:{'User-Agent':'HerShield-SafetyApp/1.0'}});
+                        const r = await fetch(`${API}?` + new URLSearchParams({ q, format: 'json', limit: 6, 'accept-language': 'en' }),
+                            { headers: { 'User-Agent': 'HerShield-SafetyApp/1.0' } });
                         suggs = await r.json();
-                        list.innerHTML='';
+                        list.innerHTML = '';
                         if (!suggs.length) {
-                            const li=document.createElement('li'); li.style.padding='9px 13px'; li.style.color='#888';
-                            li.textContent='No results found.'; list.appendChild(li);
-                        } else suggs.forEach((p,i)=>list.appendChild(buildLi(p,i)));
-                        list.style.display='block';
-                    } catch(_){hide();} finally{spin(false);}
+                            const li = document.createElement('li'); li.style.padding = '9px 13px'; li.style.color = '#888';
+                            li.textContent = 'No results found.'; list.appendChild(li);
+                        } else suggs.forEach((p, i) => list.appendChild(buildLi(p, i)));
+                        list.style.display = 'block';
+                    } catch (_) { hide(); } finally { spin(false); }
                 }
 
                 input.addEventListener('input', () => {
-                    latI.value=''; lngI.value='';
+                    latI.value = ''; lngI.value = '';
                     clearTimeout(timer);
-                    const q=input.value.trim();
-                    if(q.length<3){hide();spin(false);return;}
-                    timer=setTimeout(()=>search(q),380);
+                    const q = input.value.trim();
+                    if (q.length < 3) { hide(); spin(false); return; }
+                    timer = setTimeout(() => search(q), 380);
                 });
 
                 input.addEventListener('keydown', e => {
-                    const items=list.querySelectorAll('li[data-idx]');
-                    if(!items.length) return;
-                    if(e.key==='ArrowDown'){e.preventDefault();activeIdx=Math.min(activeIdx+1,items.length-1);}
-                    else if(e.key==='ArrowUp'){e.preventDefault();activeIdx=Math.max(activeIdx-1,0);}
-                    else if(e.key==='Enter'&&activeIdx>=0){e.preventDefault();pick(activeIdx);return;}
-                    else if(e.key==='Escape'){hide();return;}
-                    items.forEach((li,i)=>{ li.style.background=i===activeIdx?'rgba(155,142,199,.2)':''; });
+                    const items = list.querySelectorAll('li[data-idx]');
+                    if (!items.length) return;
+                    if (e.key === 'ArrowDown') { e.preventDefault(); activeIdx = Math.min(activeIdx + 1, items.length - 1); }
+                    else if (e.key === 'ArrowUp') { e.preventDefault(); activeIdx = Math.max(activeIdx - 1, 0); }
+                    else if (e.key === 'Enter' && activeIdx >= 0) { e.preventDefault(); pick(activeIdx); return; }
+                    else if (e.key === 'Escape') { hide(); return; }
+                    items.forEach((li, i) => { li.style.background = i === activeIdx ? 'rgba(255,154,134,.2)' : ''; });
                 });
 
                 document.addEventListener('click', e => {
-                    if(!input.contains(e.target)&&!list.contains(e.target)) hide();
+                    if (!input.contains(e.target) && !list.contains(e.target)) hide();
                 });
 
                 document.getElementById('reportModal').addEventListener('hide.bs.modal', () => {
@@ -1328,7 +1383,7 @@
             })();
 
             // Handle form submission
-            document.getElementById('reportForm').addEventListener('submit', function(event) {
+            document.getElementById('reportForm').addEventListener('submit', function (event) {
                 event.preventDefault(); // Prevent the default form submission
 
                 // Get form data
@@ -1362,4 +1417,5 @@
         });
     </script>
 </body>
+
 </html>
