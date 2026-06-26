@@ -3,13 +3,87 @@
         "rules": "firestore.rules",
         "indexes": "firestore.indexes.json"
     },
+    "storage": {
+        "rules": "storage.rules"
+    },
     "hosting": {
-        "public": "public",
         "site": "hershield-web",
+        "public": ".",
         "ignore": [
             "firebase.json",
+            "firestore.rules",
+            "firestore.indexes.json",
+            "storage.rules",
+            ".firebaseignore",
+            ".firebaserc",
+            ".gitignore",
+            ".gitattributes",
+            ".dockerignore",
+            ".env",
             "**/.*",
-            "**/node_modules/**"
+            "node_modules/**",
+            "routes/**",
+            "middleware/**",
+            "models/**",
+            "services/**",
+            "config/**",
+            "scripts/**",
+            "functions/**",
+            "data/**",
+            ".firebase/**",
+            ".git/**",
+            "__pycache__/**",
+            "server.js",
+            "package.json",
+            "package-lock.json",
+            "Button.js",
+            "Dockerfile",
+            "render.yaml",
+            "fly.toml",
+            "fly.toml.bak",
+            "firebase_env.yaml",
+            "hershield-firebase-adminsdk.json",
+            "*.csv",
+            "*.py",
+            "*.log",
+            "*.zip",
+            "*.bak",
+            "*.md",
+            "live-tracker1.html",
+            "safety-map.html.bak",
+            "safetymap.html",
+            "report_button.html",
+            "live-tracker.html.zip",
+            "VDIT3/**",
+            "Sheherhackathon/**",
+            "Safety Map/**",
+            "public/**"
+        ],
+        "rewrites": [
+            {
+                "source": "**",
+                "destination": "/index.html"
+            }
+        ],
+        "headers": [
+            {
+                "source": "**/*.@(js|css)",
+                "headers": [
+                    {
+                        "key": "Cache-Control",
+                        "value": "max-age=3600"
+                    }
+                ]
+            },
+            {
+                "source": "**/*.html",
+                "headers": [
+                    {
+                        "key": "Cache-Control",
+                        "value": "no-cache"
+                    }
+                ]
+            }
         ]
     }
 }

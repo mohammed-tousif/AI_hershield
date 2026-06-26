@@ -180,7 +180,7 @@ class NavigationManager {
                 <!-- Sidebar Navigation -->
                 <div class="hershield-sidebar" id="sidebar">
                     <div class="sidebar-header-mobile">
-                        <h5 style="margin: 0; color: var(--gradient-middle);">Menu</h5>
+                        <h5 style="margin: 0; color: #FF9A86;">Menu</h5>
                         <button class="sidebar-close-btn" id="sidebarCloseBtn">
                             <svg viewBox="0 0 24 24" fill="currentColor" style="width: 24px; height: 24px;"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
                         </button>
@@ -534,11 +534,11 @@ class NavigationManager {
             <style>
         /* UNIFIED NAVIGATION SYSTEM STYLES */
         :root {
-            --unified-nav-color: #BDA6CE;
-            --unified-nav-gradient: linear-gradient(135deg, #BDA6CE 0%, #9B8EC7 100%);
+            --unified-nav-color: #FF9A86;
+            --unified-nav-gradient: linear-gradient(135deg, #FF9A86 0%, #FFB399 100%);
             --sidebar-width: 280px;
-            --sidebar-bg: rgba(255, 255, 255, 0.95);
-            --sidebar-border: rgba(0, 0, 0, 0.1);
+            --sidebar-bg: rgba(255,255,255,0.98);
+            --sidebar-border: rgba(255,154,134,0.15);
             --mobile-z-index: 10000;
         }
 
@@ -568,7 +568,7 @@ class NavigationManager {
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    box-shadow: 0 4px 15px rgba(155, 142, 199, 0.4);
+                    box-shadow: 0 4px 15px rgba(255,154,134,0.35);
                     cursor: pointer;
                     transition: all 0.3s ease;
                     font-size: 1.25rem;
@@ -580,7 +580,7 @@ class NavigationManager {
 
                 .fixed-nav-btn:hover {
                     transform: scale(1.1);
-                    box-shadow: 0 6px 20px rgba(155, 142, 199, 0.5);
+                    box-shadow: 0 6px 20px rgba(255,154,134,0.5);
                 }
 
                 .fixed-nav-btn-sidebar {
@@ -622,7 +622,7 @@ class NavigationManager {
                     align-items: center;
                     padding: 1rem 0;
                     margin-bottom: 1rem;
-                    border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+                    border-bottom: 2px solid rgba(255,154,134,0.15);
                 }
 
                 .sidebar-close-btn {
@@ -660,7 +660,7 @@ class NavigationManager {
                 }
 
                 .sidebar-profile.sidebar-profile-btn:hover {
-                    background: rgba(155, 142, 199, 0.1);
+                    background: rgba(255,154,134,0.08);
                 }
 
                 .sidebar-profile .profile-chevron {
@@ -684,7 +684,7 @@ class NavigationManager {
                 }
 
                 .profile-info small {
-                    color: var(--unified-nav-color);
+                    color: #FF9A86;
                     font-weight: 500;
                 }
 
@@ -742,8 +742,8 @@ class NavigationManager {
                 }
 
                 .logout-btn:hover {
-                    background: rgba(155, 142, 199, 0.1);
-                    color: #9B8EC7;
+                    background: rgba(255,154,134,0.10);
+                    color: #FF9A86;
                     transform: translateX(5px);
                 }
 
@@ -828,7 +828,7 @@ class NavigationManager {
                     background: var(--unified-nav-gradient);
                     color: white;
                     transform: translateY(-2px);
-                    box-shadow: 0 5px 15px rgba(155, 142, 199, 0.2);
+                    box-shadow: 0 5px 15px rgba(255,154,134,0.25);
                 }
 
                 .action-item i {
@@ -843,7 +843,7 @@ class NavigationManager {
                 }
 
                 .emergency-btn:hover {
-                    background: linear-gradient(135deg, #FF453A 0%, #9B8EC7 100%);
+                    background: linear-gradient(135deg, #FF453A 0%, #FF9A86 100%);
                     color: white;
                 }
 
@@ -1631,7 +1631,8 @@ class NavigationManager {
 
         const PROFILE_STORAGE_KEY = 'hershield_user_profile';
 
-        const MAX_AVATAR_BYTES = 750000;
+        // We no longer cap at 750KB because photos go to Firebase Storage, not localStorage
+        const MAX_AVATAR_BYTES = 5 * 1024 * 1024; // 5 MB hard cap for upload
 
         const loadExtendedProfile = () => {
             try {
@@ -1670,7 +1671,7 @@ class NavigationManager {
         const profilePhotoPreview = document.getElementById('profilePhotoPreview');
         let pendingAvatarDataUrl = null;
 
-        const fillProfileForm = () => {
+        const fillProfileForm = async () => {
             const ext = loadExtendedProfile();
             const email = localStorage.getItem('hershield_user_email') || '';
             const name =
@@ -1699,20 +1700,79 @@ class NavigationManager {
                 fb.classList.add('d-none');
                 fb.textContent = '';
             }
+
+            // ─ Fetch from Firestore API so extended fields (blood group, address, etc.) ─
+            // survive logout and reappear the next time the profile modal is opened.
+            try {
+                let userId = localStorage.getItem('hershield_backend_user_id');
+                if (!userId && email) {
+                    const r = await fetch(`/api/users/email/${encodeURIComponent(email)}`);
+                    const j = await r.json();
+                    if (j.success && j.exists && j.user && j.user._id) {
+                        userId = j.user._id;
+                        localStorage.setItem('hershield_backend_user_id', userId);
+                    }
+                }
+                if (userId) {
+                    const resp = await fetch(`/api/users/profile/${encodeURIComponent(userId)}`);
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        if (data.success && data.user) {
+                            const u = data.user;
+                            const merged = { ...ext,
+                                age: u.age || ext.age || '',
+                                homeAddress: u.homeAddress || ext.homeAddress || '',
+                                bloodGroup: u.bloodGroup || ext.bloodGroup || '',
+                                allergies: u.allergies || ext.allergies || '',
+                                medications: u.medications || ext.medications || '',
+                                personalPhone: u.phone || ext.personalPhone || '',
+                            };
+                            saveExtendedProfile(merged);
+                            if (u.age)         document.getElementById('profileAge').value = u.age;
+                            if (u.homeAddress)  document.getElementById('profileHomeAddress').value = u.homeAddress;
+                            if (u.phone)        document.getElementById('profilePersonalPhone').value = u.phone;
+                            if (u.bloodGroup)   document.getElementById('profileBloodGroup').value = u.bloodGroup;
+                            if (u.allergies)    document.getElementById('profileAllergies').value = u.allergies;
+                            if (u.medications)  document.getElementById('profileMedications').value = u.medications;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn('[Profile] API fetch skipped:', e.message);
+            }
         };
+
+        /**
+         * Upload a File object to Firebase Storage and return the public download URL.
+         * Path: avatars/{uid}/{timestamp}-{filename}
+         */
+        async function uploadAvatarToStorage(file) {
+            const uid = window.authService?.getCurrentUser?.()?.uid;
+            if (!uid) throw new Error('Not signed in');
+            const { storage } = await import('./firebase-config.js');
+            const { ref, uploadBytes, getDownloadURL } =
+                await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js');
+            const ext  = file.name.split('.').pop().toLowerCase() || 'jpg';
+            const path = `avatars/${uid}/${Date.now()}.${ext}`;
+            const storageRef = ref(storage, path);
+            const snapshot   = await uploadBytes(storageRef, file);
+            const url        = await getDownloadURL(snapshot.ref);
+            return url;
+        }
 
         if (profilePhotoFile && profilePhotoPreview) {
             profilePhotoFile.addEventListener('change', () => {
                 const f = profilePhotoFile.files && profilePhotoFile.files[0];
                 if (!f) return;
                 if (f.size > MAX_AVATAR_BYTES) {
-                    alert('Image is too large. Please choose a smaller file (under ~700KB).');
+                    alert('Image is too large. Please choose a file under 5 MB.');
                     profilePhotoFile.value = '';
                     return;
                 }
+                // Show local preview immediately while we wait for the upload
                 const reader = new FileReader();
                 reader.onload = () => {
-                    pendingAvatarDataUrl = reader.result;
+                    pendingAvatarDataUrl = reader.result; // used as temp preview only
                     profilePhotoPreview.src = pendingAvatarDataUrl;
                     document.getElementById('profilePhotoUrl').value = '';
                 };
@@ -1758,6 +1818,12 @@ class NavigationManager {
         if (profileBtn && profileModalEl && profileForm && typeof bootstrap !== 'undefined') {
             const profileModal = new bootstrap.Modal(profileModalEl);
 
+            // Fix Bootstrap aria-hidden warning: blur focused elements before modal hides
+            profileModalEl.addEventListener('hide.bs.modal', () => {
+                if (document.activeElement && profileModalEl.contains(document.activeElement)) {
+                    document.activeElement.blur();
+                }
+            });
             profileBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 fillProfileForm();
@@ -1779,28 +1845,45 @@ class NavigationManager {
                     fb.classList.remove('d-none');
                     return;
                 }
+
+                // Show saving state
+                fb.textContent = 'Saving…';
+                fb.className = 'alert alert-info mt-3 mb-0';
+                fb.classList.remove('d-none');
+
                 const photoUrlInput = document.getElementById('profilePhotoUrl').value.trim();
-                let avatarToStore = null;
-                if (pendingAvatarDataUrl) {
-                    avatarToStore = pendingAvatarDataUrl;
-                } else if (photoUrlInput && /^https?:\/\//i.test(photoUrlInput)) {
-                    avatarToStore = photoUrlInput;
-                } else if (localStorage.getItem('hershield_user_avatar')) {
-                    avatarToStore = localStorage.getItem('hershield_user_avatar');
-                } else if (window.authService?.getCurrentUser?.()?.photoURL) {
-                    avatarToStore = window.authService.getCurrentUser().photoURL;
+                let resolvedAvatarUrl = null;  // will be a permanent https:// URL
+
+                // Priority 1: file upload → upload to Firebase Storage
+                const selectedFile = profilePhotoFile && profilePhotoFile.files && profilePhotoFile.files[0];
+                if (selectedFile) {
+                    try {
+                        fb.textContent = 'Uploading photo to cloud…';
+                        resolvedAvatarUrl = await uploadAvatarToStorage(selectedFile);
+                        console.log('✅ Avatar uploaded to Firebase Storage:', resolvedAvatarUrl);
+                    } catch (uploadErr) {
+                        console.warn('Firebase Storage upload failed, falling back to base64:', uploadErr.message);
+                        // Fallback: keep base64 in localStorage for this session
+                        resolvedAvatarUrl = pendingAvatarDataUrl;
+                    }
+                }
+                // Priority 2: manually entered HTTP URL
+                else if (photoUrlInput && /^https?:\/\//i.test(photoUrlInput)) {
+                    resolvedAvatarUrl = photoUrlInput;
+                }
+                // Priority 3: keep existing avatar URL
+                else if (localStorage.getItem('hershield_user_avatar')) {
+                    resolvedAvatarUrl = localStorage.getItem('hershield_user_avatar');
+                }
+                else if (window.authService?.getCurrentUser?.()?.photoURL) {
+                    resolvedAvatarUrl = window.authService.getCurrentUser().photoURL;
                 }
 
-                if (avatarToStore && avatarToStore.length > MAX_AVATAR_BYTES) {
-                    fb.textContent = 'Photo data is too large to store locally. Use a smaller image or a photo URL.';
-                    fb.className = 'alert alert-danger mt-3 mb-0';
-                    fb.classList.remove('d-none');
-                    return;
-                }
+                // Save to localStorage
+                if (resolvedAvatarUrl) localStorage.setItem('hershield_user_avatar', resolvedAvatarUrl);
+                else localStorage.removeItem('hershield_user_avatar');
 
                 localStorage.setItem('hershield_user_name', displayName);
-                if (avatarToStore) localStorage.setItem('hershield_user_avatar', avatarToStore);
-                else localStorage.removeItem('hershield_user_avatar');
 
                 const ext = {
                     displayName,
@@ -1810,19 +1893,22 @@ class NavigationManager {
                     bloodGroup: document.getElementById('profileBloodGroup').value,
                     allergies: document.getElementById('profileAllergies').value.trim(),
                     medications: document.getElementById('profileMedications').value.trim(),
-                    photoUrl: photoUrlInput && /^https?:\/\//i.test(photoUrlInput) ? photoUrlInput : '',
+                    photoUrl: resolvedAvatarUrl && /^https?:\/\//i.test(resolvedAvatarUrl) ? resolvedAvatarUrl : '',
                 };
                 saveExtendedProfile(ext);
 
                 window.refreshHershieldSidebarProfile();
                 window.dispatchEvent(new CustomEvent('hershield-profile-updated', { detail: { displayName } }));
+
+                // Update Firebase Auth profile (displayName + photoURL)
                 if (window.authService && typeof window.authService.updateFirebaseProfile === 'function') {
                     await window.authService.updateFirebaseProfile({
                         displayName,
-                        photoURL: photoUrlInput && /^https?:\/\//i.test(photoUrlInput) ? photoUrlInput : null,
+                        photoURL: resolvedAvatarUrl && /^https?:\/\//i.test(resolvedAvatarUrl) ? resolvedAvatarUrl : null,
                     });
                 }
 
+                // Sync all fields to Firestore (including the resolved photo URL)
                 await syncProfileToBackend({
                     displayName,
                     personalPhone: ext.personalPhone,
@@ -1832,13 +1918,15 @@ class NavigationManager {
                     allergies: ext.allergies,
                     medications: ext.medications,
                     profilePictureHttp:
-                        photoUrlInput && /^https?:\/\//i.test(photoUrlInput) ? photoUrlInput : undefined,
+                        resolvedAvatarUrl && /^https?:\/\//i.test(resolvedAvatarUrl)
+                            ? resolvedAvatarUrl
+                            : undefined,
                 });
 
-                fb.textContent = 'Profile saved.';
+                fb.textContent = 'Profile saved ✅';
                 fb.className = 'alert alert-success mt-3 mb-0';
                 fb.classList.remove('d-none');
-                setTimeout(() => profileModal.hide(), 600);
+                setTimeout(() => profileModal.hide(), 800);
             });
         }
     }

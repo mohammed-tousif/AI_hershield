@@ -1,16 +1,112 @@
-# Her Shield — backend API on Render (hybrid with Firebase for auth + Firestore + hosting).
+# HerShield — Render deployment config
 # https://render.com/docs/yaml-spec
+#
+# HOW TO DEPLOY:
+#  1. Push this repo to GitHub (make sure .env is NOT committed)
+#  2. Go to https://render.com → New → Web Service → connect your repo
+#  3. Render auto-detects this file
+#  4. In the Render dashboard → Environment, add these SECRET vars manually:
+#       FIREBASE_SERVICE_ACCOUNT_JSON  → paste entire service account JSON as one line
+#       SESSION_SECRET                 → copy from your .env
+#       JWT_SECRET                     → copy from your .env
+#       ADMIN_JWT_SECRET               → copy from your .env
+#       ADMIN_PASSWORD_HASH            → copy from your .env
+#       TWILIO_ACCOUNT_SID             → copy from your .env
+#       TWILIO_AUTH_TOKEN              → copy from your .env
+#       EMAIL_PASS                     → copy from your .env
+#       GROQ_API_KEY                   → copy from your .env
+#       MONGODB_URI                    → copy from your .env  (optional)
+
 services:
   - type: web
     name: hershield-api
     runtime: node
     plan: free
     region: oregon
-    buildCommand: npm install
+    buildCommand: npm install --omit=dev
     startCommand: npm start
+    healthCheckPath: /api/health
     envVars:
+      # ── Server ──────────────────────────────────────────────────────────────
       - key: NODE_ENV
         value: production
-      # Render injects PORT automatically.
-      # Set in Render dashboard (do not commit secrets):
-      # APP_URL, MONGODB_URI (optional), FIREBASE_SERVICE_ACCOUNT_JSON, TWILIO_*, GOOGLE_MAPS_API_KEY, etc.
+      - key: TRUST_PROXY
+        value: "1"
+      # Render injects PORT automatically (usually 10000). APP_URL is set after
+      # first deploy — come back and paste the https://xxxx.onrender.com URL here.
+      - key: APP_URL
+        value: https://hershield-api.onrender.com   # ← UPDATE after first deploy
+
+      # ── Firebase Web SDK (public — safe to commit) ───────────────────────────
+      - key: FIREBASE_API_KEY
+        value: AIzaSyA3iKwVNo7xrNMXUGv0-R8hIG8SG6vdIqI
+      - key: FIREBASE_AUTH_DOMAIN
+        value: hershield-web.firebaseapp.com
+      - key: FIREBASE_PROJECT_ID
+        value: hershield-web
+      - key: FIREBASE_STORAGE_BUCKET
+        value: hershield-web.firebasestorage.app
+      - key: FIREBASE_MESSAGING_SENDER_ID
+        value: "64178190817"
+      - key: FIREBASE_APP_ID
+        value: "1:64178190817:web:8a22b6e2dd10763a98faa0"
+
+      # ── Firebase Admin (SECRET — set in Render dashboard, NOT here) ──────────
+      - key: FIREBASE_SERVICE_ACCOUNT_JSON
+        sync: false   # tells Render this is a secret — set it in the dashboard
+
+      # ── Admin panel ──────────────────────────────────────────────────────────
+      - key: ADMIN_EMAIL
+        value: admin@hershield.app
+      - key: ADMIN_PASSWORD_HASH
+        sync: false   # set in dashboard
+
+      # ── JWT / Session (SECRET — set in dashboard) ────────────────────────────
+      - key: SESSION_SECRET
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ADMIN_JWT_SECRET
+        sync: false
+
+      # ── Email ────────────────────────────────────────────────────────────────
+      - key: EMAIL_USER
+        value: developerclub63@gmail.com
+      - key: EMAIL_PASS
+        sync: false   # Gmail app password — set in dashboard
+
+      # ── Twilio SMS (SECRET — set in dashboard) ───────────────────────────────
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_PHONE_NUMBER
+        value: "+16623986679"
+
+      # ── Google Maps (public key — restrict by domain in GCP Console) ─────────
+      - key: GOOGLE_MAPS_API_KEY
+        value: AIzaSyC7xQb255KkIv0q9RknQr4JCkE0vKEiPzg
+
+      # ── Groq / LexaShield chatbot (SECRET — set in dashboard) ────────────────
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
+      - key: GROQ_LEGAL_MAX_TOKENS
+        value: "1500"
+      - key: GROQ_LEGAL_RATE_LIMIT_MAX
+        value: "20"
+      - key: GROQ_LEGAL_RATE_LIMIT_WINDOW_MS
+        value: "600000"
+
+      # ── Rate limiting ────────────────────────────────────────────────────────
+      - key: RATE_LIMIT_WINDOW_MS
+        value: "900000"
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: "100"
+
+      # ── Live tracker timing ──────────────────────────────────────────────────
+      - key: VERIFY_INTERVAL
+        value: "600000"
+      - key: PIN_TIMEOUT
+        value: "20000"

@@ -38,6 +38,32 @@ async function syncUserToFirestore(user) {
             // Cache the backend user ID (= Firebase UID) for profile/contact API calls
             localStorage.setItem('hershield_backend_user_id', user.uid);
             console.log('✅ User synced to Firestore:', user.uid);
+
+            // ── Restore profile picture from Firestore if not already in localStorage ──
+            // This makes the avatar survive logout / browser clears / new devices.
+            const hasLocalAvatar = !!localStorage.getItem('hershield_user_avatar');
+            if (!hasLocalAvatar) {
+                try {
+                    const profileRes = await fetch(`/api/users/profile/${encodeURIComponent(user.uid)}`);
+                    if (profileRes.ok) {
+                        const profileData = await profileRes.json();
+                        const storedPic = profileData?.user?.profilePicture;
+                        if (storedPic && /^https?:\/\//i.test(storedPic)) {
+                            localStorage.setItem('hershield_user_avatar', storedPic);
+                            console.log('✅ Profile picture restored from Firestore:', storedPic);
+                            // Refresh all avatar elements on the page
+                            document.querySelectorAll('.user-avatar, .profile-avatar').forEach(img => {
+                                img.src = storedPic;
+                            });
+                            if (typeof window.refreshHershieldSidebarProfile === 'function') {
+                                window.refreshHershieldSidebarProfile();
+                            }
+                        }
+                    }
+                } catch (profileErr) {
+                    console.warn('⚠️ Could not restore profile picture:', profileErr.message);
+                }
+            }
         } else {
             console.warn('⚠️ Firestore upsert returned', res.status);
         }
@@ -55,7 +81,7 @@ class FirebaseAuthService {
     }
 
     initAuthStateListener() {
-        onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(auth, async (user) => {
             this.currentUser = user;
 
             if (user) {
@@ -67,6 +93,26 @@ class FirebaseAuthService {
                         'hershield_user_name',
                         user.displayName || user.email.split('@')[0]
                     );
+                }
+
+                // ── Restore profile picture on every page load ──────────────
+                // If localStorage has no avatar, or only a temporary base64
+                // (which won't survive clearing), fetch from Firestore.
+                const localAv = localStorage.getItem('hershield_user_avatar');
+                const isBase64 = localAv && localAv.startsWith('data:');
+                if (!localAv || isBase64) {
+                    try {
+                        const uid = user.uid;
+                        const profileRes = await fetch(`/api/users/profile/${encodeURIComponent(uid)}`);
+                        if (profileRes.ok) {
+                            const profileData = await profileRes.json();
+                            const storedPic = profileData?.user?.profilePicture;
+                            if (storedPic && /^https?:\/\//i.test(storedPic)) {
+                                localStorage.setItem('hershield_user_avatar', storedPic);
+                                console.log('✅ Profile picture restored on page load:', storedPic);
+                            }
+                        }
+                    } catch (_) { /* non-fatal */ }
                 }
             } else {
                 // Clear localStorage on logout
@@ -128,7 +174,7 @@ class FirebaseAuthService {
             if (user.photoURL) {
                 avatar.src = user.photoURL;
             } else {
-                avatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email)}&background=BDA6CE&color=fff`;
+                avatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email)}&background=FF9A86&color=fff`;
             }
         });
 

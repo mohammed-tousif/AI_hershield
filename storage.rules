@@ -1,0 +1,20 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ── Profile Avatars ──────────────────────────────────────────────────────
+    // Each user can read/write only their own folder: avatars/{uid}/...
+    match /avatars/{userId}/{allPaths=**} {
+      allow read:  if true;                              // public read for displaying avatars
+      allow write: if request.auth != null               // must be signed in
+                   && request.auth.uid == userId         // can only write to own folder
+                   && request.resource.size < 5 * 1024 * 1024  // max 5 MB
+                   && request.resource.contentType.matches('image/.*'); // images only
+    }
+
+    // Deny everything else by default
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

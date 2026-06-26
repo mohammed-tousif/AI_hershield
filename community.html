@@ -1,7 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+<head>`n    <script src="/config.js"></script>
     <meta charset="UTF-8">
+    <!-- ↓ Auth guard: runs synchronously before any content renders -->
+    <script>
+        (function() {
+            if (localStorage.getItem('hershield_logged_in') !== 'true') {
+                window.location.replace('auth.html?next=community.html');
+            }
+        })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HerShield — Community</title>
     <meta name="description" content="Her Shield Community — Share safety tips, experiences and real-time alerts with women in your area.">
@@ -10,16 +18,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary:   #FFB399;
+            --primary:   #FF9A86;
             --primary-lt:#FF9A86;
             --accent:    #FFD6A6;
-            --bg:        #FFF0BE;
-            --card-bg:   rgba(255,255,255,0.97);
-            --shadow:    0 4px 24px rgba(255,154,134,0.13);
+            --bg:        #FDF9F5;
+            --bg-alt:    #FFF5EC;
+            --bg-dark:   #3B2620;
+            --card-bg:   rgba(255,255,255,0.98);
+            --shadow:    0 4px 24px rgba(255,154,134,0.12);
             --radius:    18px;
             --sidebar:   280px;
+            --text-primary: #1F1209;
+            --text-muted:   #7A5C4F;
         }
-        body { font-family:'Poppins',sans-serif; background:var(--bg); color:#2D3436; overflow-x:hidden; }
+        body { font-family:'Poppins',sans-serif; background:var(--bg); color:var(--text-primary); overflow-x:hidden; }
 
         /* ── scrollbar ── */
         ::-webkit-scrollbar{width:7px}

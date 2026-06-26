@@ -1,12 +1,85 @@
-**/node_modules/**
 node_modules
+node_modules/**
+**/node_modules/**
+
+# Server-side code
+routes
+routes/**
+middleware
+middleware/**
+models
+models/**
+services
+services/**
+config
+config/**
+scripts
+scripts/**
+functions
+functions/**
+data
+data/**
+
+# Firebase/GCloud internal
+.firebase
+.firebase/**
 .git
-.gitignore
+.git/**
+__pycache__
+__pycache__/**
+.firebaserc
+firestore.rules
+firestore.indexes.json
+storage.rules
+
+# Secrets and config
+.env
+*.env
+*.env.*
+hershield-firebase-adminsdk.json
+*-firebase-adminsdk*.json
+firebase_env.yaml
+
+# Server entry files
+server.js
 package.json
 package-lock.json
-README.md
-firebase.json
-.firebaserc
+Button.js
+Dockerfile
+render.yaml
+fly.toml
+fly.toml.bak
+
+# Data files
+*.csv
+*.py
 *.log
+*.zip
+*.bak
+*.toml
+tempCodeRunnerFile.py
+Coloum.py
+report_routes.py
+incident_reports.csv
+threat_analysis.csv
+ka_crime_2023_sexual_harrassment_etc.csv
+
+# Misc OS
 .DS_Store
-Safety Map
+Thumbs.db
+.gitattributes
+.gitignore
+.firebaseignore
+.dockerignore
+
+# Docs
+*.md
+PROJECT_DOCUMENTATION.md
+README.md
+
+# Old/backup files
+live-tracker.html.zip
+live-tracker1.html
+safety-map.html.bak
+safetymap.html
+report_button.html

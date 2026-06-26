@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 
-<head>
+<head>`n    <script src="/config.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Her Shield - Authentication</title>
@@ -25,19 +25,16 @@
             padding: 0;
             min-height: 100vh;
             overflow-x: hidden;
-            background: var(--bg-base, #1C0F0A);
+            background: #FDF9F5;
         }
 
         .gradient-background {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             z-index: -1;
-            background: linear-gradient(-45deg, var(--gradient-start), var(--gradient-middle), var(--gradient-end));
-            background-size: 400% 400%;
-            animation: gradient 15s ease infinite;
+            background: radial-gradient(circle at 20% 80%, rgba(255,154,134,0.12) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(255,214,166,0.10) 0%, transparent 50%);
         }
 
         .gradient-overlay {
@@ -77,14 +74,13 @@
         }
 
         .auth-card {
-            background: rgba(38,21,16,0.90);
-            backdrop-filter: blur(10px);
-            border-radius: 24px;
+            background: #FFFFFF;
+            border-radius: 28px;
             padding: 2.5rem;
             width: 100%;
             max-width: 480px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 60px rgba(255,154,134,0.18);
+            border: 1px solid rgba(255,154,134,0.12);
             transition: all 0.3s ease;
             position: relative;
             z-index: 1;
@@ -101,17 +97,17 @@
         }
 
         .auth-header h2 {
-            font-weight: 700;
-            color: var(--text-dark);
+            font-weight: 800;
+            color: #1F1209;
             margin-bottom: 0.5rem;
-            font-size: 2.4rem;
+            font-size: 2.2rem;
             letter-spacing: -0.5px;
         }
 
         .auth-header p {
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 500;
-            color: #666;
+            color: #7A5C4F;
         }
 
         .auth-tabs {
@@ -211,18 +207,19 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #261510;
-            color: var(--text-dark);
+            background: rgba(255,154,134,0.10);
+            color: #1F1209;
             text-decoration: none;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 10px rgba(255,154,134,0.15);
             font-size: 1.2rem;
         }
 
         .social-btn:hover {
             transform: translateY(-3px);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-            color: var(--gradient-middle);
+            box-shadow: 0 8px 20px rgba(255,154,134,0.25);
+            background: var(--gradient-middle);
+            color: #fff;
         }
 
         .form-check-input:checked {
@@ -285,9 +282,19 @@
                             required>
                         <label for="loginEmail">Email address</label>
                     </div>
-                    <div class="form-floating mb-3">
-                        <input type="password" class="form-control" id="loginPassword" placeholder="Password" required>
-                        <label for="loginPassword">Password</label>
+                    <div class="mb-3">
+                        <div class="input-group">
+                            <div class="form-floating flex-grow-1">
+                                <input type="password" class="form-control" id="loginPassword" placeholder="Password" required style="border-right:0; border-radius: 12px 0 0 12px;">
+                                <label for="loginPassword">Password</label>
+                            </div>
+                            <button class="btn btn-outline-secondary" type="button" id="toggleLoginPassword"
+                                onclick="togglePasswordVisibility('loginPassword','toggleLoginPassword')"
+                                style="border-left:0; border-radius:0 12px 12px 0; background:#fff; border-color:#dee2e6;"
+                                title="Show/hide password">
+                                <i class="fas fa-eye" id="toggleLoginPasswordIcon"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <div class="form-check">
@@ -329,9 +336,19 @@
                         <input type="tel" class="form-control" id="signupPhone" placeholder="Phone Number" required>
                         <label for="signupPhone">Phone Number</label>
                     </div>
-                    <div class="form-floating mb-4">
-                        <input type="password" class="form-control" id="signupPassword" placeholder="Password" required>
-                        <label for="signupPassword">Password</label>
+                    <div class="mb-4">
+                        <div class="input-group">
+                            <div class="form-floating flex-grow-1">
+                                <input type="password" class="form-control" id="signupPassword" placeholder="Password" required style="border-right:0; border-radius: 12px 0 0 12px;">
+                                <label for="signupPassword">Password</label>
+                            </div>
+                            <button class="btn btn-outline-secondary" type="button" id="toggleSignupPassword"
+                                onclick="togglePasswordVisibility('signupPassword','toggleSignupPassword')"
+                                style="border-left:0; border-radius:0 12px 12px 0; background:#fff; border-color:#dee2e6;"
+                                title="Show/hide password">
+                                <i class="fas fa-eye" id="toggleSignupPasswordIcon"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="form-check mb-4">
                         <input class="form-check-input" type="checkbox" id="termsCheck" required>
@@ -596,6 +613,19 @@
                 showNotification('Login Failed', error.message, 'error');
             }
         }
+        // Password visibility toggle
+        window.togglePasswordVisibility = function(inputId, btnId) {
+            const input = document.getElementById(inputId);
+            const icon = document.querySelector('#' + btnId + ' i');
+            if (!input || !icon) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        };
     </script>
 </body>
 

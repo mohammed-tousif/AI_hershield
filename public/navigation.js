@@ -1083,7 +1083,7 @@ class NavigationManager {
         const profilePhotoPreview = document.getElementById('profilePhotoPreview');
         let pendingAvatarDataUrl = null;
 
-        const fillProfileForm = () => {
+        const fillProfileForm = async () => {
             const ext = loadExtendedProfile();
             const email = localStorage.getItem('hershield_user_email') || '';
             const name =
@@ -1111,6 +1111,47 @@ class NavigationManager {
             if (fb) {
                 fb.classList.add('d-none');
                 fb.textContent = '';
+            }
+
+            // — Also fetch from Firestore API so extended fields survive logout —
+            try {
+                let userId = localStorage.getItem('hershield_backend_user_id');
+                if (!userId && email) {
+                    const r = await fetch(`/api/users/email/${encodeURIComponent(email)}`);
+                    const j = await r.json();
+                    if (j.success && j.exists && j.user && j.user._id) {
+                        userId = j.user._id;
+                        localStorage.setItem('hershield_backend_user_id', userId);
+                    }
+                }
+                if (userId) {
+                    const resp = await fetch(`/api/users/profile/${encodeURIComponent(userId)}`);
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        if (data.success && data.user) {
+                            const u = data.user;
+                            // Merge API data into localStorage cache
+                            const merged = { ...ext,
+                                age: u.age || ext.age || '',
+                                homeAddress: u.homeAddress || ext.homeAddress || '',
+                                bloodGroup: u.bloodGroup || ext.bloodGroup || '',
+                                allergies: u.allergies || ext.allergies || '',
+                                medications: u.medications || ext.medications || '',
+                                personalPhone: u.phone || ext.personalPhone || '',
+                            };
+                            saveExtendedProfile(merged);
+                            // Update form fields with authoritative Firestore data
+                            if (u.age) document.getElementById('profileAge').value = u.age;
+                            if (u.homeAddress) document.getElementById('profileHomeAddress').value = u.homeAddress;
+                            if (u.phone) document.getElementById('profilePersonalPhone').value = u.phone;
+                            if (u.bloodGroup) document.getElementById('profileBloodGroup').value = u.bloodGroup;
+                            if (u.allergies) document.getElementById('profileAllergies').value = u.allergies;
+                            if (u.medications) document.getElementById('profileMedications').value = u.medications;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn('[Profile] API fetch skipped:', e.message);
             }
         };
 
@@ -1169,6 +1210,14 @@ class NavigationManager {
 
         if (profileBtn && profileModalEl && profileForm && typeof bootstrap !== 'undefined') {
             const profileModal = new bootstrap.Modal(profileModalEl);
+
+            // Fix Bootstrap aria-hidden warning: blur any focused element inside the modal
+            // before the modal hides so assistive technology doesn't see a focused-but-hidden element
+            profileModalEl.addEventListener('hide.bs.modal', () => {
+                if (document.activeElement && profileModalEl.contains(document.activeElement)) {
+                    document.activeElement.blur();
+                }
+            });
 
             profileBtn.addEventListener('click', (e) => {
                 e.preventDefault();

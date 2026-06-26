@@ -10,8 +10,10 @@ const {
     liveSessionSetVerified,
     liveSessionPushLocation,
     liveSessionStop,
+    liveSessionsByEmail,
     communityInsert,
     usersFindById,
+    sosCreate,
 } = require('../services/firestoreRepository');
 
 const smsService = require('../services/smsService');
@@ -38,8 +40,11 @@ router.post('/start', async (req, res) => {
         const userId    = Date.now().toString() + Math.floor(Math.random() * 1000);
         const trackingCode = Math.random().toString(36).substring(2, 8).toUpperCase();
 
-        // ── Tracking link — use origin sent by browser so it works on any network ──
-        const origin       = baseUrl || process.env.SERVER_URL || `http://localhost:${process.env.PORT || 3000}`;
+        // ── Tracking link — APP_URL from env is highest priority so the link
+        // is always reachable by emergency contacts (not just localhost) ──────
+        const origin = process.env.APP_URL
+            || process.env.SERVER_URL
+            || `http://localhost:${process.env.PORT || 3000}`;
         const trackingLink = `${origin}/live-tracker.html?track=${userId}`;
 
         // ── Map link using real GPS coords if provided ────────────────────
@@ -128,7 +133,7 @@ router.post('/start', async (req, res) => {
 
 router.post('/update-location', async (req, res) => {
     try {
-        const { userId, lat, lng } = req.body;
+        const { userId, lat, lng, accuracy } = req.body;
 
         const session = await liveSessionGetByUserId(userId);
         if (!session) {
@@ -141,6 +146,15 @@ router.post('/update-location', async (req, res) => {
 
         await liveSessionPushLocation(userId, lat, lng);
 
+        // ── Broadcast to all viewer sockets in this session room ──────────────
+        const io = req.app.get('io');
+        if (io) {
+            io.to(userId).emit('locationUpdated', {
+                location: { lat, lng, accuracy: accuracy || 50 },
+                timestamp: new Date(),
+            });
+        }
+
         res.json({ success: true, message: 'Location updated' });
     } catch (error) {
         console.error('Error updating location:', error);
@@ -149,6 +163,33 @@ router.post('/update-location', async (req, res) => {
             success: false,
             message: error.code === 'FIRESTORE_NOT_CONFIGURED' ? error.message : 'Server error',
         });
+    }
+});
+
+// ── GET /location/:userId — viewer polling fallback ────────────────────────────
+// Returns the most recent lat/lng from the Firestore locationLogs array.
+router.get('/location/:userId', async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const session = await liveSessionGetByUserId(userId);
+        if (!session) {
+            return res.status(404).json({ success: false, message: 'Session not found' });
+        }
+        const logs = session.locationLogs || [];
+        if (logs.length === 0) {
+            return res.json({ success: true, message: 'No location yet' });
+        }
+        const last = logs[logs.length - 1];
+        return res.json({
+            success: true,
+            lat: last.lat,
+            lng: last.lng,
+            accuracy: last.accuracy || 50,
+            timestamp: last.timestamp || session.lastVerified,
+        });
+    } catch (error) {
+        console.error('Error fetching latest location:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
     }
 });
 
@@ -376,9 +417,10 @@ router.post('/dashboard-alert', async (req, res) => {
 
         // ── 4. Persist to community alerts ───────────────────────────────────
         let alertPersisted = true;
+        const alertId = `${Date.now()}_${Math.floor(Math.random() * 10000)}`;
         try {
             await communityInsert({
-                _id: `${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+                _id: alertId,
                 kind: 'alert',
                 title: `Emergency Alert: ${userName || 'User'}`,
                 message: `${userName || 'User'} triggered an emergency alert from dashboard.`,
@@ -391,6 +433,36 @@ router.post('/dashboard-alert', async (req, res) => {
         } catch (e) {
             console.warn('dashboard-alert: communityInsert failed:', e.message);
             alertPersisted = false;
+        }
+
+        // ── 5. Write to SOS history so the dashboard history section shows it ─
+        if (userId) {
+            try {
+                const now = new Date();
+                const loc = location
+                    ? { latitude: location.lat, longitude: location.lng }
+                    : null;
+                await sosCreate({
+                    _id: `dashboard_alert_${alertId}`,
+                    userId,
+                    userName: userName || 'User',
+                    userEmail: userEmail || '',
+                    status: 'safe',   // dashboard alerts are point-in-time; no PIN-based session
+                    location: loc,
+                    trackingCode: null,
+                    trackingLink: null,
+                    pinHash: null,
+                    timerMinutes: null,
+                    triggeredAt: now,
+                    expiresAt: null,
+                    resolvedAt: now,
+                    contactCount: firestoreContacts.length || (contacts ? contacts.length : 0),
+                    source: 'dashboard',
+                });
+                console.log(`📝 dashboard-alert: SOS history record written for userId=${userId}`);
+            } catch (e) {
+                console.warn('dashboard-alert: sosCreate failed (non-fatal):', e.message);
+            }
         }
 
         const smsSent    = smsResults.filter(r => r.success).length;
@@ -408,6 +480,38 @@ router.post('/dashboard-alert', async (req, res) => {
 
     } catch (err) {
         console.error('dashboard-alert error:', err);
+        return res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+/**
+ * GET /api/live-tracker/history/:userEmail
+ * Returns all live-tracking sessions for the given email address,
+ * used to populate the private "My Emergency Alert History" panel.
+ */
+router.get('/history/:userEmail', async (req, res) => {
+    try {
+        const email = decodeURIComponent(req.params.userEmail || '').trim().toLowerCase();
+        if (!email || !email.includes('@')) {
+            return res.status(400).json({ success: false, message: 'Valid email required.' });
+        }
+        const sessions = await liveSessionsByEmail(email);
+        const formatted = sessions.map((s) => ({
+            _id:              s._id || s.userId,
+            sessionId:        s.userId,
+            name:             s.name,
+            source:           s.source,
+            destination:      s.destination,
+            transportMode:    s.transportMode,
+            isTrackingActive: s.isTrackingActive,
+            trackingLink:     s.trackingLink,
+            startedAt:        s.createdAt,
+            lastVerified:     s.lastVerified,
+            contactCount:     Array.isArray(s.emergencyContacts) ? s.emergencyContacts.length : 0,
+        }));
+        return res.json({ success: true, sessions: formatted, count: formatted.length });
+    } catch (err) {
+        console.error('live-tracker history error:', err.message);
         return res.status(500).json({ success: false, message: err.message });
     }
 });

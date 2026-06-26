@@ -1,0 +1,41 @@
+# HerShield — Fly.io configuration
+# Deploy: fly deploy
+# Docs:   https://fly.io/docs/reference/configuration/
+
+app = "hershield-api"
+primary_region = "sin"   # Singapore — closest free region to India
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  NODE_ENV   = "production"
+  PORT       = "8080"
+  TRUST_PROXY = "1"
+
+# HTTP service — handles both REST API and Socket.IO upgrades
+[[services]]
+  internal_port = 8080
+  protocol      = "tcp"
+
+  [[services.ports]]
+    port     = 80
+    handlers = ["http"]
+
+  [[services.ports]]
+    port     = 443
+    handlers = ["tls", "http"]
+
+  # Health check (Fly.io will restart the VM if this fails)
+  [[services.http_checks]]
+    interval      = 30000   # every 30s
+    timeout       = 5000
+    grace_period  = "10s"
+    method        = "get"
+    path          = "/api/health"
+    protocol      = "http"
+
+# Free tier machine — shared-cpu-1x with 256MB RAM (free, no charge)
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

@@ -36,11 +36,14 @@ const corsOptions = {
     credentials: true
 };
 
-// Socket.IO setup
+// Socket.IO setup — force polling only so it works through Firebase Hosting's HTTPS proxy
+// WebSocket transport fails because Firebase Hosting cannot upgrade HTTP→WS connections
 const io = socketIo(server, {
     cors: corsOptions,
     pingTimeout: 60000,
-    pingInterval: 25000
+    pingInterval: 25000,
+    transports: ['polling'],
+    allowEIO3: true
 });
 app.set('io', io); // expose to routes
 
@@ -155,6 +158,28 @@ app.get('/api/health', (req, res) => {
         environment: process.env.NODE_ENV || 'development',
         ...(warnings.length ? { warnings } : {}),
     });
+});
+
+// Dashboard stats — real-time counts from Firestore
+app.get('/api/dashboard/stats', async (req, res) => {
+    const TIMEOUT_MS = 6000;
+    const fallback = { communityMembers: 0, totalSosAlerts: 0, safeTrips: 0, safeZones: 0 };
+    try {
+        const { getDashboardStats } = require('./services/firestoreRepository');
+        const timeoutP = new Promise(resolve =>
+            setTimeout(() => resolve({ _timedOut: true }), TIMEOUT_MS)
+        );
+        const result = await Promise.race([getDashboardStats(), timeoutP]);
+        if (result && result._timedOut) {
+            console.warn('/api/dashboard/stats: Firestore timed out — returning zeros');
+            return res.json({ success: true, stats: fallback, warning: 'timeout' });
+        }
+        return res.json({ success: true, stats: result });
+    } catch (err) {
+        // Gracefully return zeros if Firestore is not configured or throws
+        console.warn('/api/dashboard/stats error:', err.message);
+        return res.json({ success: true, stats: fallback, warning: err.message });
+    }
 });
 
 // Socket.IO connection handling

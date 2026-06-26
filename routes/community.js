@@ -218,4 +218,57 @@ router.get('/alerts', async (req, res) => {
     }
 });
 
+// ── GET /incident-reports ─────────────────────────────────────────────────────
+/**
+ * Public feed of community-submitted safety incident reports.
+ * These come exclusively from the dashboard "Report Issue" form →
+ * POST /api/safety/report → stored in hershield_incidents.
+ *
+ * This endpoint is the ONLY data source for the "Recent Alerts" section.
+ * Emergency SOS events are intentionally excluded — they belong only in
+ * the private "My Emergency Alert History" panel.
+ */
+router.get('/incident-reports', async (req, res) => {
+    try {
+        const limit = Math.min(parseInt(req.query.limit || '30', 10), 100);
+
+        if (!isFirestoreConfigured()) {
+            return res.json({ success: true, reports: [], degraded: true,
+                message: 'Firestore not configured.' });
+        }
+
+        const SEVERITY_LABELS = { critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low' };
+        const TYPE_LABELS = {
+            harassment:          'Harassment',
+            assault:             'Assault',
+            theft:               'Theft',
+            suspicious_activity: 'Suspicious Activity',
+            poor_lighting:       'Poor Lighting',
+            unsafe_area:         'Unsafe Area',
+            other:               'Other',
+        };
+
+        const all = await incidentsFetchAll();
+        const reports = all
+            .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+            .slice(0, limit)
+            .map((inc) => ({
+                _id:          inc._id,
+                incidentType: inc.incidentType || 'other',
+                typeLabel:    TYPE_LABELS[inc.incidentType] || inc.incidentType || 'Incident',
+                severity:     (inc.severity || 'medium').toLowerCase(),
+                severityLabel: SEVERITY_LABELS[(inc.severity || 'medium').toLowerCase()] || 'Medium',
+                location:     inc?.location?.address || '',
+                description:  (inc.description || '').slice(0, 200),
+                reporterName: inc.reporterName || 'Anonymous',
+                createdAt:    inc.createdAt || inc.timestamp || new Date().toISOString(),
+            }));
+
+        res.json({ success: true, reports, count: reports.length });
+    } catch (err) {
+        console.error('GET /community/incident-reports error:', err.message);
+        res.status(err.statusCode || 500).json({ success: false, message: err.message });
+    }
+});
+
 module.exports = router;

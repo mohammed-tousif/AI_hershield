@@ -1378,17 +1378,17 @@
         // Location Management System
         class LocationManager {
             constructor() {
-                // Default current location: KLE Institute of Technology
+                // Default current location: Jain College of Engineering & Technology, Hubli
                 this.defaultLocation = {
-                    lat: 15.351826,  // KLE Institute of Technology latitude
-                    lng: 75.081279,  // KLE Institute of Technology longitude
-                    address: "KLE Institute of Technology, Hubballi, Karnataka, India",
-                    accuracy: 12.5    // meters (excellent GPS accuracy)
+                    lat: 15.3647,   // Jain College of Engineering & Technology latitude
+                    lng: 75.1236,   // Jain College of Engineering & Technology longitude
+                    address: "Jain College of Engineering & Technology, Hubballi, Karnataka, India",
+                    accuracy: 12.5   // meters (excellent GPS accuracy)
                 };
 
                 // Current location dummy data for simulation (around Hubballi area)
                 this.fakeLocations = [
-                    { lat: 15.350916, lng: 75.08221, address: "KLE Institute of Technology Campus", accuracy: 12.5 },
+                    { lat: 15.3647, lng: 75.1236, address: "Jain College of Engineering & Technology, Hubli", accuracy: 12.5 },
                     { lat: 15.3654, lng: 75.1067, address: "DMART Mall, Keshwapur, Hubballi", accuracy: 15.2 },
                     { lat: 15.3498, lng: 75.1265, address: "Unkal Lake, Hubballi", accuracy: 18.7 },
                     { lat: 15.3389, lng: 75.0712, address: "CSI Hospital, Rajajinagar, Hubballi", accuracy: 22.1 },
@@ -1669,6 +1669,281 @@
                 });
             }
         });
+    </script>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         VIEWER MODE — shown when URL contains ?track=<sessionId>
+         Hidden by default; activated entirely by JS below.
+    ════════════════════════════════════════════════════════════════════════ -->
+    <div id="viewerMode" style="display:none; position:fixed; inset:0; z-index:99999;
+         background:#F2EAE0; font-family:'Poppins',sans-serif;">
+
+        <!-- Top bar -->
+        <div style="position:absolute; top:0; left:0; right:0; height:60px; z-index:10;
+                    background:linear-gradient(135deg,#9B8EC7,#7A6B99);
+                    display:flex; align-items:center; justify-content:space-between;
+                    padding:0 20px; box-shadow:0 4px 20px rgba(0,0,0,0.2);">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <span style="font-size:1.4rem;">🛡️</span>
+                <div>
+                    <div style="color:white; font-weight:700; font-size:1.1rem; line-height:1.2;">HerShield</div>
+                    <div style="color:rgba(255,255,255,0.8); font-size:0.75rem;">Live Safety Tracker — Viewer</div>
+                </div>
+            </div>
+            <!-- Status pill -->
+            <div id="viewerStatusPill" style="display:flex; align-items:center; gap:8px;
+                 background:rgba(255,255,255,0.15); border-radius:50px; padding:6px 16px;">
+                <span id="viewerDot" style="width:10px; height:10px; border-radius:50%;
+                      background:#ffc107; display:inline-block; flex-shrink:0;
+                      animation: pulse-dot 1.5s ease-in-out infinite;"></span>
+                <span id="viewerStatusText" style="color:white; font-size:0.82rem; font-weight:600;">Connecting…</span>
+            </div>
+        </div>
+
+        <!-- Info bar just below header -->
+        <div id="viewerInfoBar" style="position:absolute; top:60px; left:0; right:0; z-index:10;
+             background:rgba(255,255,255,0.92); backdrop-filter:blur(8px);
+             padding:10px 20px; display:flex; align-items:center; gap:20px; flex-wrap:wrap;
+             border-bottom:1px solid rgba(0,0,0,0.08); box-shadow:0 2px 10px rgba(0,0,0,0.06);">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-crosshairs" style="color:#9B8EC7;"></i>
+                <span style="font-size:0.82rem; color:#555; font-weight:500;">Coordinates:</span>
+                <span id="viewerCoords" style="font-size:0.82rem; font-weight:700; color:#333;">Waiting for first update…</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-clock" style="color:#9B8EC7;"></i>
+                <span style="font-size:0.82rem; color:#555; font-weight:500;">Last update:</span>
+                <span id="viewerLastUpdate" style="font-size:0.82rem; font-weight:700; color:#333;">–</span>
+            </div>
+            <div style="margin-left:auto; display:flex; gap:8px;">
+                <a id="viewerOpenMaps" href="#" target="_blank"
+                   style="background:linear-gradient(135deg,#007bff,#0056b3); color:white;
+                          padding:6px 14px; border-radius:20px; text-decoration:none;
+                          font-size:0.8rem; font-weight:600; display:none; align-items:center; gap:6px;">
+                    <i class="fas fa-map-marked-alt"></i> Open in Maps
+                </a>
+            </div>
+        </div>
+
+        <!-- Full-screen map -->
+        <div id="viewerMap" style="position:absolute; top:108px; left:0; right:0; bottom:0;"></div>
+
+        <!-- "No updates yet" overlay shown before first location arrives -->
+        <div id="viewerWaiting" style="position:absolute; top:108px; left:0; right:0; bottom:0;
+             background:rgba(242,234,224,0.96); display:flex; flex-direction:column;
+             align-items:center; justify-content:center; gap:16px; z-index:5;">
+            <div style="width:70px; height:70px; border-radius:50%;
+                 background:linear-gradient(135deg,#9B8EC7,#7A6B99);
+                 display:flex; align-items:center; justify-content:center;
+                 box-shadow:0 8px 30px rgba(155,142,199,0.4);">
+                <i class="fas fa-satellite-dish" style="color:white; font-size:1.6rem;"></i>
+            </div>
+            <p id="viewerWaitingMsg" style="font-size:1rem; color:#555; font-weight:500; text-align:center; margin:0; max-width:320px;">
+                Connecting to tracking session…<br>
+                <span style="font-size:0.85rem; color:#888;">The map will appear as soon as the first location is received.</span>
+            </p>
+        </div>
+    </div>
+
+    <style>
+        @keyframes pulse-dot {
+            0%, 100% { opacity:1; transform:scale(1); }
+            50%       { opacity:0.5; transform:scale(1.4); }
+        }
+    </style>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         VIEWER MODE LOGIC
+         Reads ?track=<sessionId> from the URL.  If present:
+           1. Hides the normal tracker UI
+           2. Shows the viewerMode fullscreen panel
+           3. Connects to Socket.IO and joins the session room
+           4. Handles `locationUpdated` events → moves the map pin in real-time
+           5. Also polls Firestore REST every 10 s as a fallback
+    ════════════════════════════════════════════════════════════════════════ -->
+    <script>
+    (function () {
+        'use strict';
+
+        // ── 1. Check URL for ?track= ──────────────────────────────────────────
+        const params    = new URLSearchParams(window.location.search);
+        const sessionId = params.get('track');
+        if (!sessionId) return;   // Normal tracker mode — do nothing
+
+        // ── 2. Hide the normal tracker UI immediately ─────────────────────────
+        document.addEventListener('DOMContentLoaded', function () {
+            // Hide sidebar, header, main content
+            const hide = ['#fixedSidebarToggle','#fixedActionsToggle','.sidebar',
+                          '.header-bar','.main-content','.dashboard-container',
+                          '.gradient-background','.gradient-overlay'];
+            hide.forEach(function(sel) {
+                document.querySelectorAll(sel).forEach(function(el) { el.style.display = 'none'; });
+            });
+            // Completely replace body styles
+            document.body.style.cssText = 'margin:0;padding:0;overflow:hidden;background:#F2EAE0;';
+        });
+
+        // ── 3. Show viewer panel ──────────────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', function () {
+            document.getElementById('viewerMode').style.display = 'block';
+            initViewerMode(sessionId);
+        });
+
+        // ── 4. Viewer initialisation ──────────────────────────────────────────
+        var viewerMap    = null;
+        var viewerMarker = null;
+        var viewerCircle = null;
+        var firstUpdate  = false;
+
+        function initViewerMode(sid) {
+            // Connect Socket.IO
+            var socket = window.io ? window.io(window.location.origin) : null;
+
+            if (socket) {
+                socket.on('connect', function () {
+                    setStatus('connected', '🟢 Live — receiving updates');
+                    socket.emit('joinSession', sid);
+                });
+
+                socket.on('connect_error', function () {
+                    setStatus('error', '⚠️ Connection lost — retrying…');
+                });
+
+                socket.on('disconnect', function () {
+                    setStatus('warning', '🔴 Disconnected');
+                });
+
+                // ← THIS is the key event the tracker fires every GPS update
+                socket.on('locationUpdated', function (data) {
+                    if (!data || !data.location) return;
+                    var loc = data.location;
+                    applyLocation(loc.lat, loc.lng, loc.accuracy || 50, data.timestamp);
+                });
+
+                socket.on('sessionEnded', function () {
+                    setStatus('ended', '🏁 Tracking session ended');
+                    document.getElementById('viewerWaitingMsg').innerHTML =
+                        'The tracking session has ended.<br><span style="font-size:.85rem;color:#888;">The person has arrived safely.</span>';
+                    document.getElementById('viewerWaiting').style.display = 'flex';
+                });
+            } else {
+                setStatus('warning', '⚠️ Socket not available — polling only');
+            }
+
+            // ── Fallback: poll the REST API every 10 s ─────────────────────
+            pollLocation(sid);
+            setInterval(function () { pollLocation(sid); }, 10000);
+        }
+
+        function pollLocation(sid) {
+            fetch('/api/live-tracker/location/' + encodeURIComponent(sid))
+                .then(function(r) { return r.ok ? r.json() : null; })
+                .then(function(data) {
+                    if (!data || !data.success || !data.lat) return;
+                    applyLocation(data.lat, data.lng, data.accuracy || 50, data.timestamp);
+                })
+                .catch(function() { /* silent fallback */ });
+        }
+
+        function applyLocation(lat, lng, accuracy, ts) {
+            // Update info bar
+            document.getElementById('viewerCoords').textContent =
+                lat.toFixed(6) + ', ' + lng.toFixed(6);
+            var t = ts ? new Date(ts) : new Date();
+            document.getElementById('viewerLastUpdate').textContent =
+                t.toLocaleTimeString();
+
+            // "Open in Maps" link
+            var mapsLink = document.getElementById('viewerOpenMaps');
+            mapsLink.href = 'https://maps.google.com/?q=' + lat + ',' + lng;
+            mapsLink.style.display = 'flex';
+
+            // Hide "waiting" overlay
+            document.getElementById('viewerWaiting').style.display = 'none';
+
+            setStatus('connected', '🟢 Live — receiving updates');
+
+            // Update or create Google Map + marker
+            if (typeof google !== 'undefined' && google.maps) {
+                var pos = { lat: lat, lng: lng };
+                if (!viewerMap) {
+                    viewerMap = new google.maps.Map(document.getElementById('viewerMap'), {
+                        zoom: 16,
+                        center: pos,
+                        mapTypeId: google.maps.MapTypeId.ROADMAP,
+                        mapTypeControl: false,
+                        streetViewControl: false,
+                        fullscreenControl: true,
+                        zoomControl: true,
+                    });
+                }
+
+                if (!viewerMarker) {
+                    var svgIcon = 'data:image/svg+xml;charset=UTF-8,' +
+                        encodeURIComponent(
+                            '<svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">' +
+                            '<circle cx="24" cy="24" r="22" fill="#9B8EC7" fill-opacity="0.85" stroke="white" stroke-width="3"/>' +
+                            '<circle cx="24" cy="24" r="10" fill="white"/>' +
+                            '<circle cx="24" cy="24" r="5" fill="#9B8EC7"/>' +
+                            '<circle cx="24" cy="24" r="22" fill="none" stroke="#9B8EC7" stroke-width="2" stroke-opacity="0.4">' +
+                            '<animate attributeName="r" from="22" to="36" dur="1.5s" repeatCount="indefinite"/>' +
+                            '<animate attributeName="stroke-opacity" from="0.4" to="0" dur="1.5s" repeatCount="indefinite"/>' +
+                            '</circle>' +
+                            '</svg>'
+                        );
+                    viewerMarker = new google.maps.Marker({
+                        position: pos,
+                        map: viewerMap,
+                        title: 'Live Location',
+                        animation: google.maps.Animation.DROP,
+                        icon: {
+                            url: svgIcon,
+                            scaledSize: new google.maps.Size(48, 48),
+                            anchor: new google.maps.Point(24, 24)
+                        }
+                    });
+                    viewerCircle = new google.maps.Circle({
+                        map: viewerMap,
+                        center: pos,
+                        radius: accuracy,
+                        fillColor: '#9B8EC7',
+                        fillOpacity: 0.12,
+                        strokeColor: '#9B8EC7',
+                        strokeOpacity: 0.35,
+                        strokeWeight: 2
+                    });
+                } else {
+                    // ← Real-time position update
+                    viewerMarker.setPosition(pos);
+                    viewerCircle.setCenter(pos);
+                    viewerCircle.setRadius(accuracy);
+                }
+
+                if (!firstUpdate) {
+                    viewerMap.panTo(pos);
+                    firstUpdate = true;
+                } else {
+                    viewerMap.panTo(pos);
+                }
+            }
+        }
+
+        function setStatus(type, text) {
+            var dot  = document.getElementById('viewerDot');
+            var span = document.getElementById('viewerStatusText');
+            if (!dot || !span) return;
+            span.textContent = text;
+            var colors = {
+                connected: '#2DCE89',
+                warning:   '#ffc107',
+                error:     '#f5365c',
+                ended:     '#adb5bd'
+            };
+            dot.style.background = colors[type] || '#ffc107';
+            dot.style.animation  = type === 'connected' ? 'pulse-dot 1.5s ease-in-out infinite' : 'none';
+        }
+
+    })();
     </script>
 </body>
 

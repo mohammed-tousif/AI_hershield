@@ -542,7 +542,7 @@ class SafetyTracker {
             await fetch(`${API_BASE_URL}/api/live-tracker/update-location`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: this.sessionId, lat, lng })
+                body: JSON.stringify({ userId: this.sessionId, lat, lng, accuracy })
             });
         } catch (err) { console.warn('Location update failed:', err.message); }
     }

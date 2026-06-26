@@ -600,6 +600,22 @@ async function sosFindByUserId(userId, limitN = 20) {
     return rows;
 }
 
+/**
+ * Fetch all live-tracking sessions that belong to a given user email.
+ * Sessions are keyed by a timestamp ID and store `email` as a plain field.
+ */
+async function liveSessionsByEmail(email, limitN = 50) {
+    const db = firestoreOrThrow();
+    const snap = await db
+        .collection(COL.LIVE_TRACKER)
+        .where('email', '==', email)
+        .limit(Math.min(limitN, 200))
+        .get();
+    const rows = snap.docs.map((d) => serializeDoc(d));
+    rows.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    return rows;
+}
+
 // ── Admin-only functions ───────────────────────────────────────────────────
 
 async function usersListAll(limitN = 500) {
@@ -655,6 +671,39 @@ async function adminLogsList(limitN = 100) {
     return rows;
 }
 
+async function getDashboardStats() {
+    const db = firestoreOrThrow();
+
+    // Helper: count documents in a collection efficiently.
+    // Tries the Firestore aggregation API first (much cheaper), falls back to
+    // fetching all doc IDs if the SDK version doesn't support aggregate().
+    async function countCollection(colName) {
+        try {
+            const colRef = db.collection(colName);
+            if (typeof colRef.count === 'function') {
+                // Firestore v9+ aggregation — only reads metadata, not documents
+                const snapshot = await colRef.count().get();
+                return snapshot.data().count;
+            }
+            // Fallback: select only __name__ (cheapest field projection)
+            const snap = await colRef.select('__name__').get();
+            return snap.size;
+        } catch (e) {
+            console.warn(`getDashboardStats: count failed for ${colName}:`, e.message);
+            return 0;
+        }
+    }
+
+    const [communityMembers, totalSosAlerts, safeTrips, safeZones] = await Promise.all([
+        countCollection(COL.USERS),
+        countCollection(COL.SOS_EVENTS),
+        countCollection(COL.LIVE_TRACKER),
+        countCollection(COL.SAFETY_LOCATIONS),
+    ]);
+
+    return { communityMembers, totalSosAlerts, safeTrips, safeZones };
+}
+
 module.exports = {
     firestoreOrThrow,
     isFirestoreConfigured,
@@ -696,8 +745,10 @@ module.exports = {
     sosMarkSafe,
     sosMarkExpired,
     sosFindByUserId,
+    liveSessionsByEmail,
     sosListAll,
     adminLogCreate,
     adminLogsList,
+    getDashboardStats,
 };
 

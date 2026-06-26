@@ -1,0 +1,38 @@
+# Dependencies (rebuilt inside Docker)
+node_modules/
+npm-debug.log*
+
+# Secrets — never bake into the image
+.env
+*.local.env
+hershield-firebase-adminsdk.json
+*-firebase-adminsdk*.json
+
+# Git & Editor
+.git/
+.gitattributes
+.DS_Store
+Thumbs.db
+
+# Firebase deploy artifacts (not needed at runtime)
+.firebase/
+functions/
+
+# Python/misc dev files
+__pycache__/
+*.py
+*.zip
+*.bak
+# NOTE: *.csv is intentionally NOT excluded — data/safety_locations.csv is needed for Firestore seed
+
+# Fly.io config (not needed inside container)
+fly.toml
+
+# Docs
+README.md
+PROJECT_DOCUMENTATION.md
+
+# Legacy / unused dirs
+Safety Map/
+Sheherhackathon/
+VDIT3/

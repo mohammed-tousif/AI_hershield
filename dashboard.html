@@ -10,8 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
-    <script
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBGXF_WodaMeP10oziYhG0NdqHw2fJogxM&libraries=visualization,geometry"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBGXF_WodaMeP10oziYhG0NdqHw2fJogxM&libraries=geometry"></script>
+    <script src="/config.js"></script>
     <style>
         :root {
             --gradient-start: #FF9A86;
@@ -26,7 +26,7 @@
             font-family: 'Poppins', sans-serif;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            background: #FFF0BE;
+            background: #FDF9F5;
             min-height: 100vh;
             overflow-x: hidden;
         }
@@ -270,7 +270,7 @@
         }
 
         #reportButton {
-            background-color: #FFB399;
+            background-color: #FF9A86;
             color: white;
             border: none;
             border-radius: 5px;
@@ -281,7 +281,7 @@
         }
 
         #reportButton:hover {
-            background-color: #7A6B99;
+            background-color: #FF7A6A;
         }
     </style>
 </head>
@@ -316,26 +316,26 @@
         </div>
 
         <!-- Stats -->
-        <div class="stats-container">
+        <div class="stats-container" id="statsContainer">
             <div class="stat-card glass-card">
                 <i class="fas fa-walking"></i>
-                <h3 class="counter">2500+</h3>
+                <h3 id="statSafeTrips"><span class="spinner-border spinner-border-sm" role="status"></span></h3>
                 <p class="mb-0">Safe Trips</p>
             </div>
             <div class="stat-card glass-card">
                 <i class="fas fa-map-marker-alt"></i>
-                <h3 class="counter">150+</h3>
+                <h3 id="statSafeZones"><span class="spinner-border spinner-border-sm" role="status"></span></h3>
                 <p class="mb-0">Safe Zones</p>
             </div>
             <div class="stat-card glass-card">
                 <i class="fas fa-users"></i>
-                <h3 class="counter">500</h3>
+                <h3 id="statCommunity"><span class="spinner-border spinner-border-sm" role="status"></span></h3>
                 <p class="mb-0">Community Members</p>
             </div>
             <div class="stat-card glass-card">
-                <i class="fas fa-shield-alt"></i>
-                <h3 class="counter">98%</h3>
-                <p class="mb-0">Safety Score</p>
+                <i class="fas fa-bell"></i>
+                <h3 id="statSosAlerts"><span class="spinner-border spinner-border-sm" role="status"></span></h3>
+                <p class="mb-0">SOS Alerts</p>
             </div>
         </div>
 
@@ -356,16 +356,45 @@
                             <button class="btn btn-light" onclick="setMapStyle('night')">Night</button>
                         </div>
                     </div>
-                    <div id="googleMap" class="map-container" style="height: 400px;"></div>
+                    <div style="position:relative;">
+                        <div id="googleMap" class="map-container" style="height: 400px;"></div>
+                        <!-- GPS Recenter Button -->
+                        <button onclick="centerMapToCurrentLocation()" title="Center to my current location"
+                            style="position:absolute;bottom:16px;right:16px;z-index:10;background:#fff;
+                                   border:none;border-radius:50%;width:44px;height:44px;box-shadow:0 2px 8px rgba(0,0,0,0.3);
+                                   display:flex;align-items:center;justify-content:center;cursor:pointer;
+                                   transition:box-shadow 0.2s;" 
+                            onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.4)'" 
+                            onmouseout="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.3)'">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="#1a73e8">
+                                <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <!-- Recent Alerts -->
             <div class="col-lg-4 mb-4">
                 <div class="glass-card">
-                    <h5 class="fw-bold mb-4">Recent Alerts</h5>
-                    <div class="alert-history">
-                        <!-- New alerts will be added here -->
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold mb-0">Recent Alerts</h5>
+                        <span class="badge rounded-pill" style="background:#FF9A86;font-size:0.72rem;" id="alertCountBadge">Loading…</span>
+                    </div>
+                    <!-- Preview: first 3 alerts -->
+                    <div class="alert-history" id="alertHistoryPreview">
+                        <!-- populated by JS -->
+                    </div>
+                    <!-- Expandable: remaining alerts -->
+                    <div id="alertHistoryExtra" style="display:none;"></div>
+                    <!-- Show more / less toggle -->
+                    <div class="text-center mt-2" id="alertToggleWrap" style="display:none;">
+                        <button class="btn btn-sm w-100" id="alertToggleBtn"
+                            style="background:rgba(255,154,134,0.12);border:1px solid #FF9A86;color:#c0392b;border-radius:10px;font-size:0.82rem;"
+                            onclick="toggleMoreAlerts()">
+                            <i class="fas fa-chevron-down me-1" id="alertToggleIcon"></i>
+                            <span id="alertToggleLabel">Show all alerts</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -473,8 +502,8 @@
     <div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
-                <div class="modal-header border-0 text-white"
-                    style="background: linear-gradient(135deg, #FFB399, #7A6B99); border-radius: 20px 20px 0 0;">
+                    <div class="modal-header border-0 text-white"
+                    style="background: linear-gradient(135deg, #FF9A86, #FFB399); border-radius: 20px 20px 0 0;">
                     <h5 class="modal-title fw-bold" id="reportModalLabel">
                         <i class="fas fa-exclamation-triangle me-2"></i>Report Safety Issue
                     </h5>
@@ -574,7 +603,8 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg" style="border-radius: 24px; overflow: hidden;">
                 <div class="modal-header border-0 text-white"
-                    style="background: linear-gradient(135deg, #FFB399, #7A6B99);">
+                    style="background: linear-gradient(135deg, #FF9A86, #FFB399);">
+
                     <h5 class="modal-title fw-bold">Confirm Emergency Alert</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                         aria-label="Close"></button>
@@ -624,6 +654,8 @@
         <i class="fas fa-exclamation-triangle"></i> Report Issue
     </button>
 
+    <!-- Socket.IO client (CDN — works on Firebase Hosting + Render) -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Moving gradient effect
@@ -635,7 +667,7 @@
         });
 
         // Initialize Google Maps with Safety Heatmap
-        let map, heatmap, safetyData = [], markers = [];
+        let map, heatmap, safetyData = [], incidentData = [], markers = [];
         let showHeatmap = true, showMarkers = true;
         let currentLocationMarker = null;
 
@@ -651,22 +683,40 @@
             try {
                 console.log('Loading safety data from API...');
                 const response = await fetch('/api/safety/locations');
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                safetyData = await response.json();
-                console.log(`✅ Loaded ${safetyData.length} safety locations`);
-                initializeMapLayers();
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const json1 = await response.json();
+                // API returns { data: [...], Count: N } — extract the array
+                safetyData = Array.isArray(json1) ? json1
+                           : Array.isArray(json1.data) ? json1.data
+                           : [];
+                console.log(`✅ Loaded ${safetyData.length} static safety locations`);
             } catch (error) {
                 console.error('❌ Failed to load safety data:', error);
                 safetyData = [];
             }
+
+            try {
+                const r2 = await fetch('/api/safety/incident-points');
+                if (r2.ok) {
+                    const json2 = await r2.json();
+                    incidentData = json2.points || [];
+                    console.log(`✅ Loaded ${incidentData.length} user incident points`);
+                } else {
+                    console.warn('⚠️ incident-points HTTP', r2.status);
+                    incidentData = [];
+                }
+            } catch (err) {
+                console.warn('⚠️ Could not load user incidents:', err.message);
+                incidentData = [];
+            }
+
+            initializeMapLayers();
         }
 
         function initMap() {
             map = new google.maps.Map(document.getElementById("googleMap"), {
-                center: { lat: 15.351826, lng: 75.081279 }, // Default center (KLE Institute of Technology)
-                zoom: 13,
+                center: { lat: 15.3647, lng: 75.1236 }, // Fallback: Jain College of Engineering & Technology, Hubli
+                zoom: 15,
                 styles: [] // Default to day style
             });
 
@@ -686,7 +736,7 @@
                     lng: position.coords.longitude
                 };
                 map.setCenter(pos);
-                map.setZoom(14);
+                map.setZoom(16);
                 if (currentLocationMarker) currentLocationMarker.setMap(null);
                 currentLocationMarker = new google.maps.Marker({
                     position: pos,
@@ -694,16 +744,16 @@
                     title: 'Your current location',
                     icon: {
                         path: google.maps.SymbolPath.CIRCLE,
-                        scale: 7,
+                        scale: 8,
                         fillColor: '#2563eb',
                         fillOpacity: 1,
                         strokeColor: '#ffffff',
-                        strokeWeight: 2
+                        strokeWeight: 3
                     }
                 });
             }, (error) => {
                 console.warn('Could not center map to current location:', error.message);
-            }, getGeoOptions());
+            }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
         }
 
         function severityClass(severity) {
@@ -713,34 +763,153 @@
             return 'text-success';
         }
 
-        async function loadRecentAlerts() {
-            const alertHistory = document.querySelector('.alert-history');
-            if (!alertHistory) return;
-            try {
-                const response = await fetch('/api/community/alerts?limit=10');
-                const result = await response.json();
-                if (!response.ok || !result.success) throw new Error(result.message || 'Failed to load alerts');
-                const alerts = result.alerts || [];
+        let _allAlerts = [];
+        let _alertsExpanded = false;
+        const PREVIEW_COUNT = 3;
 
-                if (!alerts.length) {
-                    alertHistory.innerHTML = '<div class="text-muted small">No recent alerts yet.</div>';
+        function toggleMoreAlerts() {
+            _alertsExpanded = !_alertsExpanded;
+            const extra  = document.getElementById('alertHistoryExtra');
+            const icon   = document.getElementById('alertToggleIcon');
+            const label  = document.getElementById('alertToggleLabel');
+            if (_alertsExpanded) {
+                extra.style.display = '';
+                icon.className  = 'fas fa-chevron-up me-1';
+                label.textContent = 'Show fewer alerts';
+            } else {
+                extra.style.display = 'none';
+                icon.className  = 'fas fa-chevron-down me-1';
+                label.textContent = 'Show all alerts';
+            }
+        }
+
+        async function loadRecentAlerts() {
+            const previewEl  = document.getElementById('alertHistoryPreview');
+            const extraEl    = document.getElementById('alertHistoryExtra');
+            const badge      = document.getElementById('alertCountBadge');
+            const toggleWrap = document.getElementById('alertToggleWrap');
+            if (!previewEl) return;
+            try {
+                const res = await fetch('/api/community/incident-reports?limit=30');
+                const result = await res.json();
+                if (!res.ok || !result.success) throw new Error(result.message || 'Failed to load reports');
+                _allAlerts = result.reports || [];
+
+                if (badge) badge.textContent = `${_allAlerts.length} report${_allAlerts.length !== 1 ? 's' : ''}`;
+
+                if (!_allAlerts.length) {
+                    previewEl.innerHTML = '<div class="text-muted small">No community reports yet.</div>';
+                    if (extraEl) extraEl.innerHTML = '';
+                    if (toggleWrap) toggleWrap.style.display = 'none';
                     return;
                 }
 
-                alertHistory.innerHTML = alerts.map(alert => `
-                    <div class="alert-item">
-                        <i class="fas fa-exclamation-circle ${severityClass(alert.severity)}"></i>
-                        <div>
-                            <h6 class="mb-1">${alert.title || 'Safety Alert'}</h6>
-                            <small class="text-muted">${alert.location || 'Location unavailable'}</small>
-                            <p class="mb-0 small">${alert.message || ''}</p>
-                            <small class="text-muted">${new Date(alert.createdAt).toLocaleString()}</small>
+                const SEVERITY_COLORS = {
+                    critical: '#dc3545', high: '#fd7e14',
+                    medium:   '#ffc107', low:  '#28a745',
+                };
+                const TYPE_ICONS = {
+                    harassment:          'fa-user-slash',
+                    assault:             'fa-fist-raised',
+                    theft:               'fa-hand-holding-usd',
+                    suspicious_activity: 'fa-eye',
+                    poor_lighting:       'fa-lightbulb',
+                    unsafe_area:         'fa-map-marked-alt',
+                    other:               'fa-exclamation-circle',
+                };
+
+                const renderReport = (r) => {
+                    const color  = SEVERITY_COLORS[r.severity] || '#6c757d';
+                    const icon   = TYPE_ICONS[r.incidentType] || 'fa-exclamation-circle';
+                    const time   = (() => {
+                        try { return new Date(r.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }); }
+                        catch { return new Date(r.createdAt).toLocaleString(); }
+                    })();
+                    return `
+                    <div class="alert-item" style="border-left:3px solid ${color};">
+                        <i class="fas ${icon}" style="color:${color};font-size:1.15rem;flex-shrink:0;"></i>
+                        <div style="flex:1;min-width:0;">
+                            <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                                <h6 class="mb-0 fw-semibold" style="font-size:0.88rem;">${r.typeLabel}</h6>
+                                <span class="badge rounded-pill" style="background:${color};font-size:0.68rem;padding:2px 8px;">${r.severityLabel}</span>
+                            </div>
+                            ${r.location ? `<small class="text-muted d-block"><i class="fas fa-map-pin me-1"></i>${r.location}</small>` : ''}
+                            ${r.description ? `<p class="mb-1 small" style="color:#555;line-height:1.4;">${r.description}</p>` : ''}
+                            <small class="text-muted">
+                                <i class="fas fa-user me-1"></i>${r.reporterName}
+                                &nbsp;&bull;&nbsp;
+                                <i class="fas fa-clock me-1"></i>${time}
+                            </small>
                         </div>
-                    </div>
-                `).join('');
+                    </div>`;
+                };
+
+                const preview = _allAlerts.slice(0, PREVIEW_COUNT);
+                const extra   = _allAlerts.slice(PREVIEW_COUNT);
+
+                previewEl.innerHTML = preview.map(renderReport).join('');
+                if (extraEl) extraEl.innerHTML = extra.map(renderReport).join('');
+                if (toggleWrap) toggleWrap.style.display = extra.length ? '' : 'none';
+                if (_alertsExpanded && extraEl) extraEl.style.display = '';
+
             } catch (error) {
-                console.error('Failed to load recent alerts:', error);
-                alertHistory.innerHTML = '<div class="text-danger small">Failed to load alerts.</div>';
+                console.error('Failed to load recent reports:', error);
+                previewEl.innerHTML = '<div class="text-danger small">Failed to load reports.</div>';
+            }
+        }
+
+        const STAT_IDS = ['statSafeTrips', 'statSafeZones', 'statCommunity', 'statSosAlerts'];
+        const STAT_FALLBACK = { safeTrips: 0, safeZones: 0, communityMembers: 0, totalSosAlerts: 0 };
+
+        function setStatValues(s) {
+            function animateTo(el, target) {
+                if (!el) return;
+                if (target === 0) { el.textContent = '0'; return; }
+                const dur = 1200, steps = 40;
+                const inc = target / steps;
+                let cur = 0, step = 0;
+                const t = setInterval(() => {
+                    cur += inc; step++;
+                    el.textContent = Math.floor(cur);
+                    if (step >= steps) { el.textContent = target; clearInterval(t); }
+                }, dur / steps);
+            }
+            animateTo(document.getElementById('statSafeTrips'),  s.safeTrips);
+            animateTo(document.getElementById('statSafeZones'),  s.safeZones);
+            animateTo(document.getElementById('statCommunity'),  s.communityMembers);
+            animateTo(document.getElementById('statSosAlerts'),  s.totalSosAlerts);
+        }
+
+        function clearStatSpinners(placeholder) {
+            STAT_IDS.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = placeholder || '—';
+            });
+        }
+
+        async function loadDashboardStats() {
+            // Race the fetch against a 5-second timeout so spinners never freeze
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 5000);
+            try {
+                const res  = await fetch('/api/dashboard/stats', { signal: controller.signal });
+                clearTimeout(timer);
+                if (!res.ok) {
+                    // Non-2xx (e.g. 404 if server not restarted yet)
+                    console.warn('Dashboard stats: HTTP', res.status, '— using fallback data');
+                    setStatValues(STAT_FALLBACK);
+                    return;
+                }
+                const data = await res.json();
+                if (data.success && data.stats) {
+                    setStatValues(data.stats);
+                } else {
+                    setStatValues(STAT_FALLBACK);
+                }
+            } catch (e) {
+                clearTimeout(timer);
+                console.warn('Dashboard stats unavailable:', e.message);
+                setStatValues(STAT_FALLBACK);
             }
         }
 
@@ -754,67 +923,127 @@
             try {
                 console.log('🔄 Fetching updated safety data...');
                 const response = await fetch('/api/safety/locations');
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const json1 = await response.json();
+                safetyData = Array.isArray(json1) ? json1
+                           : Array.isArray(json1.data) ? json1.data
+                           : [];
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                try {
+                    const r2 = await fetch('/api/safety/incident-points');
+                    if (r2.ok) { const j2 = await r2.json(); incidentData = j2.points || []; }
+                } catch(_) {}
 
-                const newData = await response.json();
-                console.log(`✅ Loaded ${newData.length} safety locations (was ${safetyData.length})`);
-
-                // Update the data
-                safetyData = newData;
-
-                // Clear existing markers
                 markers.forEach(marker => marker.setMap(null));
                 markers = [];
-
-                // Remove existing heatmap
-                if (heatmap) {
-                    heatmap.setMap(null);
-                }
-
-                // Recreate map layers with new data
+                if (heatmap) heatmap.destroy();
                 initializeMapLayers();
-
                 console.log('✅ Map updated with new data!');
             } catch (error) {
                 console.error('❌ Failed to reload safety data:', error);
             }
         }
 
+        // ── CanvasHeatmap: drop-in replacement for deprecated google.maps.visualization.HeatmapLayer ──
+        // Draws radial-gradient blobs on a canvas overlay using the OverlayView projection.
+        class CanvasHeatmap {
+            constructor({ map, data = [], radius = 40, opacity = 0.65, initiallyVisible = true }) {
+                this._map     = map;
+                this._data    = data;
+                this._radius  = radius;
+                this._opacity = opacity;
+                this._visible = initiallyVisible;
+
+                this._canvas = document.createElement('canvas');
+                this._canvas.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none;z-index:3;';
+                map.getDiv().appendChild(this._canvas);
+
+                const self = this;
+                this._ov = new google.maps.OverlayView();
+                this._ov.onAdd    = function () { self._redraw(); };
+                this._ov.draw     = function () { self._redraw(); };
+                this._ov.onRemove = function () {};
+                this._ov.setMap(map);
+
+                this._listeners = [
+                    map.addListener('idle',         () => self._redraw()),
+                    map.addListener('zoom_changed', () => self._redraw()),
+                    map.addListener('resize',       () => self._redraw()),
+                ];
+            }
+
+            _redraw() {
+                const mapDiv = this._map.getDiv();
+                const w = mapDiv.offsetWidth, h = mapDiv.offsetHeight;
+                const canvas = this._canvas;
+                canvas.width = w; canvas.height = h;
+                if (!this._visible) return;
+                const ctx  = canvas.getContext('2d');
+                const proj = this._ov.getProjection();
+                if (!proj || !this._data.length) return;
+                ctx.clearRect(0, 0, w, h);
+                this._data.forEach(point => {
+                    const px = proj.fromLatLngToContainerPixel(point.location);
+                    if (!px) return;
+                    const wt = Math.min(3, Math.max(0.5, point.weight || 1));
+                    const r  = this._radius * (0.6 + wt * 0.2);
+                    const a  = this._opacity;
+                    const grd = ctx.createRadialGradient(px.x, px.y, 0, px.x, px.y, r);
+                    if (wt >= 2.5) {
+                        grd.addColorStop(0,    `rgba(220, 30,  30, ${a})`);
+                        grd.addColorStop(0.45, `rgba(255, 90,   0, ${a * 0.65})`);
+                        grd.addColorStop(1,    'rgba(255, 90,   0, 0)');
+                    } else if (wt >= 1.5) {
+                        grd.addColorStop(0,    `rgba(255,165,   0, ${a})`);
+                        grd.addColorStop(0.45, `rgba(255,215,   0, ${a * 0.6})`);
+                        grd.addColorStop(1,    'rgba(255,215,   0, 0)');
+                    } else {
+                        grd.addColorStop(0,    `rgba( 34,197,  94, ${a})`);
+                        grd.addColorStop(0.45, `rgba( 34,197,  94, ${a * 0.5})`);
+                        grd.addColorStop(1,    'rgba( 34,197,  94, 0)');
+                    }
+                    ctx.beginPath();
+                    ctx.arc(px.x, px.y, r, 0, Math.PI * 2);
+                    ctx.fillStyle = grd;
+                    ctx.fill();
+                });
+            }
+
+            setMap(mapOrNull) { this._visible = mapOrNull !== null; this._redraw(); }
+            getData()         { return this._data; }
+            setData(data)     { this._data = data; this._redraw(); }
+            destroy() {
+                this._listeners.forEach(l => google.maps.event.removeListener(l));
+                this._ov.setMap(null);
+                if (this._canvas.parentNode) this._canvas.parentNode.removeChild(this._canvas);
+            }
+        }
+
         function createHeatmap() {
-            const heatmapData = safetyData.map(point => ({
+            // Merge static safety locations + user-submitted incidents
+            const merged = [...safetyData, ...incidentData];
+            const heatmapData = merged.map(point => ({
                 location: new google.maps.LatLng(point.latitude, point.longitude),
                 weight: point.risk_level
             }));
 
-            heatmap = new google.maps.visualization.HeatmapLayer({
+            heatmap = new CanvasHeatmap({
+                map,
                 data: heatmapData,
                 radius: 50,
-                opacity: 0.6,
-                gradient: [
-                    'rgba(0, 255, 0, 0)',
-                    'rgba(0, 255, 0, 1)',
-                    'rgba(255, 255, 0, 1)',
-                    'rgba(255, 165, 0, 1)',
-                    'rgba(255, 0, 0, 1)'
-                ]
+                opacity: 0.65,
+                initiallyVisible: showHeatmap
             });
-
-            if (showHeatmap) {
-                heatmap.setMap(map);
-            }
         }
 
         function createMarkersWithCircles() {
+            // ── Static safety-location markers (circles) ─────────────────────────
             safetyData.forEach(location => {
                 const position = { lat: location.latitude, lng: location.longitude };
                 const color = getColor(location.risk_level);
 
-                // Create marker
                 const marker = new google.maps.Marker({
-                    position: position,
+                    position,
                     map: showMarkers ? map : null,
                     icon: {
                         path: google.maps.SymbolPath.CIRCLE,
@@ -827,24 +1056,71 @@
                     title: location.location
                 });
 
-                // Create info window
                 const infoWindow = new google.maps.InfoWindow({
                     content: `
-                        <div style="padding: 8px;">
-                            <h6 style="margin: 0 0 8px 0; font-weight: bold;">${location.location}</h6>
-                            <p style="margin: 4px 0;"><strong>Risk Level:</strong> ${getRiskLabel(location.risk_level)}</p>
-                            <p style="margin: 4px 0;"><strong>Category:</strong> ${location.category}</p>
-                            <p style="margin: 4px 0; font-size: 12px; color: #666;">Updated: ${location.last_updated}</p>
-                        </div>
-                    `
+                        <div style="padding:8px;">
+                            <h6 style="margin:0 0 8px 0;font-weight:bold;">${location.location}</h6>
+                            <p style="margin:4px 0;"><strong>Risk Level:</strong> ${getRiskLabel(location.risk_level)}</p>
+                            <p style="margin:4px 0;"><strong>Category:</strong> ${location.category}</p>
+                            <p style="margin:4px 0;font-size:12px;color:#666;">Updated: ${location.last_updated}</p>
+                        </div>`
                 });
-
-                marker.addListener('click', () => {
-                    infoWindow.open(map, marker);
-                });
-
+                marker.addListener('click', () => infoWindow.open(map, marker));
                 markers.push(marker);
             });
+
+            // ── User-submitted incident markers (diamonds) ───────────────────
+            incidentData.forEach(point => addIncidentMarkerDashboard(point));
+        }
+
+        /**
+         * Adds a single user-submitted incident as a diamond marker.
+         * Called at init (for all loaded incidents) and in real-time via Socket.IO.
+         */
+        function addIncidentMarkerDashboard(point) {
+            const SEVERITY_COLORS = { critical:'#dc3545', high:'#fd7e14', medium:'#ffc107', low:'#28a745' };
+            const TYPE_ICONS_LABEL = {
+                harassment:'Harassment', assault:'Assault', theft:'Theft',
+                suspicious_activity:'Suspicious Activity', poor_lighting:'Poor Lighting',
+                unsafe_area:'Unsafe Area', other:'Incident'
+            };
+            const color     = SEVERITY_COLORS[(point.severity||'').toLowerCase()] || '#6c757d';
+            const badge     = point.severity === 'high' || point.severity === 'critical' ? '🔴' : point.severity === 'medium' ? '🟡' : '🟢';
+            const typeLabel = TYPE_ICONS_LABEL[point.incidentType] || 'Incident';
+
+            const marker = new google.maps.Marker({
+                position: { lat: point.latitude, lng: point.longitude },
+                map: showMarkers ? map : null,
+                icon: {
+                    path: 'M 0,-1 1,0 0,1 -1,0 Z',  // diamond shape
+                    fillColor: color,
+                    fillOpacity: 0.95,
+                    strokeColor: '#ffffff',
+                    strokeWeight: 2,
+                    scale: 11
+                },
+                title: `🚨 User Report: ${typeLabel}`,
+                zIndex: 20   // always on top of static markers
+            });
+
+            const time = (() => {
+                try { return new Date(point.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }); }
+                catch { return new Date(point.createdAt).toLocaleString(); }
+            })();
+
+            const iw = new google.maps.InfoWindow({
+                content:
+                    `<div style="max-width:240px;font-size:.85rem;padding:4px;">`+
+                    `<div style="font-weight:700;margin-bottom:6px;font-size:.95rem;">${badge} User Report: ${typeLabel}</div>`+
+                    `<div style="margin-bottom:4px;"><i style="color:#888">&#128205;</i> ${point.location || 'Unknown location'}</div>`+
+                    (point.description ? `<div style="color:#444;margin-bottom:4px;">${point.description}</div>` : '')+
+                    `<div style="margin-bottom:4px;">Severity: <b style="color:${color};">${(point.severity||'').toUpperCase()}</b></div>`+
+                    `<div style="font-size:.78rem;color:#888;">🕒 ${time}</div>`+
+                    `</div>`
+            });
+            marker.addListener('click', () => iw.open(map, marker));
+            markers.push(marker);
+            return marker;
         }
 
         function getColor(riskLevel) {
@@ -918,6 +1194,28 @@
 
         // Initialize the map when the page loads
         window.onload = initMap;
+
+        // ── Socket.IO: live incident updates ────────────────────────────────
+        (function initDashboardIncidentSocket() {
+            if (!window.io) return;
+            const socket = io(window.HERSHIELD_BACKEND || location.origin, { transports: ['polling'] });
+            socket.on('incident:new', (point) => {
+                if (!map) return;  // map not ready yet
+                incidentData.push(point);
+                // Add diamond marker
+                addIncidentMarkerDashboard(point);
+                // Push into heatmap
+                if (heatmap) {
+                    const existing = heatmap.getData();
+                    existing.push({
+                        location: new google.maps.LatLng(point.latitude, point.longitude),
+                        weight: point.risk_level
+                    });
+                    heatmap.setData(existing);
+                }
+                console.log('🔴 Live incident added to dashboard map:', point.location);
+            });
+        })();
 
         // Animate counters
         function animateCounter(element) {
@@ -1507,7 +1805,8 @@
 
                         if (data.success) {
                             showNotification('Alert Sent', 'Emergency alert has been sent successfully to your contacts.', 'success');
-                            await loadRecentAlerts();
+                            // Refresh private history (SOS events), NOT the public recent alerts
+                            await loadSosHistory();
                         } else {
                             throw new Error(data.message);
                         }
@@ -1529,81 +1828,139 @@
             }
         });
 
-        // ═══ SOS Alert History Loader ═══════════════════════════════════════
+        // ═══ Unified Emergency & Tracking History Loader ══════════════════════
         /**
-         * Returns the current user's Firebase UID.
-         * Tries multiple sources and waits up to 3s for Firebase auth to settle.
+         * Resolves the current user's Firebase UID (for SOS events)
+         * and email (for live-tracker sessions).
          */
-        function getSosUserId() {
-            // 1. Live Firebase session (most reliable)
-            if (window.authService && typeof window.authService.getCurrentUser === 'function') {
-                const u = window.authService.getCurrentUser();
-                if (u && u.uid) return u.uid;
-            }
-            // 2. Persisted by firebase-auth.js after upsert
-            const a = localStorage.getItem('hershield_backend_user_id');
-            if (a) return a;
-            // 3. Raw Firebase UID stored by some auth paths
-            const b = localStorage.getItem('hershield_user_uid');
-            if (b) return b;
-            return null;
+        function getCurrentUserInfo() {
+            const uid = (() => {
+                if (window.authService && typeof window.authService.getCurrentUser === 'function') {
+                    const u = window.authService.getCurrentUser();
+                    if (u && u.uid) return u.uid;
+                }
+                return localStorage.getItem('hershield_backend_user_id') ||
+                       localStorage.getItem('hershield_user_uid') || null;
+            })();
+            const email = localStorage.getItem('hershield_user_email') || '';
+            return { uid, email };
         }
 
         async function loadSosHistory() {
             const listEl = document.getElementById('sosHistoryList');
             if (!listEl) return;
 
-            // Wait up to 3 s for Firebase auth to initialise (it's async)
-            let userId = getSosUserId();
-            if (!userId) {
+            // Wait up to 3 s for Firebase auth to initialise
+            let { uid, email } = getCurrentUserInfo();
+            if (!uid) {
                 let attempts = 0;
                 await new Promise(resolve => {
                     const interval = setInterval(() => {
-                        userId = getSosUserId();
+                        ({ uid, email } = getCurrentUserInfo());
                         attempts++;
-                        if (userId || attempts >= 6) {
-                            clearInterval(interval);
-                            resolve();
-                        }
+                        if (uid || attempts >= 6) { clearInterval(interval); resolve(); }
                     }, 500);
                 });
             }
 
-            if (!userId) {
+            if (!uid) {
                 listEl.innerHTML = '<div class="text-muted small py-2 px-1"><i class="fas fa-lock me-2"></i>Log in to see your private alert history.</div>';
                 return;
             }
 
             try {
-                const resp = await fetch(`/api/emergency/sos/history/${encodeURIComponent(userId)}`);
-                const data = await resp.json();
+                // ── Fetch SOS events + live-tracker sessions in parallel ──────
+                const [sosResp, liveResp] = await Promise.all([
+                    fetch(`/api/emergency/sos/history/${encodeURIComponent(uid)}`),
+                    email ? fetch(`/api/live-tracker/history/${encodeURIComponent(email)}`) : Promise.resolve(null),
+                ]);
 
-                if (!resp.ok) throw new Error(data.error || 'Failed to load SOS history');
+                const sosData  = await sosResp.json();
+                if (!sosResp.ok) throw new Error(sosData.error || 'Failed to load SOS history');
 
-                const history = data.history || [];
+                const liveData = liveResp ? await liveResp.json() : { sessions: [] };
 
-                if (!history.length) {
+                // ── Normalise SOS events ──────────────────────────────────────
+                const sosRows = (sosData.history || []).map(s => ({
+                    _type:        s.source === 'dashboard' ? 'dashboard_alert' : 'sos_session',
+                    triggeredAt:  s.triggeredAt,
+                    resolvedAt:   s.resolvedAt,
+                    status:       s.status,
+                    source:       s.source,
+                    contactCount: s.contactCount ?? null,
+                    timerMinutes: s.timerMinutes ?? null,
+                    trackingLink: s.trackingLink ?? null,
+                    // live-tracker fields: N/A for SOS
+                    source_label: null,
+                    destination:  null,
+                    transportMode:null,
+                }));
+
+                // ── Normalise live-tracker sessions ───────────────────────────
+                const liveRows = (liveData.sessions || []).map(s => ({
+                    _type:        'live_tracking',
+                    triggeredAt:  s.startedAt,
+                    resolvedAt:   null,
+                    status:       s.isTrackingActive ? 'active' : 'ended',
+                    source:       'live-tracker',
+                    contactCount: s.contactCount ?? null,
+                    timerMinutes: null,
+                    trackingLink: s.trackingLink ?? null,
+                    source_label: s.source,
+                    destination:  s.destination,
+                    transportMode:s.transportMode,
+                }));
+
+                // ── Merge and sort newest-first ───────────────────────────────
+                const all = [...sosRows, ...liveRows]
+                    .sort((a, b) => new Date(b.triggeredAt || 0) - new Date(a.triggeredAt || 0));
+
+                if (!all.length) {
                     listEl.innerHTML = `
                         <div class="text-center py-4">
                             <i class="fas fa-shield-alt fa-2x text-success mb-3 d-block"></i>
-                            <p class="text-muted mb-0">No emergency alerts triggered — stay safe! 💚</p>
+                            <p class="text-muted mb-0">No emergency alerts or tracking sessions yet — stay safe! 💚</p>
                         </div>`;
                     return;
                 }
 
-                const statusChip = (status) => {
-                    switch ((status || '').toLowerCase()) {
-                        case 'active':   return '<span class="badge rounded-pill" style="background:linear-gradient(135deg,#FF453A,#c0392b);font-size:0.7rem;">🔴 ACTIVE</span>';
-                        case 'safe':     return '<span class="badge rounded-pill bg-success" style="font-size:0.7rem;">✅ Safe</span>';
-                        case 'expired':  return '<span class="badge rounded-pill bg-secondary" style="font-size:0.7rem;">⏰ Expired</span>';
-                        default:         return `<span class="badge rounded-pill bg-light text-dark" style="font-size:0.7rem;">${status}</span>`;
+                // ── Chips / badges ────────────────────────────────────────────
+                const typeChip = (row) => {
+                    switch (row._type) {
+                        case 'sos_session':
+                            if (row.status === 'active')
+                                return '<span class="badge rounded-pill" style="background:linear-gradient(135deg,#FF453A,#c0392b);font-size:0.7rem;">🔴 SOS — ACTIVE</span>';
+                            if (row.status === 'safe')
+                                return '<span class="badge rounded-pill bg-success" style="font-size:0.7rem;">✅ SOS — Safe</span>';
+                            return '<span class="badge rounded-pill bg-secondary" style="font-size:0.7rem;">⏰ SOS — Expired</span>';
+                        case 'dashboard_alert':
+                            return '<span class="badge rounded-pill" style="background:linear-gradient(135deg,#FF9A86,#e07060);font-size:0.7rem;">🚨 Dashboard Alert</span>';
+                        case 'live_tracking':
+                            if (row.status === 'active')
+                                return '<span class="badge rounded-pill" style="background:linear-gradient(135deg,#0d6efd,#0a58ca);font-size:0.7rem;">📡 Live — ACTIVE</span>';
+                            return '<span class="badge rounded-pill" style="background:linear-gradient(135deg,#6c757d,#495057);font-size:0.7rem;">📡 Live Tracking</span>';
+                        default:
+                            return `<span class="badge bg-light text-dark" style="font-size:0.7rem;">${row.status || '—'}</span>`;
                     }
                 };
 
                 const fmtTime = (ts) => {
-                    if (!ts) return 'Unknown';
+                    if (!ts) return '<span class="text-muted">—</span>';
                     try { return new Date(ts).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }); }
                     catch { return new Date(ts).toLocaleString(); }
+                };
+
+                // ── Detail cell: shows route for live sessions, timer for SOS ─
+                const detailCell = (row) => {
+                    if (row._type === 'live_tracking') {
+                        const from = row.source_label || '—';
+                        const to   = row.destination   || '—';
+                        const mode = row.transportMode || '';
+                        return `<span class="small text-muted" title="${from} → ${to}">${from} → ${to}${mode ? ' (' + mode + ')' : ''}</span>`;
+                    }
+                    return row.timerMinutes
+                        ? `${row.timerMinutes} min`
+                        : '<span class="text-muted">—</span>';
                 };
 
                 listEl.innerHTML = `
@@ -1611,23 +1968,26 @@
                         <table class="table table-hover align-middle mb-0" style="font-size:0.9rem;">
                             <thead>
                                 <tr class="table-light">
-                                    <th>Status</th>
+                                    <th>Type</th>
                                     <th>Triggered</th>
-                                    <th>Resolved / Expired</th>
-                                    <th>Contacts Alerted</th>
-                                    <th>Timer</th>
+                                    <th>Resolved / Ended</th>
+                                    <th>Contacts</th>
+                                    <th>Detail</th>
                                     <th>Track</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                ${history.map(s => `
+                                ${all.map(row => `
                                 <tr>
-                                    <td>${statusChip(s.status)}</td>
-                                    <td>${fmtTime(s.triggeredAt)}</td>
-                                    <td>${s.resolvedAt ? fmtTime(s.resolvedAt) : '<span class="text-muted">—</span>'}</td>
-                                    <td><i class="fas fa-users me-1 text-muted"></i>${s.contactCount ?? '—'}</td>
-                                    <td>${s.timerMinutes ? `${s.timerMinutes} min` : '<span class="text-muted">None</span>'}</td>
-                                    <td>${s.trackingLink ? `<a href="${s.trackingLink}" target="_blank" class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size:0.75rem;"><i class="fas fa-satellite-dish me-1"></i>View</a>` : '<span class="text-muted small">—</span>'}</td>
+                                    <td>${typeChip(row)}</td>
+                                    <td>${fmtTime(row.triggeredAt)}</td>
+                                    <td>${row.resolvedAt ? fmtTime(row.resolvedAt) : '<span class="text-muted">—</span>'}</td>
+                                    <td><i class="fas fa-users me-1 text-muted"></i>${row.contactCount ?? '—'}</td>
+                                    <td>${detailCell(row)}</td>
+                                    <td>${row.trackingLink
+                                        ? `<a href="${row.trackingLink}" target="_blank" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:0.75rem;"><i class="fas fa-satellite-dish me-1"></i>View</a>`
+                                        : '<span class="text-muted small">—</span>'}
+                                    </td>
                                 </tr>`).join('')}
                             </tbody>
                         </table>
@@ -1640,6 +2000,7 @@
 
         // Wire refresh button + initial load
         document.addEventListener('DOMContentLoaded', () => {
+            loadDashboardStats();
             loadRecentAlerts();
             setInterval(loadRecentAlerts, 15000);
             loadSosHistory();
