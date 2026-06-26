@@ -21,7 +21,7 @@
     var isLocal = (host === 'localhost' || host === '127.0.0.1');
 
     /** Render backend root — update if your Render service URL ever changes */
-    var RENDER_BACKEND = 'https://hershield-api.onrender.com';
+    var RENDER_BACKEND = 'https://ai-hershield.onrender.com';
 
     /**
      * Exposed globally so Socket.IO connections can use it:
