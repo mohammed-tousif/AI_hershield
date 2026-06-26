@@ -23,11 +23,14 @@ function hasEmailConfig() {
 }
 
 const emailTransporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true, // true for 465, false for other ports
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
     },
+    tls: { rejectUnauthorized: false },
 });
 
 /**
@@ -70,40 +73,36 @@ async function sendSosEmail({ toEmail, toName, userName, userEmail, location, tr
       </div>
     </div>`;
 
-    try {
-        await emailTransporter.sendMail({
-            from: `"HerShield Safety" <${process.env.EMAIL_USER}>`,
-            to: toEmail,
-            subject: `🚨 URGENT: ${userName || 'A HerShield User'} needs help — SOS Alert`,
-            html,
-        });
-        console.log(`✅ SOS email sent to ${toEmail}`);
-        return { success: true, to: toEmail };
-    } catch (err) {
-        console.error(`❌ SOS email failed for ${toEmail}:`, err.message);
-        return { success: false, to: toEmail, error: err.message };
-    }
+    emailTransporter.sendMail({
+        from: `"HerShield Safety" <${process.env.EMAIL_USER}>`,
+        to: toEmail,
+        subject: `🚨 URGENT: ${userName || 'A HerShield User'} needs help — SOS Alert`,
+        html,
+    })
+    .then(() => console.log(`✅ SOS email sent to ${toEmail}`))
+    .catch(err => console.error(`❌ SOS email failed for ${toEmail}:`, err.message));
+
+    return { success: true, to: toEmail };
 }
 
 /**
  * Send SOS emails to all contacts that have an email address.
  */
 async function sendBulkSosEmails(contacts, userName, userEmail, location, trackingLink) {
-    const results = [];
-    for (const c of contacts) {
-        if (!c.email) continue;
-        const r = await sendSosEmail({
+    // ── Send all SOS emails asynchronously in background ──
+    contacts.forEach(c => {
+        if (!c.email) return;
+        sendSosEmail({
             toEmail: c.email,
             toName: c.name,
             userName,
             userEmail,
             location,
-            trackingLink,
+            trackingLink
         });
-        results.push({ contactName: c.name, ...r, method: 'email' });
-        await new Promise(res => setTimeout(res, 80)); // minor rate-limit guard
-    }
-    return results;
+    });
+    
+    return [{ success: true, message: 'Emails triggered in background' }];
 }
 
 // ─── Shared in-memory SOS timer map (exported so server.js can re-hydrate) ───

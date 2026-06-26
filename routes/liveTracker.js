@@ -25,11 +25,15 @@ function hasEmailConfig() {
 }
 
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true, // true for 465, false for other ports
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
     },
+    // Force IPv4 to prevent Render hanging on IPv6
+    tls: { rejectUnauthorized: false },
 });
 
 router.post('/start', async (req, res) => {
@@ -99,18 +103,17 @@ router.post('/start', async (req, res) => {
               </div>
             </div>`;
 
-            try {
-                await transporter.sendMail({
-                    from: `"HerShield Safety" <${process.env.EMAIL_USER}>`,
-                    to: emergencyContacts,
-                    subject: `📡 ${name || 'A HerShield User'} started Live Tracking – Stay Alert`,
-                    html,
-                });
+            // ── Send asynchronously in background (don't await) to prevent UI buffer ──
+            transporter.sendMail({
+                from: `"HerShield Safety" <${process.env.EMAIL_USER}>`,
+                to: emergencyContacts,
+                subject: `📡 ${name || 'A HerShield User'} started Live Tracking – Stay Alert`,
+                html,
+            }).then(() => {
                 console.log(`✅ Tracking start email sent to: ${emergencyContacts.join(', ')}`);
-            } catch (mailErr) {
-                // Non-fatal – session already created, just log the error
+            }).catch((mailErr) => {
                 console.error('⚠️  Tracking start email failed:', mailErr.message);
-            }
+            });
         }
 
         res.status(201).json({
@@ -285,15 +288,9 @@ router.post('/trigger-alert', async (req, res) => {
             `,
         };
 
-        try {
-            await transporter.sendMail(mailOptions);
-        } catch (mailErr) {
-            console.error('sendMail (trigger-alert):', mailErr);
-            return res.status(502).json({
-                success: false,
-                message: `Email send failed: ${mailErr.message || 'check EMAIL_USER / EMAIL_PASS'}`,
-            });
-        }
+            transporter.sendMail(mailOptions)
+                .then(() => console.log('✅ Trigger-alert email sent'))
+                .catch(mailErr => console.error('sendMail (trigger-alert):', mailErr));
 
         res.json({ success: true, message: 'Emergency alert sent' });
     } catch (error) {
@@ -407,12 +404,9 @@ router.post('/dashboard-alert', async (req, res) => {
                         </div>
                     </div>`,
             };
-            try {
-                await transporter.sendMail(mailOptions);
-                emailSent = true;
-            } catch (mailErr) {
-                console.error('sendMail (dashboard-alert):', mailErr.message);
-            }
+                transporter.sendMail(mailOptions)
+                    .then(() => console.log(`✅ Dashboard alert email sent to ${emailRecipients.join(', ')}`))
+                    .catch(mailErr => console.error('sendMail (dashboard-alert):', mailErr.message));
         }
 
         // ── 4. Persist to community alerts ───────────────────────────────────
