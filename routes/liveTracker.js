@@ -347,9 +347,21 @@ router.post('/dashboard-alert', async (req, res) => {
         }
 
         // Fall back to contacts passed from frontend (email-only) if no Firestore data
-        const emailRecipients = firestoreContacts.length > 0
-            ? firestoreContacts.map(c => c.email).filter(Boolean)
-            : (contacts && contacts.length > 0 ? contacts : [process.env.EMAIL_USER]);
+        let allEmails = [];
+        if (firestoreContacts && firestoreContacts.length > 0) {
+            allEmails = allEmails.concat(firestoreContacts.map(c => c.email));
+        }
+        if (contacts && Array.isArray(contacts) && contacts.length > 0) {
+            // Handle both array of objects and array of strings
+            const mappedContacts = contacts.map(c => typeof c === 'string' ? c : c.email);
+            allEmails = allEmails.concat(mappedContacts);
+        }
+        
+        // Remove duplicates and empty values
+        const emailRecipients = [...new Set(allEmails.filter(Boolean))];
+        if (emailRecipients.length === 0) {
+            emailRecipients.push(process.env.EMAIL_USER); // fallback if no emails found
+        }
 
         // ── 2. Send SMS to all contacts that have a phone number ─────────────
         const smsResults = [];
