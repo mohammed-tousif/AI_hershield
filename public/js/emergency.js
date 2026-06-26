@@ -17,7 +17,9 @@ class EmergencySystem {
 
     init() {
         // Get user ID from localStorage or session
-        this.userId = localStorage.getItem('userId');
+        this.userId = localStorage.getItem('hershield_user_uid')
+            || localStorage.getItem('hershield_backend_user_id')
+            || localStorage.getItem('userId');
 
         // Set up emergency button listeners
         this.setupEmergencyButtons();

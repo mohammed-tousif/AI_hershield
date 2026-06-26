@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+    <script src="/config.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Her Shield - Dashboard</title>
@@ -1277,6 +1278,13 @@
                     const contacts = savedContacts.map(c => c.email);
 
                     try {
+                        const userId = (
+                            (window.authService?.getCurrentUser?.()?.uid) ||
+                            localStorage.getItem('hershield_backend_user_id') ||
+                            localStorage.getItem('hershield_user_uid') ||
+                            null
+                        );
+
                         const response = await fetch('/api/live-tracker/dashboard-alert', {
                             method: 'POST',
                             headers: {
@@ -1286,7 +1294,8 @@
                                 location,
                                 userName,
                                 userEmail,
-                                contacts
+                                contacts,
+                                userId
                             })
                         });
 

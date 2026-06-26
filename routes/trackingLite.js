@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
+const { liveTrackerLink } = require('../config/appUrls');
 const {
     trackingCodeExists,
     trackingCreate,
@@ -72,7 +73,7 @@ router.post(
                     startTime: session.startTime,
                     status: session.status,
                 },
-                shareLink: `${process.env.APP_URL || 'http://localhost:3000'}/live-tracker.html?code=${trackingCode}`,
+                shareLink: liveTrackerLink(userId, { code: trackingCode }),
             });
         } catch (error) {
             console.error('tracking/start:', error);

@@ -35,7 +35,9 @@ services:
       # Render injects PORT automatically (usually 10000). APP_URL is set after
       # first deploy — come back and paste the https://xxxx.onrender.com URL here.
       - key: APP_URL
-        value: https://hershield-api.onrender.com   # ← UPDATE after first deploy
+        value: https://ai-hershield.onrender.com
+      - key: FRONTEND_URL
+        value: https://hershield-web.web.app
 
       # ── Firebase Web SDK (public — safe to commit) ───────────────────────────
       - key: FIREBASE_API_KEY

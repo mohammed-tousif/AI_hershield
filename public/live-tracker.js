@@ -1,8 +1,6 @@
 // Live Safety Tracker Logic
 
-const API_BASE_URL = typeof window !== 'undefined' && window.location?.origin
-    ? window.location.origin
-    : '';
+// Use relative /api paths — config.js rewrites them to the Render backend on Firebase Hosting.
 
 /**
  * Parse JSON from fetch responses. Fails clearly on HTML error pages or empty bodies.
@@ -172,19 +170,10 @@ class SafetyTracker {
             return;
         }
 
-        if (!API_BASE_URL) {
-            this.showNotification(
-                'Configuration Error',
-                'This page must be opened in a browser from your Her Shield server URL.',
-                'error'
-            );
-            return;
-        }
-
         try {
             try {
                 console.log('Checking server health...');
-                const healthCheck = await fetch(`${API_BASE_URL}/api/health`);
+                const healthCheck = await fetch('/api/health');
                 if (!healthCheck.ok) {
                     throw new Error(`Health check failed (HTTP ${healthCheck.status})`);
                 }
@@ -200,7 +189,7 @@ class SafetyTracker {
             }
 
             console.log('Sending start request to server...');
-            const response = await fetch(`${API_BASE_URL}/api/live-tracker/start`, {
+            const response = await fetch(`/api/live-tracker/start`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -334,7 +323,7 @@ class SafetyTracker {
 
         // Send to Backend
         try {
-            await fetch(`${API_BASE_URL}/api/live-tracker/update-location`, {
+            await fetch(`/api/live-tracker/update-location`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -410,7 +399,7 @@ class SafetyTracker {
 
         // Correct PIN
         try {
-            const response = await fetch(`${API_BASE_URL}/api/live-tracker/verify-pin`, {
+            const response = await fetch(`/api/live-tracker/verify-pin`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -468,7 +457,7 @@ class SafetyTracker {
 
         try {
             console.log('Triggering emergency for session:', this.sessionId);
-            const response = await fetch(`${API_BASE_URL}/api/live-tracker/trigger-alert`, {
+            const response = await fetch(`/api/live-tracker/trigger-alert`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId: this.sessionId })
@@ -506,7 +495,7 @@ class SafetyTracker {
         }
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/live-tracker/stop`, {
+            const response = await fetch(`/api/live-tracker/stop`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

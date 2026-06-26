@@ -1406,10 +1406,10 @@ class NavigationManager {
             async function pushLocationUpdate(userId) {
                 try {
                     const loc = await getCurrentLocation();
-                    await fetch('/api/live-tracker/location', {
+                    await fetch('/api/live-tracker/update-location', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ userId, latitude: loc.latitude, longitude: loc.longitude }),
+                        body: JSON.stringify({ userId, lat: loc.latitude, lng: loc.longitude }),
                     });
                 } catch (e) {
                     console.warn('GPS push failed:', e.message);

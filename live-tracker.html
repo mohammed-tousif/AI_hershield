@@ -7,7 +7,9 @@
     <!-- ↓ Auth guard: runs synchronously before any content renders -->
     <script>
         (function() {
-            if (localStorage.getItem('hershield_logged_in') !== 'true') {
+            var params = new URLSearchParams(window.location.search);
+            var isViewerLink = params.has('track') || params.has('code');
+            if (!isViewerLink && localStorage.getItem('hershield_logged_in') !== 'true') {
                 window.location.replace('auth.html?next=live-tracker.html');
             }
         })();
@@ -1342,6 +1344,7 @@
     </audio>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
+    <script src="live-tracker-viewer.js" defer></script>
     <script src="live-tracker.js" defer></script>
     <!-- Google Maps loaded LAST so callback=initMap finds the function defined in live-tracker.js -->
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBGXF_WodaMeP10oziYhG0NdqHw2fJogxM&libraries=places,directions,visualization&callback=initMap" async defer></script>

@@ -143,16 +143,26 @@ app.use('/api/legal',    require('./routes/legalChat'));   // 🛡️ LexaShield
 app.get('/api/health', (req, res) => {
     const dbHealth = checkDBHealth();
     const fsReady = !!getFirestoreAdmin();
+    const emailConfigured = !!(
+        process.env.EMAIL_USER && String(process.env.EMAIL_USER).trim()
+        && process.env.EMAIL_PASS && String(process.env.EMAIL_PASS).trim()
+    );
     const warnings = [];
     if (!fsReady) {
         warnings.push(
             'Firestore Admin is not configured. Set FIREBASE_SERVICE_ACCOUNT_PATH (key file) or FIREBASE_SERVICE_ACCOUNT_JSON — see .env.example.'
         );
     }
+    if (!emailConfigured) {
+        warnings.push('Email is not configured. Set EMAIL_USER and EMAIL_PASS (Gmail app password) on Render to send emergency alerts.');
+    }
     res.json({
         status: 'ok',
         timestamp: new Date(),
         database: dbHealth,
+        email: { configured: emailConfigured, user: emailConfigured ? process.env.EMAIL_USER : null },
+        frontendUrl: process.env.FRONTEND_URL || null,
+        appUrl: process.env.APP_URL || null,
         port: typeof global.__HER_SHIELD_HTTP_PORT__ === 'number' ? global.__HER_SHIELD_HTTP_PORT__ : null,
         uptime: process.uptime(),
         environment: process.env.NODE_ENV || 'development',

@@ -22,12 +22,15 @@
 
     /** Render backend root — update if your Render service URL ever changes */
     var RENDER_BACKEND = 'https://ai-hershield.onrender.com';
+    /** Firebase Hosting frontend — used in share links from the backend */
+    var FRONTEND_URL   = 'https://hershield-web.web.app';
 
     /**
      * Exposed globally so Socket.IO connections can use it:
      *   io(window.HERSHIELD_BACKEND || location.origin, { transports:['polling'] })
      */
     window.HERSHIELD_BACKEND = isLocal ? '' : RENDER_BACKEND;
+    window.HERSHIELD_FRONTEND = isLocal ? window.location.origin : FRONTEND_URL;
 
     // In local dev there is nothing to intercept
     if (isLocal) return;

@@ -14,6 +14,7 @@ const {
 } = require('../services/firestoreRepository');
 const smsService = require('../services/smsService');
 const whatsappService = require('../services/whatsappService');
+const { liveTrackerLink } = require('../config/appUrls');
 
 // ─── Email transporter (same Gmail config as liveTracker.js) ─────────────────
 function hasEmailConfig() {
@@ -73,36 +74,39 @@ async function sendSosEmail({ toEmail, toName, userName, userEmail, location, tr
       </div>
     </div>`;
 
-    emailTransporter.sendMail({
-        from: `"HerShield Safety" <${process.env.EMAIL_USER}>`,
-        to: toEmail,
-        subject: `🚨 URGENT: ${userName || 'A HerShield User'} needs help — SOS Alert`,
-        html,
-    })
-    .then(() => console.log(`✅ SOS email sent to ${toEmail}`))
-    .catch(err => console.error(`❌ SOS email failed for ${toEmail}:`, err.message));
-
-    return { success: true, to: toEmail };
+    try {
+        await emailTransporter.sendMail({
+            from: `"HerShield Safety" <${process.env.EMAIL_USER}>`,
+            to: toEmail,
+            subject: `🚨 URGENT: ${userName || 'A HerShield User'} needs help — SOS Alert`,
+            html,
+        });
+        console.log(`✅ SOS email sent to ${toEmail}`);
+        return { success: true, to: toEmail };
+    } catch (err) {
+        console.error(`❌ SOS email failed for ${toEmail}:`, err.message);
+        return { success: false, to: toEmail, error: err.message };
+    }
 }
 
 /**
  * Send SOS emails to all contacts that have an email address.
  */
 async function sendBulkSosEmails(contacts, userName, userEmail, location, trackingLink) {
-    // ── Send all SOS emails asynchronously in background ──
-    contacts.forEach(c => {
-        if (!c.email) return;
-        sendSosEmail({
-            toEmail: c.email,
-            toName: c.name,
-            userName,
-            userEmail,
-            location,
-            trackingLink
-        });
-    });
-    
-    return [{ success: true, message: 'Emails triggered in background' }];
+    const withEmail = contacts.filter((c) => c.email);
+    if (!withEmail.length) return [];
+    return Promise.all(
+        withEmail.map((c) =>
+            sendSosEmail({
+                toEmail: c.email,
+                toName: c.name,
+                userName,
+                userEmail,
+                location,
+                trackingLink,
+            })
+        )
+    );
 }
 
 // ─── Shared in-memory SOS timer map (exported so server.js can re-hydrate) ───
@@ -205,8 +209,7 @@ router.post(
 
             // Create live tracking session keyed to userId
             const trackingCode = await ensureUniqueCode();
-            const appUrl = process.env.APP_URL || 'http://localhost:3000';
-            const trackingLink = `${appUrl}/live-tracker.html?code=${trackingCode}`;
+            const trackingLink = liveTrackerLink(userId, { code: trackingCode });
 
             await liveSessionCreate({
                 userId,
@@ -271,7 +274,7 @@ router.post(
                 }
                 // Always send email to contacts that have an email address
                 const emailRes = await sendBulkSosEmails(sorted, userName, user.email || '', location, trackingLink);
-                alertResults.push(...emailRes);
+                alertResults.push(...emailRes.map((r) => ({ ...r, method: 'email' })));
             }
 
             // ── Also notify the user themselves via SMS ──────────────────────
@@ -457,7 +460,7 @@ router.post(
             if (sessionId) {
                 const session = await trackingFindById(sessionId);
                 if (session) {
-                    trackingLink = `${process.env.APP_URL || 'http://localhost:3000'}/live-tracker.html?code=${session.trackingCode}`;
+                    trackingLink = liveTrackerLink(session.userId || userId, { code: session.trackingCode });
                     session.emergencyAlerts = session.emergencyAlerts || [];
                     session.emergencyAlerts.push({ location, notificationsSent: [], timestamp: new Date() });
                     await trackingUpdate(session);
@@ -476,6 +479,10 @@ router.post(
                 const wa = await whatsappService.sendBulkEmergencyAlerts(sorted, user.name, location, trackingLink);
                 results.push(...wa.map((r) => ({ ...r, method: 'whatsapp' })));
             }
+
+            const userName = user.name || 'HerShield User';
+            const emailResults = await sendBulkSosEmails(sorted, userName, user.email || '', location, trackingLink);
+            results.push(...emailResults.map((r) => ({ ...r, method: 'email' })));
 
             user.statistics = user.statistics || {};
             user.statistics.emergencyAlerts = (user.statistics.emergencyAlerts || 0) + 1;

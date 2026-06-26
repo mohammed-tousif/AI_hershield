@@ -350,6 +350,14 @@ async function liveSessionGetByUserId(userId) {
     return serializeDoc(snap);
 }
 
+async function liveSessionFindByCode(code) {
+    const db = firestoreOrThrow();
+    const upper = (code || '').toUpperCase();
+    const q = await db.collection(COL.LIVE_TRACKER).where('trackingCode', '==', upper).limit(1).get();
+    if (q.empty) return null;
+    return serializeDoc(q.docs[0]);
+}
+
 async function liveSessionSetVerified(userId) {
     const db = firestoreOrThrow();
     await db.collection(COL.LIVE_TRACKER).doc(userId).set(
@@ -731,6 +739,7 @@ module.exports = {
     communityDeleteAlert,
     liveSessionCreate,
     liveSessionGetByUserId,
+    liveSessionFindByCode,
     liveSessionSetVerified,
     liveSessionPushLocation,
     liveSessionStop,

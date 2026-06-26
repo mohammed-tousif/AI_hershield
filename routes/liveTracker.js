@@ -7,6 +7,7 @@ const nodemailer = require('nodemailer');
 const {
     liveSessionCreate,
     liveSessionGetByUserId,
+    liveSessionFindByCode,
     liveSessionSetVerified,
     liveSessionPushLocation,
     liveSessionStop,
@@ -17,6 +18,7 @@ const {
 } = require('../services/firestoreRepository');
 
 const smsService = require('../services/smsService');
+const { getFrontendUrl, liveTrackerLink } = require('../config/appUrls');
 
 function hasEmailConfig() {
     const u = process.env.EMAIL_USER && String(process.env.EMAIL_USER).trim();
@@ -44,12 +46,9 @@ router.post('/start', async (req, res) => {
         const userId    = Date.now().toString() + Math.floor(Math.random() * 1000);
         const trackingCode = Math.random().toString(36).substring(2, 8).toUpperCase();
 
-        // ── Tracking link — APP_URL from env is highest priority so the link
-        // is always reachable by emergency contacts (not just localhost) ──────
-        const origin = process.env.APP_URL
-            || process.env.SERVER_URL
-            || `http://localhost:${process.env.PORT || 3000}`;
-        const trackingLink = `${origin}/live-tracker.html?track=${userId}`;
+        // ── Tracking link — FRONTEND_URL so emergency contacts open Firebase-hosted page
+        const origin = req.body.baseUrl || getFrontendUrl();
+        const trackingLink = liveTrackerLink(userId);
 
         // ── Map link using real GPS coords if provided ────────────────────
         const mapLink = (startLat && startLng)
@@ -103,17 +102,18 @@ router.post('/start', async (req, res) => {
               </div>
             </div>`;
 
-            // ── Send asynchronously in background (don't await) to prevent UI buffer ──
-            transporter.sendMail({
-                from: `"HerShield Safety" <${process.env.EMAIL_USER}>`,
-                to: emergencyContacts,
-                subject: `📡 ${name || 'A HerShield User'} started Live Tracking – Stay Alert`,
-                html,
-            }).then(() => {
+            // Send emails and wait so we know delivery status
+            try {
+                await transporter.sendMail({
+                    from: `"HerShield Safety" <${process.env.EMAIL_USER}>`,
+                    to: emergencyContacts,
+                    subject: `📡 ${name || 'A HerShield User'} started Live Tracking – Stay Alert`,
+                    html,
+                });
                 console.log(`✅ Tracking start email sent to: ${emergencyContacts.join(', ')}`);
-            }).catch((mailErr) => {
+            } catch (mailErr) {
                 console.error('⚠️  Tracking start email failed:', mailErr.message);
-            });
+            }
         }
 
         res.status(201).json({
@@ -290,7 +290,7 @@ router.post('/trigger-alert', async (req, res) => {
 
             transporter.sendMail(mailOptions)
                 .then(() => console.log('✅ Trigger-alert email sent'))
-                .catch(mailErr => console.error('sendMail (trigger-alert):', mailErr));
+                .catch((mailErr) => console.error('sendMail (trigger-alert):', mailErr));
 
         res.json({ success: true, message: 'Emergency alert sent' });
     } catch (error) {
@@ -358,9 +358,9 @@ router.post('/dashboard-alert', async (req, res) => {
         }
         
         // Remove duplicates and empty values
-        const emailRecipients = [...new Set(allEmails.filter(Boolean))];
-        if (emailRecipients.length === 0) {
-            emailRecipients.push(process.env.EMAIL_USER); // fallback if no emails found
+        let emailRecipients = [...new Set(allEmails.filter(Boolean))];
+        if (emailRecipients.length === 0 && hasEmailConfig()) {
+            console.warn('dashboard-alert: no contact emails — alert not sent (add emails to emergency contacts)');
         }
 
         // ── 2. Send SMS to all contacts that have a phone number ─────────────
@@ -384,10 +384,10 @@ router.post('/dashboard-alert', async (req, res) => {
         }
 
         // ── 3. Send Email ────────────────────────────────────────────────────
-        let emailSent = false;
+        let emailSentCount = 0;
         if (hasEmailConfig() && emailRecipients.length > 0) {
             const mailOptions = {
-                from: process.env.EMAIL_USER,
+                from: `"HerShield Safety" <${process.env.EMAIL_USER}>`,
                 to: emailRecipients,
                 subject: `🚨 URGENT: Emergency Alert from ${userName || 'User'}`,
                 html: `
@@ -416,9 +416,13 @@ router.post('/dashboard-alert', async (req, res) => {
                         </div>
                     </div>`,
             };
-                transporter.sendMail(mailOptions)
-                    .then(() => console.log(`✅ Dashboard alert email sent to ${emailRecipients.join(', ')}`))
-                    .catch(mailErr => console.error('sendMail (dashboard-alert):', mailErr.message));
+            try {
+                await transporter.sendMail(mailOptions);
+                emailSentCount = emailRecipients.length;
+                console.log(`✅ Dashboard alert email sent to ${emailRecipients.join(', ')}`);
+            } catch (mailErr) {
+                console.error('sendMail (dashboard-alert):', mailErr.message);
+            }
         }
 
         // ── 4. Persist to community alerts ───────────────────────────────────
@@ -479,13 +483,36 @@ router.post('/dashboard-alert', async (req, res) => {
             message: 'Emergency alert dispatched.',
             notifications: {
                 sms:   { sent: smsSent, failed: smsFailed },
-                email: { sent: emailSent ? emailRecipients.length : 0 },
+                email: { sent: emailSentCount, failed: emailRecipients.length - emailSentCount },
             },
             alertPersisted,
         });
 
     } catch (err) {
         console.error('dashboard-alert error:', err);
+        return res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// Resolve tracking code → session userId (for email links with ?code=)
+router.get('/lookup-code/:code', async (req, res) => {
+    try {
+        const code = (req.params.code || '').trim();
+        if (!code) {
+            return res.status(400).json({ success: false, message: 'Tracking code required' });
+        }
+        const session = await liveSessionFindByCode(code);
+        if (!session) {
+            return res.status(404).json({ success: false, message: 'Invalid or expired tracking code' });
+        }
+        return res.json({
+            success: true,
+            userId: session.userId,
+            isTrackingActive: session.isTrackingActive !== false,
+            name: session.name || 'HerShield User',
+        });
+    } catch (err) {
+        console.error('lookup-code error:', err.message);
         return res.status(500).json({ success: false, message: err.message });
     }
 });

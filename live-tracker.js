@@ -2,9 +2,7 @@
 //  HerShield Live Safety Tracker  –  live-tracker.js
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-const API_BASE_URL = typeof window !== 'undefined' && window.location?.origin
-    ? window.location.origin
-    : '';
+// Use relative /api paths — config.js rewrites them to the Render backend on Firebase Hosting.
 
 // ── JSON helper ──────────────────────────────────────────────────────────────
 async function readJsonResponse(response) {
@@ -423,7 +421,7 @@ class SafetyTracker {
         if (startBtn) { startBtn.disabled = true; startBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Starting…'; }
 
         try {
-            const resp = await fetch(`${API_BASE_URL}/api/live-tracker/start`, {
+            const resp = await fetch(`/api/live-tracker/start`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
@@ -539,7 +537,7 @@ class SafetyTracker {
         }
 
         try {
-            await fetch(`${API_BASE_URL}/api/live-tracker/update-location`, {
+            await fetch(`/api/live-tracker/update-location`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId: this.sessionId, lat, lng, accuracy })
@@ -588,7 +586,7 @@ class SafetyTracker {
         if (inputPin !== this.pin) { errorDiv.style.display = 'block'; errorDiv.textContent = 'Incorrect PIN!'; return; }
 
         try {
-            const resp = await fetch(`${API_BASE_URL}/api/live-tracker/verify-pin`, {
+            const resp = await fetch(`/api/live-tracker/verify-pin`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId: this.sessionId, pin: inputPin })
@@ -625,7 +623,7 @@ class SafetyTracker {
         }
 
         try {
-            const resp = await fetch(`${API_BASE_URL}/api/live-tracker/trigger-alert`, {
+            const resp = await fetch(`/api/live-tracker/trigger-alert`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId: this.sessionId })
@@ -648,7 +646,7 @@ class SafetyTracker {
         if (inputPin !== this.pin) { errorDiv.style.display = 'block'; errorDiv.textContent = 'Incorrect PIN!'; return; }
 
         try {
-            const resp = await fetch(`${API_BASE_URL}/api/live-tracker/stop`, {
+            const resp = await fetch(`/api/live-tracker/stop`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId: this.sessionId, pin: inputPin })
