@@ -247,7 +247,7 @@ router.post('/trigger-alert', async (req, res) => {
         }
 
         const mailOptions = {
-            from: process.env.EMAIL_USER,
+            from: `"HerShield Safety" <${process.env.EMAIL_USER}>`,
             to: session.emergencyContacts,
             subject: `🚨 EMERGENCY ALERT: ${session.name} needs help!`,
             html: `
@@ -329,6 +329,12 @@ router.post('/dashboard-alert', async (req, res) => {
     try {
         const { location, userEmail, userName, contacts, userId } = req.body;
 
+        console.log('📩 dashboard-alert received:', JSON.stringify({
+            userName, userEmail, userId,
+            contactsFromFrontend: contacts,
+            hasLocation: !!location,
+        }));
+
         const mapLink = location
             ? `https://maps.google.com/?q=${location.lat},${location.lng}`
             : 'Location not available';
@@ -340,28 +346,37 @@ router.post('/dashboard-alert', async (req, res) => {
                 const userDoc = await usersFindById(userId);
                 if (userDoc && userDoc.emergencyContacts) {
                     firestoreContacts = userDoc.emergencyContacts.filter(c => c.phone || c.email);
+                    console.log(`📋 Firestore contacts found: ${firestoreContacts.length}`, firestoreContacts.map(c => ({ name: c.name, email: c.email, phone: c.phone ? '✓' : '✗' })));
+                } else {
+                    console.log('📋 Firestore user found but no emergencyContacts field');
                 }
             } catch (e) {
                 console.warn('dashboard-alert: could not fetch user from Firestore:', e.message);
             }
+        } else {
+            console.warn('dashboard-alert: no userId provided — cannot look up Firestore contacts');
         }
 
-        // Fall back to contacts passed from frontend (email-only) if no Firestore data
+        // Merge emails from all sources
         let allEmails = [];
         if (firestoreContacts && firestoreContacts.length > 0) {
             allEmails = allEmails.concat(firestoreContacts.map(c => c.email));
         }
         if (contacts && Array.isArray(contacts) && contacts.length > 0) {
-            // Handle both array of objects and array of strings
             const mappedContacts = contacts.map(c => typeof c === 'string' ? c : c.email);
             allEmails = allEmails.concat(mappedContacts);
         }
-        
-        // Remove duplicates and empty values
-        let emailRecipients = [...new Set(allEmails.filter(Boolean))];
-        if (emailRecipients.length === 0 && hasEmailConfig()) {
-            console.warn('dashboard-alert: no contact emails — alert not sent (add emails to emergency contacts)');
+
+        // Remove duplicates and empty/undefined values
+        let emailRecipients = [...new Set(allEmails.filter(e => e && String(e).trim().length > 0 && String(e).includes('@')))];
+
+        // Fallback: if no emergency contact emails, send to the user's own email
+        if (emailRecipients.length === 0 && userEmail && String(userEmail).includes('@')) {
+            console.warn('dashboard-alert: no emergency contact emails found — falling back to user email:', userEmail);
+            emailRecipients = [userEmail];
         }
+
+        console.log(`📧 Final email recipients (${emailRecipients.length}):`, emailRecipients);
 
         // ── 2. Send SMS to all contacts that have a phone number ─────────────
         const smsResults = [];

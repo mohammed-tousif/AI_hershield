@@ -1773,10 +1773,13 @@
                     const userName = localStorage.getItem('hershield_user_name') || 'User';
                     const userEmail = localStorage.getItem('hershield_user_email') || '';
 
-                    // Get contacts from localStorage
+                    // Get contacts from localStorage — filter out empty/undefined emails
                     const savedContacts = JSON.parse(localStorage.getItem('hershield_emergency_contacts') || '[]');
-                    // Extract just emails for now as requested
-                    const contacts = savedContacts.map(c => c.email);
+                    const contacts = savedContacts
+                        .map(c => c.email)
+                        .filter(e => e && String(e).trim().length > 0 && String(e).includes('@'));
+
+                    console.log('[Emergency Alert] Sending:', { userName, userEmail, contacts, savedContacts });
 
                     try {
                         // Get userId from multiple sources for Firestore contact lookup
@@ -1786,6 +1789,8 @@
                             localStorage.getItem('hershield_user_uid') ||
                             null
                         );
+
+                        console.log('[Emergency Alert] userId resolved:', userId);
 
                         const response = await fetch('/api/live-tracker/dashboard-alert', {
                             method: 'POST',
@@ -1802,9 +1807,15 @@
                         });
 
                         const data = await response.json();
+                        console.log('[Emergency Alert] Server response:', data);
 
                         if (data.success) {
-                            showNotification('Alert Sent', 'Emergency alert has been sent successfully to your contacts.', 'success');
+                            const emailCount = data.notifications?.email?.sent || 0;
+                            const smsCount = data.notifications?.sms?.sent || 0;
+                            const msg = emailCount > 0 || smsCount > 0
+                                ? `Alert sent! ${emailCount} email(s) and ${smsCount} SMS dispatched.`
+                                : 'Alert recorded. No emergency contact emails found — please add contacts with email addresses in your profile.';
+                            showNotification('Alert Sent', msg, emailCount > 0 || smsCount > 0 ? 'success' : 'warning');
                             // Refresh private history (SOS events), NOT the public recent alerts
                             await loadSosHistory();
                         } else {
