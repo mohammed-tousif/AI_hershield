@@ -25,8 +25,12 @@ function hasEmailConfig() {
 
 const emailTransporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 465,
-    secure: true, // true for 465, false for other ports
+    // Port 465 (implicit TLS) is fully unreachable from Render (connect times
+    // out even after forcing IPv4 - confirmed by direct testing on 2026-07-03).
+    // 587 (STARTTLS) is more commonly left open by cloud-host egress rules.
+    port: 587,
+    secure: false,
+    requireTLS: true,
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,

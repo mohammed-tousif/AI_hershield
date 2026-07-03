@@ -28,8 +28,12 @@ function hasEmailConfig() {
 
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 465,
-    secure: true, // true for 465, false for other ports
+    // Port 465 (implicit TLS) is fully unreachable from Render (connect times
+    // out even after forcing IPv4 - confirmed by direct testing on 2026-07-03).
+    // 587 (STARTTLS) is more commonly left open by cloud-host egress rules.
+    port: 587,
+    secure: false,
+    requireTLS: true,
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
@@ -296,11 +300,24 @@ router.post('/trigger-alert', async (req, res) => {
             `,
         };
 
-            transporter.sendMail(mailOptions)
-                .then(() => console.log('✅ Trigger-alert email sent'))
-                .catch((mailErr) => console.error('sendMail (trigger-alert):', mailErr));
+        // Await the send so the response honestly reflects whether the email
+        // actually went out — previously this fired-and-forgot, so the client
+        // always saw "success" even when the send later failed in the background.
+        let emailSent = false;
+        let emailError = null;
+        try {
+            await transporter.sendMail(mailOptions);
+            emailSent = true;
+            console.log('✅ Trigger-alert email sent');
+        } catch (mailErr) {
+            emailError = mailErr.message;
+            console.error('sendMail (trigger-alert):', mailErr.message);
+        }
 
-        res.json({ success: true, message: 'Emergency alert sent' });
+        res.json({
+            success: emailSent,
+            message: emailSent ? 'Emergency alert sent' : `Emergency alert email failed to send: ${emailError}`,
+        });
     } catch (error) {
         console.error('Error triggering alert:', error);
         res.status(500).json({ success: false, message: 'Server error' });
