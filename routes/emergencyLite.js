@@ -31,7 +31,16 @@ const emailTransporter = nodemailer.createTransport({
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
     },
+    // Force IPv4 — see routes/liveTracker.js for why (Render's IPv6 route to
+    // Gmail's SMTP hangs instead of failing over to IPv4).
+    family: 4,
     tls: { rejectUnauthorized: false },
+    // Without these, a blocked/blackholed outbound connection (common for cloud-host
+    // IPs talking to Gmail's SMTP) hangs the whole HTTP request indefinitely instead
+    // of failing fast — the user sees a stuck spinner and never gets an error.
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
 });
 
 /**

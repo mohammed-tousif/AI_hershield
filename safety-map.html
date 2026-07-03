@@ -432,7 +432,7 @@
                         <div style="position:relative;">
                             <div id="googleMap"></div>
                             <!-- GPS Recenter Button -->
-                            <button onclick="if(window.map && navigator.geolocation){ navigator.geolocation.getCurrentPosition(function(p){ map.setCenter({lat:p.coords.latitude,lng:p.coords.longitude}); map.setZoom(16); }, null, {enableHighAccuracy:true,timeout:10000,maximumAge:0}); }"
+                            <button onclick="if(!window.map){} else if(!navigator.geolocation){ showMapToast('Your browser does not support location access.'); } else { navigator.geolocation.getCurrentPosition(function(p){ map.setCenter({lat:p.coords.latitude,lng:p.coords.longitude}); map.setZoom(16); }, function(err){ showMapToast(geoErrorMessage(err)); }, {enableHighAccuracy:true,timeout:10000,maximumAge:0}); }"
                                 title="Center to my current location"
                                 style="position:absolute;bottom:16px;right:16px;z-index:10;background:#fff;
                                        border:none;border-radius:50%;width:44px;height:44px;box-shadow:0 2px 8px rgba(0,0,0,0.3);
@@ -808,9 +808,14 @@
                             });
                             console.log('📍 Map centered on live GPS location');
                         },
-                        () => console.warn('Geolocation denied — staying at JCET Hubli'),
+                        (err) => {
+                            console.warn('Geolocation denied — staying at default map center (JCET Hubli):', err.message);
+                            showMapToast(geoErrorMessage(err) + ' Showing a default location instead of yours.');
+                        },
                         { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
                     );
+                } else {
+                    showMapToast('Your browser does not support location access — showing a default location instead of yours.');
                 }
             });
 
@@ -1005,16 +1010,22 @@
             const heatmapData = all.map(point => {
                 const adjustedRisk = getTimeBasedRiskLevel(point.risk_level, currentHour);
                 return {
+                    // NOTE: risk_level is already 1-3 (low/medium/high), matching the
+                    // 0.5-3 clamp range CanvasHeatmap expects. Previously this was
+                    // multiplied by 5 (giving 5-15), which saturated every point to
+                    // the maximum radius + maximum (red) color regardless of actual
+                    // risk — that's why the heatmap rendered as one giant opaque
+                    // red overlay hiding the map underneath.
                     location: new google.maps.LatLng(point.latitude, point.longitude),
-                    weight: adjustedRisk * 5
+                    weight: adjustedRisk
                 };
             });
 
             heatmap = new CanvasHeatmap({
                 map,
                 data: heatmapData,
-                radius: 40,
-                opacity: 0.7,
+                radius: 32,
+                opacity: 0.5,
                 initiallyVisible: document.getElementById('showHeatmap').checked
             });
         }
@@ -1211,6 +1222,35 @@
             startPlace = null;
             endPlace   = null;
         });
+
+        /** Lightweight toast for geolocation errors (not tied to the route panel). */
+        function showMapToast(message, isError = true) {
+            let toast = document.getElementById('mapGeoToast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'mapGeoToast';
+                toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);' +
+                    'z-index:9999;padding:12px 20px;border-radius:10px;color:#fff;font-size:0.9rem;' +
+                    'max-width:min(420px,90vw);box-shadow:0 6px 20px rgba(0,0,0,0.25);transition:opacity 0.3s;';
+                document.body.appendChild(toast);
+            }
+            toast.style.background = isError ? '#e74c3c' : '#2ecc71';
+            toast.textContent = message;
+            toast.style.opacity = '1';
+            toast.style.display = 'block';
+            clearTimeout(toast._hideTimer);
+            toast._hideTimer = setTimeout(() => { toast.style.opacity = '0'; }, 5000);
+        }
+
+        /** Friendly message for a GeolocationPositionError code. */
+        function geoErrorMessage(error) {
+            const msgs = {
+                1: 'Location permission was denied. Please allow location access for this site in your browser settings.',
+                2: 'Your current location is unavailable. Check that GPS/location services are turned on.',
+                3: 'Location request timed out. Please try again.',
+            };
+            return msgs[error && error.code] || ('Could not get your location' + (error && error.message ? ': ' + error.message : '.'));
+        }
 
         /** Show state inside the route result panel */
         function showRouteResult(type, html) {

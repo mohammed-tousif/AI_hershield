@@ -729,7 +729,19 @@
         }
 
         function centerMapToCurrentLocation() {
-            if (!navigator.geolocation || !map) return;
+            if (!map) return;
+            if (!navigator.geolocation) {
+                showNotification('Not Supported', 'Your browser does not support location access.', 'error');
+                return;
+            }
+            if (window.isSecureContext === false) {
+                showNotification(
+                    'Insecure Connection',
+                    'Location access requires HTTPS (or localhost). This page was loaded over a plain http:// address, so the browser blocks GPS access.',
+                    'error'
+                );
+                return;
+            }
             navigator.geolocation.getCurrentPosition((position) => {
                 const pos = {
                     lat: position.coords.latitude,
@@ -753,6 +765,12 @@
                 });
             }, (error) => {
                 console.warn('Could not center map to current location:', error.message);
+                const messages = {
+                    1: 'Location permission was denied. Please allow location access for this site in your browser settings, then try again.',
+                    2: 'Your current location is unavailable right now. Check that GPS/location services are turned on for your device.',
+                    3: 'Location request timed out. Please try again — this can happen with a weak GPS/network signal.',
+                };
+                showNotification('Location Unavailable', messages[error.code] || ('Could not get your location: ' + error.message), 'error');
             }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
         }
 

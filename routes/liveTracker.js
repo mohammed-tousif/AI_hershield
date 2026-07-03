@@ -34,8 +34,16 @@ const transporter = nodemailer.createTransport({
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
     },
-    // Force IPv4 to prevent Render hanging on IPv6
+    // Force IPv4 — Render's outbound IPv6 route to smtp.gmail.com's AAAA record
+    // hangs instead of failing over, so Node's default dual-stack DNS lookup can
+    // stall the whole request. (Previously only commented, never actually set.)
+    family: 4,
     tls: { rejectUnauthorized: false },
+    // Fail fast instead of hanging the HTTP request indefinitely if the SMTP
+    // connection is ever blocked/blackholed again.
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
 });
 
 router.post('/start', async (req, res) => {

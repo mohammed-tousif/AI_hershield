@@ -233,6 +233,7 @@ class SafetyTracker {
         this.watchId        = null;
         this.isTracking     = false;
         this.trackingLink   = null;
+        this._geoErrorShown = false;
 
         // Map elements
         this.map           = null;
@@ -505,10 +506,14 @@ class SafetyTracker {
             if (this.marker) { this.map.panTo(this.marker.getPosition()); this.map.setZoom(15); }
         }
 
-        if (navigator.geolocation) {
+        if (!navigator.geolocation) {
+            this.showNotification('Location Not Supported', 'Your browser does not support GPS location, so your live location cannot be shared. Please use a different browser/device.', 'error');
+        } else if (window.isSecureContext === false) {
+            this.showNotification('Insecure Connection', 'This page was opened over a plain http:// address, so the browser blocks GPS access. Open it over https:// (or localhost) to share your live location.', 'error');
+        } else {
             this.watchId = navigator.geolocation.watchPosition(
                 (pos) => this.handleLocationUpdate(pos),
-                (err) => console.warn('Geolocation error:', err.message),
+                (err) => this.handleGeoError(err),
                 { enableHighAccuracy: true }
             );
         }
@@ -543,6 +548,22 @@ class SafetyTracker {
                 body: JSON.stringify({ userId: this.sessionId, lat, lng, accuracy })
             });
         } catch (err) { console.warn('Location update failed:', err.message); }
+    }
+
+    /** Surface geolocation failures to the user instead of only logging them —
+     *  otherwise "live tracking" silently stops sharing location with no feedback. */
+    handleGeoError(err) {
+        console.warn('Geolocation error:', err.message);
+        if (this._geoErrorShown) return; // avoid stacking repeated modals
+        this._geoErrorShown = true;
+        const messages = {
+            1: 'Location permission was denied, so your live location is NOT being shared with your emergency contacts. Please allow location access for this site and restart tracking.',
+            2: 'Your location is currently unavailable (GPS/location services may be off), so live tracking is paused.',
+            3: 'Location request timed out. Live tracking will keep retrying, but your location may not be up to date.',
+        };
+        this.showNotification('Location Sharing Interrupted', messages[err.code] || ('Could not get your location: ' + err.message), 'error');
+        // Allow a fresh warning if it happens again later in the session
+        setTimeout(() => { this._geoErrorShown = false; }, 60000);
     }
 
     // ── Verification timer ────────────────────────────────────────────────
