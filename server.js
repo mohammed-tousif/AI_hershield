@@ -143,10 +143,9 @@ app.use('/api/legal',    require('./routes/legalChat'));   // 🛡️ LexaShield
 app.get('/api/health', (req, res) => {
     const dbHealth = checkDBHealth();
     const fsReady = !!getFirestoreAdmin();
-    const emailConfigured = !!(
-        process.env.EMAIL_USER && String(process.env.EMAIL_USER).trim()
-        && process.env.EMAIL_PASS && String(process.env.EMAIL_PASS).trim()
-    );
+    // Email now sends via the Gmail REST API (HTTPS), not SMTP — see services/emailService.js.
+    const { isConfigured: isEmailConfigured } = require('./services/emailService');
+    const emailConfigured = isEmailConfigured();
     const warnings = [];
     if (!fsReady) {
         warnings.push(
@@ -154,7 +153,7 @@ app.get('/api/health', (req, res) => {
         );
     }
     if (!emailConfigured) {
-        warnings.push('Email is not configured. Set EMAIL_USER and EMAIL_PASS (Gmail app password) on Render to send emergency alerts.');
+        warnings.push('Email is not configured. Set GMAIL_OAUTH_CLIENT_ID, GMAIL_OAUTH_CLIENT_SECRET, GMAIL_OAUTH_REFRESH_TOKEN and EMAIL_USER — see .env.example.');
     }
     res.json({
         status: 'ok',

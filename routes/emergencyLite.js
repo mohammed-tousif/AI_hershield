@@ -4,7 +4,6 @@ const { body, validationResult } = require('express-validator');
 const crypto = require('crypto');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
-const nodemailer = require('nodemailer');
 const {
     usersFindById, usersSave, usersCreate,
     trackingFindById, trackingUpdate,
@@ -14,38 +13,14 @@ const {
 } = require('../services/firestoreRepository');
 const smsService = require('../services/smsService');
 const whatsappService = require('../services/whatsappService');
+const emailService = require('../services/emailService');
 const { liveTrackerLink } = require('../config/appUrls');
 
-// ─── Email transporter (same Gmail config as liveTracker.js) ─────────────────
+// ─── Email (Gmail REST API over HTTPS — see services/emailService.js for why) ─
 function hasEmailConfig() {
-    const u = process.env.EMAIL_USER && String(process.env.EMAIL_USER).trim();
-    const p = process.env.EMAIL_PASS && String(process.env.EMAIL_PASS).trim();
-    return !!(u && p);
+    return emailService.isConfigured();
 }
-
-const emailTransporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    // Port 465 (implicit TLS) is fully unreachable from Render (connect times
-    // out even after forcing IPv4 - confirmed by direct testing on 2026-07-03).
-    // 587 (STARTTLS) is more commonly left open by cloud-host egress rules.
-    port: 587,
-    secure: false,
-    requireTLS: true,
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-    },
-    // Force IPv4 — see routes/liveTracker.js for why (Render's IPv6 route to
-    // Gmail's SMTP hangs instead of failing over to IPv4).
-    family: 4,
-    tls: { rejectUnauthorized: false },
-    // Without these, a blocked/blackholed outbound connection (common for cloud-host
-    // IPs talking to Gmail's SMTP) hangs the whole HTTP request indefinitely instead
-    // of failing fast — the user sees a stuck spinner and never gets an error.
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000,
-});
+const emailTransporter = { sendMail: (opts) => emailService.sendMail(opts) };
 
 /**
  * Send a rich HTML SOS email to a single contact email address.

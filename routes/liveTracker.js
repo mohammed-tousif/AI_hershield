@@ -3,7 +3,6 @@ require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 const express = require('express');
 const router = express.Router();
-const nodemailer = require('nodemailer');
 const {
     liveSessionCreate,
     liveSessionGetByUserId,
@@ -18,37 +17,15 @@ const {
 } = require('../services/firestoreRepository');
 
 const smsService = require('../services/smsService');
+const emailService = require('../services/emailService');
 const { getFrontendUrl, liveTrackerLink } = require('../config/appUrls');
 
+// Sends via the Gmail REST API (HTTPS) instead of SMTP — see services/emailService.js
+// for why: Render blocks outbound SMTP entirely, on any port.
 function hasEmailConfig() {
-    const u = process.env.EMAIL_USER && String(process.env.EMAIL_USER).trim();
-    const p = process.env.EMAIL_PASS && String(process.env.EMAIL_PASS).trim();
-    return !!(u && p);
+    return emailService.isConfigured();
 }
-
-const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    // Port 465 (implicit TLS) is fully unreachable from Render (connect times
-    // out even after forcing IPv4 - confirmed by direct testing on 2026-07-03).
-    // 587 (STARTTLS) is more commonly left open by cloud-host egress rules.
-    port: 587,
-    secure: false,
-    requireTLS: true,
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-    },
-    // Force IPv4 — Render's outbound IPv6 route to smtp.gmail.com's AAAA record
-    // hangs instead of failing over, so Node's default dual-stack DNS lookup can
-    // stall the whole request. (Previously only commented, never actually set.)
-    family: 4,
-    tls: { rejectUnauthorized: false },
-    // Fail fast instead of hanging the HTTP request indefinitely if the SMTP
-    // connection is ever blocked/blackholed again.
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000,
-});
+const transporter = { sendMail: (opts) => emailService.sendMail(opts) };
 
 router.post('/start', async (req, res) => {
     try {
