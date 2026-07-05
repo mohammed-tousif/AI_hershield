@@ -1388,8 +1388,8 @@
             console.log('Mobile Navigation Setup:');
             console.log('- Fixed sidebar toggle visible:', document.getElementById('fixedSidebarToggle')?.style.display);
             console.log('- Fixed actions toggle visible:', document.getElementById('fixedActionsToggle')?.style.display);
-            console.log('- Sidebar z-index:', getComputedStyle(document.getElementById('sidebar')).zIndex);
-            console.log('- Mobile overlay z-index:', getComputedStyle(document.getElementById('mobileOverlay')).zIndex);
+            console.log('- Sidebar z-index:', document.getElementById('sidebar') ? getComputedStyle(document.getElementById('sidebar')).zIndex : 'n/a (no #sidebar on this page)');
+            console.log('- Mobile overlay z-index:', document.getElementById('mobileOverlay') ? getComputedStyle(document.getElementById('mobileOverlay')).zIndex : 'n/a (no #mobileOverlay on this page)');
 
             // Add window resize handler
             window.addEventListener('resize', function () {

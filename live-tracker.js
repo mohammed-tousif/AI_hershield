@@ -17,6 +17,17 @@ async function readJsonResponse(response) {
     }
 }
 
+// ── Great-circle distance in km between two lat/lng points (Haversine formula) ─
+function haversineDistanceKm(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const toRad = (d) => d * (Math.PI / 180);
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  Location Autocomplete Engine
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -234,6 +245,7 @@ class SafetyTracker {
         this.isTracking     = false;
         this.trackingLink   = null;
         this._geoErrorShown = false;
+        this._lastGoodFix   = null; // { lat, lng, time } — used to reject implausible GPS jumps
 
         // Map elements
         this.map           = null;
@@ -302,13 +314,25 @@ class SafetyTracker {
     }
 
     // ── Map init (called by Google Maps callback) ─────────────────────────
-    initMap() {
+    initMap(retriesLeft = 20) {
         // Hand Google Maps objects to the autocomplete instances
         this.startAC.initGoogle();
         this.destAC.initGoogle();
 
         const mapEl = document.getElementById('map');
-        if (!mapEl || typeof google === 'undefined') return;
+        if (!mapEl || typeof google === 'undefined') {
+            // The Maps script has both `async` and `defer` — async wins in every
+            // modern browser, so this callback can fire before the parser has
+            // reached <div id="map">. Previously this just gave up silently,
+            // leaving the map permanently blank with no error. Retry briefly
+            // instead, since the element shows up a moment later in practice.
+            if (retriesLeft > 0) {
+                setTimeout(() => this.initMap(retriesLeft - 1), 100);
+            } else {
+                console.error('Live tracker map: #map element never appeared — map cannot render.');
+            }
+            return;
+        }
 
         const defaultPos = { lat: 15.3647, lng: 75.1240 };
 
@@ -533,6 +557,40 @@ class SafetyTracker {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
         const accuracy = position.coords.accuracy || 50;
+        const now = Date.now();
+
+        // Reject implausible GPS jumps — a single bad reading (e.g. the device
+        // momentarily falling back to network/IP-based positioning, which on
+        // Indian mobile carriers can resolve to a completely different city
+        // regardless of true physical location) would otherwise "teleport" the
+        // shared live location hundreds of km away for that update cycle, which
+        // is exactly what emergency contacts see when they open the tracking link.
+        if (this._lastGoodFix) {
+            const dtHours = (now - this._lastGoodFix.time) / 3600000;
+            const distanceKm = haversineDistanceKm(this._lastGoodFix.lat, this._lastGoodFix.lng, lat, lng);
+            const impliedSpeedKmh = dtHours > 0 ? distanceKm / dtHours : 0;
+            // Ignore small jitter (<2km) so this only ever catches genuine teleports,
+            // not real fast travel — 300km/h is above any real road/rail speed in
+            // this context, but well below what a bad network-location fallback
+            // produces (a city-to-city jump implies tens of thousands of km/h).
+            // Also require the new reading to itself be low-accuracy before
+            // rejecting — a high-accuracy reading that disagrees is more likely a
+            // genuine fast move than sensor noise.
+            if (distanceKm > 2 && impliedSpeedKmh > 300 && accuracy > 300) {
+                console.warn(`Ignoring implausible location jump: ${distanceKm.toFixed(1)}km in ${(dtHours * 3600).toFixed(0)}s (accuracy ${accuracy.toFixed(0)}m)`);
+                if (!this._jumpWarningShown) {
+                    this._jumpWarningShown = true;
+                    this.showNotification(
+                        'Weak Location Signal',
+                        'Got an unreliable location reading (likely network-based positioning instead of real GPS) and ignored it so your shared location doesn\'t jump to the wrong place. It will keep retrying.',
+                        'warning'
+                    );
+                    setTimeout(() => { this._jumpWarningShown = false; }, 60000);
+                }
+                return; // Don't update the map or push this reading to the server
+            }
+        }
+        this._lastGoodFix = { lat, lng, time: now };
 
         if (this.map) {
             const p = { lat, lng };
@@ -745,11 +803,36 @@ window.gm_authFailure = function () { console.error('Google Maps auth failure');
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  Boot
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-document.addEventListener('DOMContentLoaded', () => {
+function bootSafetyTracker() {
     window.safetyTracker = new SafetyTracker();
     // If Maps already fired initMap() before we were ready
     if (window._mapPending) {
         window.safetyTracker.initMap();
         delete window._mapPending;
     }
-});
+    // Fallback safety net: Google's `callback=initMap` query param is the normal
+    // trigger, but if it fails to fire for any reason (slow/flaky network, the
+    // browser deprioritising a background tab, etc.) the map would otherwise stay
+    // blank forever with no error. Poll briefly for google.maps becoming available
+    // and initialise ourselves if the callback hasn't already done it.
+    let pollCount = 0;
+    const mapReadyPoll = setInterval(() => {
+        pollCount++;
+        if (window.safetyTracker.map || typeof google === 'undefined' || !google.maps) {
+            if (window.safetyTracker.map || pollCount > 40) clearInterval(mapReadyPoll); // ~20s max
+            return;
+        }
+        console.warn('Live tracker: google.maps was ready but initMap() callback never fired — initialising manually.');
+        window.safetyTracker.initMap();
+        clearInterval(mapReadyPoll);
+    }, 500);
+}
+// DOMContentLoaded may already have fired by the time this script runs (e.g. if
+// the script itself loaded slightly late) — listening for it unconditionally in
+// that case means the listener never fires and safetyTracker never gets created,
+// leaving the map permanently blank. Check readyState and boot immediately if so.
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootSafetyTracker);
+} else {
+    bootSafetyTracker();
+}
