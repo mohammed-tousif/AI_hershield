@@ -949,9 +949,14 @@
 
 
         // ── CanvasHeatmap: drop-in replacement for deprecated google.maps.visualization.HeatmapLayer ──
+        // Radius is specified in real-world METERS (not pixels) so each point stays
+        // a consistent, small physical size (~50-70m) regardless of zoom level —
+        // previously a fixed pixel radius meant points looked enormous when zoomed
+        // out, and heavy overlap between nearby points made the map unreadable.
         class CanvasHeatmap {
-            constructor({ map, data = [], radius = 35, opacity = 0.7, initiallyVisible = true }) {
-                this._map = map; this._data = data; this._radius = radius;
+            constructor({ map, data = [], minRadiusMeters = 50, maxRadiusMeters = 70, opacity = 0.4, initiallyVisible = true }) {
+                this._map = map; this._data = data;
+                this._minRadiusMeters = minRadiusMeters; this._maxRadiusMeters = maxRadiusMeters;
                 this._opacity = opacity; this._visible = initiallyVisible;
                 this._canvas = document.createElement('canvas');
                 this._canvas.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none;z-index:3;';
@@ -967,6 +972,10 @@
                     map.addListener('zoom_changed', () => self._redraw()),
                 ];
             }
+            /** Standard Web Mercator meters-per-pixel at a given latitude/zoom. */
+            _metersPerPixel(lat, zoom) {
+                return 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoom);
+            }
             _redraw() {
                 const mapDiv = this._map.getDiv();
                 const w = mapDiv.offsetWidth, h = mapDiv.offsetHeight;
@@ -976,23 +985,36 @@
                 const ctx = canvas.getContext('2d');
                 const proj = this._ov.getProjection();
                 if (!proj || !this._data.length) return;
+                const zoom = this._map.getZoom();
                 ctx.clearRect(0, 0, w, h);
+                // Composite each point onto its own temporary layer at full alpha, then
+                // draw that layer onto the visible canvas at the target opacity in one
+                // pass — this way overlapping points don't stack into a solid blob the
+                // way directly drawing N semi-transparent circles on top of each other would.
+                const layer = document.createElement('canvas');
+                layer.width = w; layer.height = h;
+                const lctx = layer.getContext('2d');
                 this._data.forEach(point => {
                     const px = proj.fromLatLngToContainerPixel(point.location);
                     if (!px) return;
                     const wt = Math.min(3, Math.max(0.5, point.weight || 1));
-                    const r  = this._radius * (0.6 + wt * 0.2);
-                    const a  = this._opacity;
-                    const grd = ctx.createRadialGradient(px.x, px.y, 0, px.x, px.y, r);
-                    if (wt >= 2.5) {
-                        grd.addColorStop(0, `rgba(220,30,30,${a})`); grd.addColorStop(0.45, `rgba(255,90,0,${a*0.65})`); grd.addColorStop(1, 'rgba(255,90,0,0)');
-                    } else if (wt >= 1.5) {
-                        grd.addColorStop(0, `rgba(255,165,0,${a})`); grd.addColorStop(0.45, `rgba(255,215,0,${a*0.6})`); grd.addColorStop(1, 'rgba(255,215,0,0)');
-                    } else {
-                        grd.addColorStop(0, `rgba(34,197,94,${a})`); grd.addColorStop(0.45, `rgba(34,197,94,${a*0.5})`); grd.addColorStop(1, 'rgba(34,197,94,0)');
-                    }
-                    ctx.beginPath(); ctx.arc(px.x, px.y, r, 0, Math.PI * 2); ctx.fillStyle = grd; ctx.fill();
+                    const metersPerPixel = this._metersPerPixel(point.location.lat(), zoom);
+                    const radiusMeters = this._minRadiusMeters + (wt / 3) * (this._maxRadiusMeters - this._minRadiusMeters);
+                    const r = Math.max(6, radiusMeters / metersPerPixel); // floor so it's still visible zoomed way out
+                    const [cr, cg, cb] = wt >= 2.5 ? [230, 60, 55] : wt >= 1.5 ? [255, 176, 40] : [46, 190, 120];
+                    const grd = lctx.createRadialGradient(px.x, px.y, 0, px.x, px.y, r);
+                    // Soft, gradual falloff (5 stops instead of a hard 3-stop disc) so each
+                    // point reads as a gentle glow rather than a flat-edged blob.
+                    grd.addColorStop(0,    `rgba(${cr},${cg},${cb},0.85)`);
+                    grd.addColorStop(0.25, `rgba(${cr},${cg},${cb},0.55)`);
+                    grd.addColorStop(0.5,  `rgba(${cr},${cg},${cb},0.28)`);
+                    grd.addColorStop(0.75, `rgba(${cr},${cg},${cb},0.10)`);
+                    grd.addColorStop(1,    `rgba(${cr},${cg},${cb},0)`);
+                    lctx.beginPath(); lctx.arc(px.x, px.y, r, 0, Math.PI * 2); lctx.fillStyle = grd; lctx.fill();
                 });
+                ctx.globalAlpha = this._opacity;
+                ctx.drawImage(layer, 0, 0);
+                ctx.globalAlpha = 1;
             }
             setMap(mapOrNull) { this._visible = mapOrNull !== null; this._redraw(); }
             getData()         { return this._data; }
@@ -1024,8 +1046,9 @@
             heatmap = new CanvasHeatmap({
                 map,
                 data: heatmapData,
-                radius: 32,
-                opacity: 0.5,
+                minRadiusMeters: 50,
+                maxRadiusMeters: 70,
+                opacity: 0.4,
                 initiallyVisible: document.getElementById('showHeatmap').checked
             });
         }
