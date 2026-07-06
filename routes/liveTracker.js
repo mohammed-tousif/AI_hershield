@@ -123,9 +123,19 @@ router.post('/start', async (req, res) => {
     }
 });
 
+// Same ceiling as the client-side check in live-tracker.js — enforced again here
+// as defense-in-depth, since anyone could call this endpoint directly with an
+// arbitrary accuracy value, bypassing whatever the browser's own JS decided.
+const MAX_TRUSTED_ACCURACY_M = 2000;
+
 router.post('/update-location', async (req, res) => {
     try {
         const { userId, lat, lng, accuracy } = req.body;
+
+        if (accuracy != null && Number(accuracy) > MAX_TRUSTED_ACCURACY_M) {
+            console.warn(`update-location: rejecting low-accuracy fix for ${userId} (±${accuracy}m)`);
+            return res.json({ success: true, skipped: true, message: 'Location accuracy too low to trust — not stored.' });
+        }
 
         const session = await liveSessionGetByUserId(userId);
         if (!session) {
@@ -341,6 +351,20 @@ router.post('/dashboard-alert', async (req, res) => {
             ? `https://maps.google.com/?q=${location.lat},${location.lng}`
             : 'Location not available';
 
+        // Same trust threshold as the frontend (see dashboard.html) — a real
+        // GPS/WiFi fix is rarely worse than a few hundred meters; IP-based
+        // fallback (no GPS chip) typically reports 5,000-50,000+ meters and can
+        // be a different city entirely. We still send the alert (never delay a
+        // real emergency on GPS precision) but flag it clearly in the email.
+        const MAX_TRUSTED_ACCURACY_M = 2000;
+        const locationIsImprecise = !!(location && location.accuracy && location.accuracy > MAX_TRUSTED_ACCURACY_M);
+        const accuracyCaveatHtml = locationIsImprecise
+            ? `<div style="background-color:#fff3cd;border:1px solid #ffe69c;color:#664d03;padding:12px 16px;border-radius:8px;margin-bottom:20px;font-size:14px;">
+                   ⚠️ <strong>Location accuracy is low</strong> (±${(location.accuracy / 1000).toFixed(1)}km) — this device likely has no GPS signal.
+                   The map pin below may be inaccurate. Please also try calling ${userName || 'the user'} directly.
+               </div>`
+            : '';
+
         // ── 1. Fetch real contacts from Firestore (has phone numbers) ────────
         let firestoreContacts = [];
         if (userId) {
@@ -417,6 +441,7 @@ router.post('/dashboard-alert', async (req, res) => {
                             <p style="font-size: 18px; color: #333; line-height: 1.6; text-align: center; margin-bottom: 30px;">
                                 <strong>${userName || 'A HerShield User'}</strong> has triggered an emergency alert.
                             </p>
+                            ${accuracyCaveatHtml}
                             <div style="background-color: #f8f9fa; padding: 20px; border-radius: 12px; border-left: 5px solid #7A6B99; margin-bottom: 30px;">
                                 <h3 style="margin-top: 0; color: #2d3436; font-size: 18px; margin-bottom: 15px;">📍 Current Status</h3>
                                 <p style="margin: 8px 0;"><strong>User:</strong> ${userName || 'Unknown'}</p>

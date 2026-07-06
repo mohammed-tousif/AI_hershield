@@ -671,6 +671,14 @@
         let showHeatmap = true, showMarkers = true;
         let currentLocationMarker = null;
 
+        // A true GPS/WiFi-positioning fix is rarely worse than a few hundred
+        // meters even in poor conditions; a device with no GPS chip falling back
+        // to IP-based geolocation typically reports accuracy in the 5,000-50,000+
+        // meter range and can place you in an entirely different city. Used to
+        // reject untrustworthy fixes before they're shown on the map or emailed
+        // to emergency contacts.
+        const MAX_TRUSTED_ACCURACY_M = 2000;
+
         function getGeoOptions() {
             return {
                 enableHighAccuracy: true,
@@ -743,6 +751,16 @@
                 return;
             }
             navigator.geolocation.getCurrentPosition((position) => {
+                const accuracy = position.coords.accuracy || 0;
+                if (accuracy > MAX_TRUSTED_ACCURACY_M) {
+                    console.warn(`Ignoring low-accuracy fix for recenter: ±${accuracy.toFixed(0)}m`);
+                    showNotification(
+                        'Location Too Imprecise',
+                        `Your device's location is only accurate to ±${Math.round(accuracy / 1000)}km right now (likely network-based positioning, not real GPS), so the map wasn't recentered on it. This usually means the device has no GPS chip or GPS/location services are off.`,
+                        'warning'
+                    );
+                    return;
+                }
                 const pos = {
                     lat: position.coords.latitude,
                     lng: position.coords.longitude
@@ -1801,9 +1819,18 @@
 
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(async position => {
+                    const accuracy = position.coords.accuracy || 0;
+                    const locationIsImprecise = accuracy > MAX_TRUSTED_ACCURACY_M;
+                    if (locationIsImprecise) {
+                        // Don't block sending a real emergency alert on GPS precision — but
+                        // do flag it so contacts know to also call rather than only trust
+                        // the map pin. Backend includes this caveat in the email itself.
+                        console.warn(`Emergency alert: location accuracy is only ±${accuracy.toFixed(0)}m — sending anyway with a caveat.`);
+                    }
                     const location = {
                         lat: position.coords.latitude,
-                        lng: position.coords.longitude
+                        lng: position.coords.longitude,
+                        accuracy
                     };
 
                     const userName = localStorage.getItem('hershield_user_name') || 'User';
@@ -1848,9 +1875,12 @@
                         if (data.success) {
                             const emailCount = data.notifications?.email?.sent || 0;
                             const smsCount = data.notifications?.sms?.sent || 0;
-                            const msg = emailCount > 0 || smsCount > 0
+                            let msg = emailCount > 0 || smsCount > 0
                                 ? `Alert sent! ${emailCount} email(s) and ${smsCount} SMS dispatched.`
                                 : 'Alert recorded. No emergency contact emails found — please add contacts with email addresses in your profile.';
+                            if (locationIsImprecise) {
+                                msg += ` Note: your location accuracy was low (±${(accuracy/1000).toFixed(1)}km) — the map pin in the alert may be imprecise.`;
+                            }
                             showNotification('Alert Sent', msg, emailCount > 0 || smsCount > 0 ? 'success' : 'warning');
                             // Refresh private history (SOS events), NOT the public recent alerts
                             await loadSosHistory();

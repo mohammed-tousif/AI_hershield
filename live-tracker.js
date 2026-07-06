@@ -559,12 +559,39 @@ class SafetyTracker {
         const accuracy = position.coords.accuracy || 50;
         const now = Date.now();
 
-        // Reject implausible GPS jumps — a single bad reading (e.g. the device
-        // momentarily falling back to network/IP-based positioning, which on
-        // Indian mobile carriers can resolve to a completely different city
-        // regardless of true physical location) would otherwise "teleport" the
-        // shared live location hundreds of km away for that update cycle, which
-        // is exactly what emergency contacts see when they open the tracking link.
+        this._updateAccuracyStatus(accuracy);
+
+        // Hard floor on accuracy, checked BEFORE anything else — this is the fix
+        // for the gap in the jump-detection below: that check only rejects a bad
+        // reading relative to a previous *good* one, so if the very FIRST reading
+        // in a session is the bad one (no previous fix to compare against), it was
+        // accepted unconditionally and became the (wrong) anchor that every real
+        // reading afterward got compared against and rejected relative to.
+        // A true GPS or WiFi-positioning fix is rarely worse than a few hundred
+        // meters even in poor conditions; a device with no GPS chip falling back to
+        // IP-based geolocation typically reports accuracy in the 5,000-50,000+
+        // meter range and can place you in an entirely different city. Anything
+        // above this ceiling is treated as untrustworthy, full stop, regardless of
+        // whether it's the first reading or the hundredth.
+        const MAX_TRUSTED_ACCURACY_M = 2000;
+        if (accuracy > MAX_TRUSTED_ACCURACY_M) {
+            console.warn(`Ignoring low-accuracy location fix: ±${accuracy.toFixed(0)}m (likely network/IP-based, not real GPS)`);
+            if (!this._lowAccuracyWarningShown) {
+                this._lowAccuracyWarningShown = true;
+                this.showNotification(
+                    'Waiting for Accurate GPS',
+                    `Your device's current location fix is only accurate to ±${Math.round(accuracy / 1000)}km (likely network-based positioning, not real GPS) — probably because this device doesn't have a GPS chip or GPS is disabled. Ignoring it and waiting for a better fix. On a phone, make sure Location Services / GPS is turned on for best accuracy.`,
+                    'warning'
+                );
+                setTimeout(() => { this._lowAccuracyWarningShown = false; }, 60000);
+            }
+            return; // Never use this as the anchor or share it with contacts
+        }
+
+        // Reject implausible GPS jumps — a single bad-but-under-the-ceiling reading
+        // would otherwise "teleport" the shared live location away for that update
+        // cycle, which is exactly what emergency contacts see when they open the
+        // tracking link.
         if (this._lastGoodFix) {
             const dtHours = (now - this._lastGoodFix.time) / 3600000;
             const distanceKm = haversineDistanceKm(this._lastGoodFix.lat, this._lastGoodFix.lng, lat, lng);
@@ -606,6 +633,21 @@ class SafetyTracker {
                 body: JSON.stringify({ userId: this.sessionId, lat, lng, accuracy })
             });
         } catch (err) { console.warn('Location update failed:', err.message); }
+    }
+
+    /** Live accuracy readout in the tracking view so the person doing the demo can
+     *  SEE at a glance whether the shared location is trustworthy, instead of it
+     *  being invisible until an emergency contact opens the link and it's wrong. */
+    _updateAccuracyStatus(accuracy) {
+        const el = document.getElementById('gpsAccuracyStatus');
+        if (!el) return;
+        if (accuracy <= 2000) {
+            el.textContent = `📍 Location accuracy: ±${Math.round(accuracy)}m ✅`;
+            el.style.color = accuracy <= 100 ? '#2ecc71' : '#e67e22';
+        } else {
+            el.textContent = `📍 Waiting for accurate GPS… (currently ±${(accuracy / 1000).toFixed(1)}km, too imprecise to share)`;
+            el.style.color = '#e74c3c';
+        }
     }
 
     /** Surface geolocation failures to the user instead of only logging them —
