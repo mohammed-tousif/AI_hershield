@@ -54,8 +54,15 @@ const chatValidators = [
         .isString()
         .isLength({ max: 3000 }).withMessage('History message too long.'),
 
+    // { nullable: true } is required here, not just .optional() — the frontend
+    // always sends this field, using `null` (not omitting it) to mean "no topic
+    // selected" for a normal typed message. express-validator's .optional() by
+    // default only skips truly-missing (undefined) fields, not explicit null,
+    // so a plain message like "Hi" was failing .isString() on the null value
+    // and getting rejected with the generic "Invalid value" error — while topic
+    // chips (which send a real string like "harassment") worked fine.
     body('incidentContext')
-        .optional()
+        .optional({ nullable: true })
         .isString()
         .isLength({ max: 100 })
         .matches(/^[a-z_]+$/).withMessage('Invalid incident context format.'),
