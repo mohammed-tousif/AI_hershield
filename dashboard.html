@@ -421,6 +421,12 @@
                     <div class="spinner-border spinner-border-sm me-2" role="status"></div>Loading your alert history...
                 </div>
             </div>
+            <div class="text-center mt-2" id="sosHistoryToggleWrap" style="display:none;">
+                <button class="btn btn-sm btn-link text-decoration-none" onclick="toggleSosHistory()">
+                    <i class="fas fa-chevron-down me-1" id="sosHistoryToggleIcon"></i>
+                    <span id="sosHistoryToggleLabel">Show all</span>
+                </button>
+            </div>
         </div>
 
         <!-- Safety Tips -->
@@ -1923,6 +1929,20 @@
             return { uid, email };
         }
 
+        const SOS_HISTORY_PREVIEW_COUNT = 5;
+        let _sosHistoryExpanded = false;
+
+        function toggleSosHistory() {
+            _sosHistoryExpanded = !_sosHistoryExpanded;
+            const icon  = document.getElementById('sosHistoryToggleIcon');
+            const label = document.getElementById('sosHistoryToggleLabel');
+            document.querySelectorAll('.sos-history-extra-row').forEach(row => {
+                row.style.display = _sosHistoryExpanded ? '' : 'none';
+            });
+            if (icon)  icon.className = _sosHistoryExpanded ? 'fas fa-chevron-up me-1' : 'fas fa-chevron-down me-1';
+            if (label) label.textContent = _sosHistoryExpanded ? 'Show less' : 'Show all';
+        }
+
         async function loadSosHistory() {
             const listEl = document.getElementById('sosHistoryList');
             if (!listEl) return;
@@ -1992,12 +2012,15 @@
                 const all = [...sosRows, ...liveRows]
                     .sort((a, b) => new Date(b.triggeredAt || 0) - new Date(a.triggeredAt || 0));
 
+                const toggleWrapEl = document.getElementById('sosHistoryToggleWrap');
+
                 if (!all.length) {
                     listEl.innerHTML = `
                         <div class="text-center py-4">
                             <i class="fas fa-shield-alt fa-2x text-success mb-3 d-block"></i>
                             <p class="text-muted mb-0">No emergency alerts or tracking sessions yet — stay safe! 💚</p>
                         </div>`;
+                    if (toggleWrapEl) toggleWrapEl.style.display = 'none';
                     return;
                 }
 
@@ -2040,6 +2063,19 @@
                         : '<span class="text-muted">—</span>';
                 };
 
+                const renderRow = (row, isExtra) => `
+                    <tr${isExtra ? ' class="sos-history-extra-row" style="display:none;"' : ''}>
+                        <td>${typeChip(row)}</td>
+                        <td>${fmtTime(row.triggeredAt)}</td>
+                        <td>${row.resolvedAt ? fmtTime(row.resolvedAt) : '<span class="text-muted">—</span>'}</td>
+                        <td><i class="fas fa-users me-1 text-muted"></i>${row.contactCount ?? '—'}</td>
+                        <td>${detailCell(row)}</td>
+                        <td>${row.trackingLink
+                            ? `<a href="${row.trackingLink}" target="_blank" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:0.75rem;"><i class="fas fa-satellite-dish me-1"></i>View</a>`
+                            : '<span class="text-muted small">—</span>'}
+                        </td>
+                    </tr>`;
+
                 listEl.innerHTML = `
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0" style="font-size:0.9rem;">
@@ -2054,21 +2090,23 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                ${all.map(row => `
-                                <tr>
-                                    <td>${typeChip(row)}</td>
-                                    <td>${fmtTime(row.triggeredAt)}</td>
-                                    <td>${row.resolvedAt ? fmtTime(row.resolvedAt) : '<span class="text-muted">—</span>'}</td>
-                                    <td><i class="fas fa-users me-1 text-muted"></i>${row.contactCount ?? '—'}</td>
-                                    <td>${detailCell(row)}</td>
-                                    <td>${row.trackingLink
-                                        ? `<a href="${row.trackingLink}" target="_blank" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:0.75rem;"><i class="fas fa-satellite-dish me-1"></i>View</a>`
-                                        : '<span class="text-muted small">—</span>'}
-                                    </td>
-                                </tr>`).join('')}
+                                ${all.map((row, i) => renderRow(row, i >= SOS_HISTORY_PREVIEW_COUNT)).join('')}
                             </tbody>
                         </table>
                     </div>`;
+
+                if (toggleWrapEl) {
+                    const hasExtra = all.length > SOS_HISTORY_PREVIEW_COUNT;
+                    toggleWrapEl.style.display = hasExtra ? '' : 'none';
+                    if (hasExtra) {
+                        const label = document.getElementById('sosHistoryToggleLabel');
+                        if (label && !_sosHistoryExpanded) label.textContent = `Show all (${all.length - SOS_HISTORY_PREVIEW_COUNT} more)`;
+                        // Re-apply expanded state across refreshes (e.g. the 30s auto-refresh)
+                        if (_sosHistoryExpanded) {
+                            document.querySelectorAll('.sos-history-extra-row').forEach(row => { row.style.display = ''; });
+                        }
+                    }
+                }
 
             } catch (err) {
                 listEl.innerHTML = `<div class="text-danger small py-2"><i class="fas fa-exclamation-circle me-2"></i>${err.message}</div>`;

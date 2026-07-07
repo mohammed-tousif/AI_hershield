@@ -11,7 +11,6 @@ const {
     liveSessionPushLocation,
     liveSessionStop,
     liveSessionsByEmail,
-    communityInsert,
     usersFindById,
     sosCreate,
 } = require('../services/firestoreRepository');
@@ -467,27 +466,15 @@ router.post('/dashboard-alert', async (req, res) => {
             }
         }
 
-        // ── 4. Persist to community alerts ───────────────────────────────────
-        let alertPersisted = true;
+        // NOTE: this used to also create a PUBLIC community post ("Emergency
+        // Alert: <name>") visible to every user on the Community page's Safety
+        // Alerts feed — a real privacy problem, since a personal emergency alert
+        // was showing up in a public feed with the user's name attached. That
+        // write has been removed; the private SOS history below is the only
+        // record now, matching the "My Emergency Alert History (private)" panel.
         const alertId = `${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-        try {
-            await communityInsert({
-                _id: alertId,
-                kind: 'alert',
-                title: `Emergency Alert: ${userName || 'User'}`,
-                message: `${userName || 'User'} triggered an emergency alert from dashboard.`,
-                severity: 'high',
-                userId,
-                userEmail,
-                location,
-                createdAt: new Date(),
-            });
-        } catch (e) {
-            console.warn('dashboard-alert: communityInsert failed:', e.message);
-            alertPersisted = false;
-        }
 
-        // ── 5. Write to SOS history so the dashboard history section shows it ─
+        // ── 4. Write to SOS history so the dashboard history section shows it ─
         if (userId) {
             try {
                 const now = new Date();
@@ -527,7 +514,6 @@ router.post('/dashboard-alert', async (req, res) => {
                 sms:   { sent: smsSent, failed: smsFailed },
                 email: { sent: emailSentCount, failed: emailRecipients.length - emailSentCount },
             },
-            alertPersisted,
         });
 
     } catch (err) {

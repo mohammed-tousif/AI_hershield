@@ -187,7 +187,14 @@ router.get('/alerts', async (req, res) => {
             return res.json({ success: true, alerts: [], degraded: true,
                 message: 'Firestore not configured.' });
         }
-        const alerts = await communityFindByKind('alert', limit);
+        let alerts = await communityFindByKind('alert', limit);
+        // Filter out personal "Emergency Alert: <name>" entries that an older
+        // version of the dashboard's Emergency Alert flow used to publish here —
+        // those were private, per-user emergency triggers that should never have
+        // been shown in a public community feed with the user's name attached.
+        // New alerts are no longer written this way; this only cleans up any
+        // that already exist in Firestore from before the fix.
+        alerts = alerts.filter(a => !(a.title || '').startsWith('Emergency Alert:'));
 
         let incidentAlerts = [];
         try {
