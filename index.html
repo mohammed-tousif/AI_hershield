@@ -44,39 +44,6 @@
             background-color: var(--bg-page);
         }
 
-        .cursor-dot {
-            width: 8px;
-            height: 8px;
-            background-color: var(--accent-color);
-            border-radius: 50%;
-            position: fixed;
-            pointer-events: none;
-            z-index: 9999;
-            transition: transform 0.1s;
-            mix-blend-mode: difference;
-        }
-
-        .cursor-outline {
-            width: 40px;
-            height: 40px;
-            border: 2px solid var(--accent-color);
-            border-radius: 50%;
-            position: fixed;
-            pointer-events: none;
-            z-index: 9999;
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            mix-blend-mode: difference;
-        }
-
-        .cursor-dot.active {
-            transform: scale(1.5);
-        }
-
-        .cursor-outline.active {
-            transform: scale(1.5);
-            border-color: var(--accent-color);
-        }
-
         .scroll-progress {
             position: fixed;
             top: 0;
@@ -554,6 +521,15 @@
                 margin: 10px 0;
             }
 
+            /* #reportButton is a fixed floating action button (bottom-right corner),
+               not a regular in-flow button — the blanket .btn width:100% rule above
+               was stretching it across the full viewport width, which combined with
+               its `right: 20px` pushed its left edge to -20px, hanging off-screen. */
+            #reportButton {
+                width: auto;
+                margin: 0;
+            }
+
             .feature-card {
                 margin-bottom: 20px;
             }
@@ -608,8 +584,6 @@
 </head>
 
 <body>
-    <div class="cursor-dot"></div>
-    <div class="cursor-outline"></div>
     <div class="scroll-progress"></div>
     <div class="background-gradient"></div>
     <div class="content-wrapper">
@@ -1082,29 +1056,11 @@
         document.addEventListener('DOMContentLoaded', function () {
             gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
 
-            // Custom cursor functionality
-            const cursorDot = document.querySelector('.cursor-dot');
-            const cursorOutline = document.querySelector('.cursor-outline');
             const depthBg = document.querySelector('.depth-bg');
             const scrollProgress = document.querySelector('.scroll-progress');
 
-            // Mouse movement tracking for custom cursor and background
+            // Mouse movement tracking for background depth effect
             document.addEventListener('mousemove', (e) => {
-                // Update custom cursor position
-                gsap.to(cursorDot, {
-                    x: e.clientX,
-                    y: e.clientY,
-                    duration: 0.1,
-                    ease: 'power1.out'
-                });
-
-                gsap.to(cursorOutline, {
-                    x: e.clientX,
-                    y: e.clientY,
-                    duration: 0.3,
-                    ease: 'power2.out'
-                });
-
                 // Update background gradient position
                 if (depthBg) {
                     depthBg.style.setProperty('--mouse-x', `${e.clientX}px`);
@@ -1113,20 +1069,6 @@
 
                 document.documentElement.style.setProperty('--mouse-x', `${e.clientX}px`);
                 document.documentElement.style.setProperty('--mouse-y', `${e.clientY}px`);
-            });
-
-            // Add active state for cursor when hovering over links and buttons
-            const interactiveElements = document.querySelectorAll('a, button, input, textarea, .feature-card');
-            interactiveElements.forEach(el => {
-                el.addEventListener('mouseenter', () => {
-                    cursorDot.classList.add('active');
-                    cursorOutline.classList.add('active');
-                });
-
-                el.addEventListener('mouseleave', () => {
-                    cursorDot.classList.remove('active');
-                    cursorOutline.classList.remove('active');
-                });
             });
 
             // Scroll progress indicator
@@ -1140,12 +1082,22 @@
             });
 
             // Initialize AOS with enhanced settings
+            // Disabled on mobile/tablet: fade-left/fade-right animations use a
+            // ±100px translateX offset before triggering, and while an element is
+            // still in that pre-animation state (e.g. a section further down the
+            // page that hasn't scrolled into view yet), it widens the browser's
+            // layout viewport for the WHOLE page — causing page-wide horizontal
+            // scroll and pushing the fixed navbar's toggler button off-screen,
+            // since fixed-position elements size against that widened viewport.
             AOS.init({
                 duration: 1200,
                 once: false,
                 mirror: true,
                 offset: 100,
-                easing: 'cubic-bezier(0.16, 1, 0.3, 1)'
+                easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+                // Width-based (not just device/UA-based) so it also protects anyone
+                // who resizes a desktop browser window down to a narrow width.
+                disable: function () { return window.innerWidth < 768; }
             });
 
             // Navbar scroll state

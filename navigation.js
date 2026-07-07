@@ -868,6 +868,17 @@ class NavigationManager {
                 }
 
                 @media (max-width: 991px) {
+                    /* The fixed hamburger/actions buttons (top:20px, 50px tall) sit on
+                       top of the page and don't scroll — without this, page content
+                       scrolls up underneath them and gets visually obscured (e.g. a
+                       post's username/tag hidden behind the button circles).
+                       !important because each page sets its own inline padding on
+                       .main-content (e.g. style="padding:1.5rem"), which otherwise
+                       wins over this rule regardless of media query specificity. */
+                    .main-content {
+                        padding-top: 90px !important;
+                    }
+
                     /* Ensure sidebar is hidden by default on mobile */
                     .hershield-sidebar {
                         transform: translateX(-100%) !important;

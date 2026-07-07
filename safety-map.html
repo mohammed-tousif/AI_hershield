@@ -34,6 +34,7 @@
             --gradient-end: #FFD6A6;
             --text-dark: #2D3436;
             --text-light: #ffffff;
+            --muted: #6b7280;
             --sidebar-width: 280px;
             --header-height: 70px;
             --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
@@ -261,6 +262,14 @@
 
             .main-content {
                 margin-left: 0;
+                /* Flex items default to min-width:auto, which refuses to shrink
+                   below the content's natural width (e.g. the Heatmap/Markers/
+                   Day/Night toggle row) even with flex:1 — that silently pushed
+                   .main-content past the viewport width with no visible
+                   scrollbar (overflow was clipped, not scrollable), cutting off
+                   content on the right instead. */
+                min-width: 0;
+                padding: 1rem;
             }
 
             .fixed-sidebar-toggle,
@@ -1383,33 +1392,33 @@
                         : 'Only one route available.';
 
                     const highWarn = best.highSeg > 0
-                        ? `<div style="margin-top:.5rem;padding:.4rem .6rem;background:rgba(239,68,68,.1);border-radius:6px;color:#f87171;font-size:.78rem;">
+                        ? `<div style="margin-top:.5rem;padding:.4rem .6rem;background:rgba(239,68,68,.1);border-radius:6px;color:#b91c1c;font-size:.78rem;">
                             ⚠️ Route passes near <b>${best.highSeg}</b> high-risk location${best.highSeg > 1 ? 's' : ''} — stay alert.
                            </div>`
                         : '';
 
                     showRouteResult('ok', `
                         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem;">
-                            <div style="font-weight:700;color:#fff;">✅ Optimal route found</div>
+                            <div style="font-weight:700;color:var(--text-dark);">✅ Optimal route found</div>
                             <div style="background:${scoreColor}22;border:1px solid ${scoreColor}44;border-radius:99px;
                                         padding:.15rem .6rem;font-size:.75rem;font-weight:700;color:${scoreColor};">
                                 ${scoreLabel} · ${safetyScore}/100
                             </div>
                         </div>
                         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.4rem;text-align:center;margin-bottom:.5rem;">
-                            <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:.4rem;">
+                            <div style="background:rgba(124,92,191,.08);border-radius:8px;padding:.4rem;">
                                 <div style="font-size:.72rem;color:var(--muted);">Distance</div>
-                                <div style="font-weight:600;color:#fff;">${distKm} km</div>
+                                <div style="font-weight:600;color:var(--text-dark);">${distKm} km</div>
                             </div>
-                            <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:.4rem;">
+                            <div style="background:rgba(124,92,191,.08);border-radius:8px;padding:.4rem;">
                                 <div style="font-size:.72rem;color:var(--muted);">ETA</div>
-                                <div style="font-weight:600;color:#fff;">${durMins} min</div>
+                                <div style="font-weight:600;color:var(--text-dark);">${durMins} min</div>
                             </div>
-                            <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:.4rem;">
+                            <div style="background:rgba(124,92,191,.08);border-radius:8px;padding:.4rem;">
                                 <div style="font-size:.72rem;color:var(--muted);">Risk zones</div>
-                                <div style="font-weight:600;color:#fff;">
-                                    <span style="color:#f87171;">${best.highSeg}H</span>
-                                    &nbsp;<span style="color:#facc15;">${best.medSeg}M</span>
+                                <div style="font-weight:600;color:var(--text-dark);">
+                                    <span style="color:#dc2626;">${best.highSeg}H</span>
+                                    &nbsp;<span style="color:#b45309;">${best.medSeg}M</span>
                                 </div>
                             </div>
                         </div>
