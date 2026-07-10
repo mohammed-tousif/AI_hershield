@@ -2215,6 +2215,25 @@
         incidentContext: null,
     };
 
+    /**
+     * Best-effort current position for "where should I go" style questions —
+     * never blocks or interrupts sending a message. Uses a cached fix if the
+     * browser already has one (maximumAge) and a short timeout so a slow or
+     * denied request can't stall the chat; resolves to null on any failure,
+     * in which case the backend just skips the real-nearby-location lookup.
+     */
+    function getCachedPositionQuick() {
+        return new Promise((resolve) => {
+            if (!navigator.geolocation || window.isSecureContext === false) { resolve(null); return; }
+            const timer = setTimeout(() => resolve(null), 1500);
+            navigator.geolocation.getCurrentPosition(
+                (pos) => { clearTimeout(timer); resolve(pos); },
+                ()    => { clearTimeout(timer); resolve(null); },
+                { maximumAge: 5 * 60 * 1000, timeout: 1400 }
+            );
+        });
+    }
+
     /* ── DOM ── */
     const fab        = document.getElementById('lexaFab');
     const panel      = document.getElementById('lexaPanel');
@@ -2395,6 +2414,8 @@
         showTyping();
 
         try {
+            const pos = await getCachedPositionQuick();
+
             const res  = await fetch('/api/legal/chat', {
                 method:  'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2402,6 +2423,9 @@
                     message:         text,
                     history:         historyForRequest,
                     incidentContext: state.incidentContext,
+                    lat:      pos ? pos.coords.latitude  : null,
+                    lng:      pos ? pos.coords.longitude : null,
+                    accuracy: pos ? pos.coords.accuracy  : null,
                 }),
             });
 

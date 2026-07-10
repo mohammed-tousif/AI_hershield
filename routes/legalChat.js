@@ -16,6 +16,47 @@ const router         = express.Router();
 const rateLimit      = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
 const legalChatSvc   = require('../services/legalChatService');
+const { safetyLocationsList, isFirestoreConfigured } = require('../services/firestoreRepository');
+
+// Same trust threshold used for live-tracker location updates — a real GPS/
+// WiFi fix is rarely worse than a few hundred meters; a device with no GPS
+// falling back to IP-based geolocation typically reports 5,000-50,000+
+// meters and can be a different city. Recommending a "nearby" safe location
+// off a reading that bad would be actively dangerous, not just unhelpful.
+const MAX_TRUSTED_ACCURACY_M = 2000;
+const MAX_NEARBY_RESULTS = 3;
+const MAX_NEARBY_RADIUS_KM = 5;
+
+function haversineDistanceKm(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const toRad = (d) => d * (Math.PI / 180);
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/** Nearest known safe-ish locations (risk_level 1-2) to a given point, real data only. */
+async function findNearbySafeLocations(lat, lng) {
+    if (!isFirestoreConfigured()) return null;
+    try {
+        const all = await safetyLocationsList();
+        return all
+            .filter(loc => (loc.risk_level ?? 2) <= 2 && Number.isFinite(loc.latitude) && Number.isFinite(loc.longitude))
+            .map(loc => ({
+                location: loc.location,
+                category: loc.category,
+                distanceKm: haversineDistanceKm(lat, lng, loc.latitude, loc.longitude),
+            }))
+            .filter(loc => loc.distanceKm <= MAX_NEARBY_RADIUS_KM)
+            .sort((a, b) => a.distanceKm - b.distanceKm)
+            .slice(0, MAX_NEARBY_RESULTS);
+    } catch (e) {
+        console.warn('[LegalChat] findNearbySafeLocations failed (non-fatal):', e.message);
+        return null;
+    }
+}
 
 // ── Rate limiter (separate, stricter than global) ─────────────────────────────
 // 20 messages per 10 minutes per IP — prevents abuse while allowing natural conversation
@@ -66,6 +107,12 @@ const chatValidators = [
         .isString()
         .isLength({ max: 100 })
         .matches(/^[a-z_]+$/).withMessage('Invalid incident context format.'),
+
+    // Optional current-position fields, sent by the frontend when geolocation is
+    // already available — same nullable gotcha as incidentContext applies here.
+    body('lat').optional({ nullable: true }).isFloat({ min: -90, max: 90 }),
+    body('lng').optional({ nullable: true }).isFloat({ min: -180, max: 180 }),
+    body('accuracy').optional({ nullable: true }).isFloat({ min: 0 }),
 ];
 
 // ── POST /api/legal/chat ───────────────────────────────────────────────────────
@@ -84,10 +131,16 @@ router.post('/chat', chatLimiter, chatValidators, async (req, res) => {
         });
     }
 
-    const { message, history = [], incidentContext = null } = req.body;
+    const { message, history = [], incidentContext = null, lat, lng, accuracy } = req.body;
 
     try {
-        const result = await legalChatSvc.chat(message, history, incidentContext);
+        let nearbyLocations = null;
+        const hasTrustedPosition = lat != null && lng != null && (accuracy == null || accuracy <= MAX_TRUSTED_ACCURACY_M);
+        if (hasTrustedPosition) {
+            nearbyLocations = await findNearbySafeLocations(lat, lng);
+        }
+
+        const result = await legalChatSvc.chat(message, history, incidentContext, nearbyLocations);
 
         return res.json({
             success:    true,
