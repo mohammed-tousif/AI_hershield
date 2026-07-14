@@ -8,6 +8,8 @@ const express  = require('express');
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
 const multer   = require('multer');
+const fs       = require('fs');
+const path     = require('path');
 const { Readable } = require('stream');
 const csvParser = require('csv-parser');
 const router   = express.Router();
@@ -17,6 +19,7 @@ const {
     isFirestoreConfigured,
     usersListAll,
     usersFindById,
+    usersSave,
     incidentsFetchAll,
     communityFindByKind,
     communityInsert,
@@ -170,6 +173,110 @@ router.get('/users/:id', async (req, res) => {
         if (!user) return res.status(404).json({ success: false, message: 'User not found' });
         const { password, passwordHash, ...safe } = user;
         res.json({ success: true, user: safe });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  GENDER VERIFICATION REVIEW QUEUE
+//  Self-declaration + selfie + human review (NOT automated gender
+//  detection, NOT a feature-access gate — see routes/verification.js).
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const VERIFICATION_UPLOADS_DIR = path.join(__dirname, '..', 'uploads', 'verification');
+
+router.get('/verifications', async (req, res) => {
+    try {
+        const status = (req.query.status || 'pending').toLowerCase();
+        const users = await usersListAll(1000);
+        const filtered = users
+            .filter(u => (u.verificationStatus || 'unverified') === status)
+            .map(({ password, passwordHash, ...u }) => u);
+        res.json({ success: true, verifications: filtered });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// Streams the selfie file — never exposed via public/static hosting, only
+// reachable through this admin-authenticated route.
+router.get('/verifications/:userId/selfie', async (req, res) => {
+    try {
+        const user = await usersFindById(req.params.userId);
+        if (!user || !user.verificationSelfiePath) {
+            return res.status(404).json({ success: false, message: 'No selfie on file for this user.' });
+        }
+        const filePath = path.join(VERIFICATION_UPLOADS_DIR, path.basename(user.verificationSelfiePath));
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({ success: false, message: 'Selfie file missing on server.' });
+        }
+        res.sendFile(filePath);
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+router.post('/verifications/:userId/approve', async (req, res) => {
+    try {
+        const user = await usersFindById(req.params.userId);
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+        user.verificationStatus = 'verified';
+        user.verificationReviewedAt = new Date();
+        user.verificationReviewedBy = req.admin?.email || 'unknown';
+        user.verificationRejectionReason = null;
+        user.updatedAt = new Date();
+        await usersSave(user);
+
+        await log(req, 'APPROVE_VERIFICATION', { userId: user._id, email: user.email });
+        res.json({ success: true, message: 'Verification approved.' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+router.post('/verifications/:userId/reject', async (req, res) => {
+    try {
+        const { reason, deactivate } = req.body || {};
+        const user = await usersFindById(req.params.userId);
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+        user.verificationStatus = 'rejected';
+        user.verificationReviewedAt = new Date();
+        user.verificationReviewedBy = req.admin?.email || 'unknown';
+        user.verificationRejectionReason = reason || 'Submission did not pass review.';
+
+        let authDisabled = false;
+        if (deactivate === true) {
+            user.isActive = false;
+            // isActive isn't checked anywhere else in the app today, so also disable
+            // the actual Firebase Auth account — Firebase itself then refuses future
+            // sign-ins (auth/user-disabled), which is real enforcement.
+            try {
+                const admin = require('firebase-admin');
+                if (admin.apps.length) {
+                    await admin.auth().updateUser(req.params.userId, { disabled: true });
+                    authDisabled = true;
+                }
+            } catch (authErr) {
+                console.warn('[Admin] Could not disable Firebase Auth account:', authErr.message);
+            }
+        }
+
+        user.updatedAt = new Date();
+        await usersSave(user);
+
+        await log(req, 'REJECT_VERIFICATION', {
+            userId: user._id, email: user.email, reason, deactivated: !!deactivate, authDisabled,
+        });
+        res.json({
+            success: true,
+            message: deactivate
+                ? (authDisabled
+                    ? 'Verification rejected and account disabled.'
+                    : 'Verification rejected; account flagged inactive but Firebase Auth disable failed — check server logs.')
+                : 'Verification rejected.',
+        });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }

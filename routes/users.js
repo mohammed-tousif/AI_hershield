@@ -76,6 +76,17 @@ router.post(
                 statistics: defaultStats(),
                 isActive: true,
                 role: 'user',               // for future admin dashboard role checks
+                // HerShield is a women-only safety platform (self-declared at signup —
+                // see the terms checkbox in auth.html). verificationStatus tracks the
+                // selfie + human-admin-review process in routes/verification.js /
+                // routes/admin.js; nothing in the app gates features on this today.
+                gender: 'female',
+                verificationStatus: 'unverified',
+                verificationSelfiePath: null,
+                verificationSubmittedAt: null,
+                verificationReviewedAt: null,
+                verificationReviewedBy: null,
+                verificationRejectionReason: null,
                 createdAt: now,
                 updatedAt: now,
             };
@@ -142,6 +153,13 @@ router.post(
                 statistics: defaultStats(),
                 isActive: true,
                 role: 'user',
+                gender: 'female',
+                verificationStatus: 'unverified',
+                verificationSelfiePath: null,
+                verificationSubmittedAt: null,
+                verificationReviewedAt: null,
+                verificationReviewedBy: null,
+                verificationRejectionReason: null,
                 createdAt: now,
                 updatedAt: now,
             };

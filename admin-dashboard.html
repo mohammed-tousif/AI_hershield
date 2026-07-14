@@ -295,6 +295,10 @@ tr:hover td{background:rgba(255,255,255,.02);}
       <i class="fas fa-users"></i> Users
       <span class="nav-badge" id="navUserCount">—</span>
     </button>
+    <button class="nav-item" onclick="showSection('verifications',this)">
+      <i class="fas fa-user-check"></i> Verifications
+      <span class="nav-badge" id="navVerificationCount" style="display:none;">!</span>
+    </button>
     <button class="nav-item" onclick="showSection('posts',this)">
       <i class="fas fa-comments"></i> Community Posts
     </button>
@@ -386,6 +390,33 @@ tr:hover td{background:rgba(255,255,255,.02);}
           <table>
             <thead><tr><th>User</th><th>Email</th><th>Phone</th><th>Guardians</th><th>Joined</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody id="usersTableBody"><tr><td colspan="7" class="empty"><i class="fas fa-spinner spin"></i> Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ VERIFICATIONS ════ -->
+    <div class="section" id="sec-verifications">
+      <div class="sec-header">
+        <div class="sec-title"><i class="fas fa-user-check"></i> Gender Verification Review</div>
+      </div>
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:1.25rem;max-width:760px;">
+        Self-declaration + selfie + human review only — this is not automated gender detection, and nothing in the
+        app restricts features by verification status. Use this queue to catch obvious impersonation.
+      </p>
+      <div class="table-card">
+        <div class="table-toolbar">
+          <select class="form-select" id="verificationStatusFilter" style="max-width:200px;" onchange="loadVerifications()">
+            <option value="pending" selected>Pending review</option>
+            <option value="verified">Verified</option>
+            <option value="rejected">Rejected</option>
+            <option value="unverified">Unverified (no submission)</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Selfie</th><th>Name</th><th>Email</th><th>Submitted</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="verificationsTableBody"><tr><td colspan="6" class="empty"><i class="fas fa-spinner spin"></i> Loading...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -686,6 +717,27 @@ tr:hover td{background:rgba(255,255,255,.02);}
   </div>
 </div>
 
+<!-- ── Reject Verification Modal ── -->
+<div class="modal-overlay" id="rejectVerificationModal">
+  <div class="modal-box">
+    <div class="modal-title"><i class="fas fa-user-times" style="color:var(--red);"></i> Reject Verification</div>
+    <div class="form-group">
+      <label>Reason (shown to the user)</label>
+      <textarea class="form-textarea" id="rejectReasonInput" placeholder="e.g. Photo unclear, please resubmit a clearer selfie."></textarea>
+    </div>
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;">
+        <input type="checkbox" id="rejectDeactivateCheck" style="accent-color:var(--purple);">
+        <span>Also disable this account (for clear impersonation — this immediately blocks their login)</span>
+      </label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('rejectVerificationModal')">Cancel</button>
+      <button class="btn btn-danger" onclick="submitRejectVerification()"><i class="fas fa-times"></i> Reject</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── User Detail Modal ── -->
 <div class="modal-overlay" id="userDetailModal">
   <div class="modal-box" style="max-width:600px;">
@@ -736,7 +788,7 @@ const timeAgo = d => {
 };
 const fmtDate = d => d ? new Date(d).toLocaleString('en-IN', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
 const sevBadge = s => {
-    const map = {critical:'red',high:'red',medium:'amber',low:'green',info:'cyan',safe:'green',active:'red',expired:'gray'};
+    const map = {critical:'red',high:'red',medium:'amber',low:'green',info:'cyan',safe:'green',active:'red',expired:'gray',verified:'green',pending:'amber',rejected:'red',unverified:'gray'};
     return `<span class="badge badge-${map[(s||'').toLowerCase()]||'gray'}">${esc(s||'—')}</span>`;
 };
 
@@ -763,7 +815,7 @@ function adminLogout() {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 let currentSection = 'overview';
 const sectionTitles = {
-    overview:'Overview', users:'User Management', posts:'Community Posts',
+    overview:'Overview', users:'User Management', verifications:'Gender Verification Review', posts:'Community Posts',
     alerts:'Safety Alerts', sos:'SOS Events', incidents:'Incident Reports',
     tracking:'Live Tracking', broadcast:'Broadcast Alert',
     safetydata:'Safety Data Upload', smstest:'SMS / Twilio Test', logs:'Audit Logs'
@@ -783,7 +835,7 @@ function refreshCurrent() { loadSection(currentSection); }
 
 function loadSection(name) {
     const loaders = {
-        overview: loadOverview, users: loadUsers, posts: loadPosts,
+        overview: loadOverview, users: loadUsers, verifications: loadVerifications, posts: loadPosts,
         alerts: loadAlerts, sos: loadSos, incidents: loadIncidents,
         tracking: loadTracking, safetydata: loadSafetyDataStats, smstest: loadSmsStatus, logs: loadLogs,
     };
@@ -828,6 +880,17 @@ async function loadOverview() {
                 <div class="bar-val">${val}</div>
             </div>`).join('');
     } catch (e) { toast('Stats load failed: ' + e.message, 'error'); }
+
+    // Pending verifications badge
+    try {
+        const { verifications } = await api('/verifications?status=pending');
+        const pendingCount = (verifications || []).length;
+        const vb = document.getElementById('navVerificationCount');
+        if (vb) {
+            if (pendingCount > 0) { vb.style.display = ''; vb.textContent = pendingCount; }
+            else vb.style.display = 'none';
+        }
+    } catch (_) {}
 
     // Recent activity
     try {
@@ -888,6 +951,95 @@ function filterUsers() {
         (u.email||'').toLowerCase().includes(q) ||
         (u.phone||'').toLowerCase().includes(q)
     ));
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  GENDER VERIFICATION REVIEW
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let rejectTargetUserId = null;
+
+async function loadVerifications() {
+    const tbody = document.getElementById('verificationsTableBody');
+    const status = document.getElementById('verificationStatusFilter').value;
+    tbody.innerHTML = '<tr><td colspan="6" class="empty"><i class="fas fa-spinner spin"></i> Loading…</td></tr>';
+    try {
+        const { verifications } = await api('/verifications?status=' + encodeURIComponent(status));
+        renderVerificationsTable(verifications || [], status);
+    } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="6" class="empty" style="color:var(--red);">Error: ${esc(e.message)}</td></tr>`;
+    }
+}
+
+function renderVerificationsTable(list, status) {
+    const tbody = document.getElementById('verificationsTableBody');
+    if (!list.length) {
+        tbody.innerHTML = `<tr><td colspan="6" class="empty"><i class="fas fa-user-check"></i>No ${esc(status)} submissions</td></tr>`;
+        return;
+    }
+    tbody.innerHTML = list.map(u => {
+        const id = esc(u._id);
+        const hasSelfie = !!u.verificationSelfiePath;
+        const actions = status === 'pending'
+            ? `<button class="btn btn-primary btn-sm" onclick="approveVerification('${id}')"><i class="fas fa-check"></i> Approve</button>
+               <button class="btn btn-danger btn-sm" onclick="openRejectModal('${id}')"><i class="fas fa-times"></i> Reject</button>`
+            : (u.verificationRejectionReason ? `<span style="font-size:.75rem;color:var(--muted);">${esc(u.verificationRejectionReason)}</span>` : '—');
+        return `<tr>
+            <td>${hasSelfie ? `<img data-selfie-user="${id}" class="verification-selfie-thumb" style="width:44px;height:44px;border-radius:8px;object-fit:cover;background:rgba(255,255,255,.05);" alt="selfie">` : '<span style="color:var(--muted);">none</span>'}</td>
+            <td>${esc(u.name || 'Unknown')}</td>
+            <td>${esc(u.email || '—')}</td>
+            <td style="white-space:nowrap;">${timeAgo(u.verificationSubmittedAt)}</td>
+            <td>${sevBadge(u.verificationStatus || 'unverified')}</td>
+            <td style="display:flex;gap:.4rem;flex-wrap:wrap;">${actions}</td>
+        </tr>`;
+    }).join('');
+
+    // Selfies are behind admin auth (not a public URL) — fetch as a blob per row.
+    tbody.querySelectorAll('img[data-selfie-user]').forEach(async (img) => {
+        const uid = img.getAttribute('data-selfie-user');
+        try {
+            const r = await fetch('/api/admin/verifications/' + uid + '/selfie', {
+                headers: { 'Authorization': 'Bearer ' + TOKEN },
+            });
+            if (!r.ok) return;
+            const blob = await r.blob();
+            img.src = URL.createObjectURL(blob);
+        } catch (_) { /* leave placeholder */ }
+    });
+}
+
+async function approveVerification(userId) {
+    try {
+        await api('/verifications/' + userId + '/approve', { method: 'POST' });
+        toast('Verification approved');
+        loadVerifications();
+    } catch (e) {
+        toast('Approve failed: ' + e.message, 'error');
+    }
+}
+
+function openRejectModal(userId) {
+    rejectTargetUserId = userId;
+    document.getElementById('rejectReasonInput').value = '';
+    document.getElementById('rejectDeactivateCheck').checked = false;
+    document.getElementById('rejectVerificationModal').classList.add('show');
+}
+
+async function submitRejectVerification() {
+    if (!rejectTargetUserId) return;
+    const reason = document.getElementById('rejectReasonInput').value.trim();
+    const deactivate = document.getElementById('rejectDeactivateCheck').checked;
+    try {
+        const result = await api('/verifications/' + rejectTargetUserId + '/reject', {
+            method: 'POST',
+            body: { reason, deactivate },
+        });
+        toast(result.message || 'Verification rejected');
+        closeModal('rejectVerificationModal');
+        rejectTargetUserId = null;
+        loadVerifications();
+    } catch (e) {
+        toast('Reject failed: ' + e.message, 'error');
+    }
 }
 
 async function viewUser(id) {

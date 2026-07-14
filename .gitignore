@@ -8,6 +8,9 @@ hershield-firebase-adminsdk.json
 node_modules/
 npm-debug.log*
 
+# Gender-verification selfies — privacy-sensitive, never commit (see routes/verification.js)
+uploads/
+
 # OS / editor
 .DS_Store
 Thumbs.db

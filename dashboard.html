@@ -303,6 +303,11 @@
             <h4 class="fw-bold" id="welcomeMessage">Welcome back!</h4>
         </div>
 
+        <!-- Gender Verification Banner (self-declaration + selfie + admin review; see routes/verification.js) -->
+        <div id="verificationBanner" class="glass-card mb-4" style="display:none;">
+            <div id="verificationBannerContent"></div>
+        </div>
+
         <!-- Quick Actions -->
         <div class="quick-actions">
             <button class="action-button glass-card" id="shareLocationBtn">
@@ -1910,6 +1915,128 @@
                 btn.disabled = false;
             }
         });
+
+        // ═══ Gender Verification (self-declaration + selfie + admin review) ═══
+        // NOTE: nothing here gates any feature — this only feeds a human admin
+        // review queue (routes/admin.js). Emergency/SOS work regardless of status.
+        function escVerificationHtml(s) {
+            return String(s || '')
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+        async function getFirebaseUserWithRetry(maxAttempts = 6) {
+            for (let i = 0; i < maxAttempts; i++) {
+                const u = window.authService && window.authService.getCurrentUser && window.authService.getCurrentUser();
+                if (u) return u;
+                await new Promise(r => setTimeout(r, 500));
+            }
+            return null;
+        }
+
+        function renderVerificationBanner(status, rejectionReason) {
+            const banner  = document.getElementById('verificationBanner');
+            const content = document.getElementById('verificationBannerContent');
+            if (!banner || !content) return;
+
+            if (status === 'verified') {
+                banner.style.display = 'none';
+                return;
+            }
+
+            banner.style.display = 'block';
+
+            if (status === 'pending') {
+                content.innerHTML = `
+                    <div class="d-flex align-items-center gap-3">
+                        <i class="fas fa-hourglass-half text-warning fa-lg"></i>
+                        <div>
+                            <strong>Verification pending</strong>
+                            <p class="mb-0 small text-muted">Your selfie is awaiting review by our team. You can keep using HerShield in the meantime.</p>
+                        </div>
+                    </div>`;
+                return;
+            }
+
+            const rejectedNotice = status === 'rejected'
+                ? `<p class="mb-2 small text-danger"><i class="fas fa-times-circle me-1"></i>Your previous submission wasn't approved${rejectionReason ? ': ' + escVerificationHtml(rejectionReason) : '.'} Please try again.</p>`
+                : '';
+
+            content.innerHTML = `
+                <div class="d-flex align-items-start gap-3 flex-wrap">
+                    <i class="fas fa-user-shield text-primary fa-lg mt-1"></i>
+                    <div style="flex:1;min-width:220px;">
+                        <strong>Verify your account</strong>
+                        <p class="mb-2 small text-muted">HerShield is a women-only safety platform. Upload a quick selfie so our team can verify your account. You can keep using HerShield in the meantime.</p>
+                        ${rejectedNotice}
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <input type="file" id="verificationSelfieInput" accept="image/png,image/jpeg,image/webp" class="form-control form-control-sm" style="max-width:240px;">
+                            <button class="btn btn-sm btn-primary" id="verificationSubmitBtn" onclick="submitVerificationSelfie()">
+                                <i class="fas fa-upload me-1"></i>Submit
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+        }
+
+        async function loadVerificationStatus() {
+            const banner = document.getElementById('verificationBanner');
+            if (!banner) return;
+            const user = await getFirebaseUserWithRetry();
+            if (!user) return; // not logged in yet — stay hidden
+
+            try {
+                const token = await user.getIdToken();
+                const res = await fetch('/api/verification/status', {
+                    headers: { 'Authorization': 'Bearer ' + token },
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                renderVerificationBanner(data.verificationStatus, data.verificationRejectionReason);
+            } catch (err) {
+                console.warn('[Verification] status check failed:', err.message);
+            }
+        }
+
+        async function submitVerificationSelfie() {
+            const input = document.getElementById('verificationSelfieInput');
+            const btn   = document.getElementById('verificationSubmitBtn');
+            if (!input || !input.files || !input.files[0]) {
+                showNotification('Select a photo', 'Please choose a selfie image first.', 'warning');
+                return;
+            }
+            const user = await getFirebaseUserWithRetry(1);
+            if (!user) {
+                showNotification('Not signed in', 'Please log in again and retry.', 'error');
+                return;
+            }
+
+            const original = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+            try {
+                const token = await user.getIdToken();
+                const formData = new FormData();
+                formData.append('selfie', input.files[0]);
+
+                const res  = await fetch('/api/verification/submit', {
+                    method:  'POST',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    body:    formData,
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.message || 'Submission failed');
+
+                showNotification('Submitted', 'Your selfie has been submitted for review.', 'success');
+                renderVerificationBanner('pending');
+            } catch (err) {
+                showNotification('Submission Failed', err.message, 'error');
+                btn.disabled = false;
+                btn.innerHTML = original;
+            }
+        }
+
+        loadVerificationStatus();
 
         // ═══ Unified Emergency & Tracking History Loader ══════════════════════
         /**
