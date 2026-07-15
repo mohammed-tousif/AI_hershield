@@ -140,6 +140,16 @@ app.use('/api/verification', require('./routes/verification')); // gender verifi
     }
 })();
 
+// ── Gender-verification selfie retention sweep ──────────────────────────────
+// Deletes verification selfies (routes/verification.js) 90 days after
+// submission, regardless of outcome — runs once at startup, then daily.
+const { purgeExpiredVerificationSelfies, RETENTION_DAYS } = require('./services/verificationRetention');
+const VERIFICATION_RETENTION_SWEEP_MS = 24 * 60 * 60 * 1000; // once a day
+purgeExpiredVerificationSelfies().then((n) => {
+    if (n > 0) console.log(`🗑️  Verification retention sweep (startup): purged ${n} selfie(s) older than ${RETENTION_DAYS} days`);
+});
+setInterval(purgeExpiredVerificationSelfies, VERIFICATION_RETENTION_SWEEP_MS);
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
     const dbHealth = checkDBHealth();

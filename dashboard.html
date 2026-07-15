@@ -1933,10 +1933,26 @@
             return null;
         }
 
+        // Live-camera capture state (no gallery/file picker — a picked file could be
+        // someone else's photo; a live capture at least proves a real camera+person
+        // was in front of the device at submit time).
+        let _verificationCameraStream = null;
+        let _verificationCapturedBlob = null;
+
+        function stopVerificationCamera() {
+            if (_verificationCameraStream) {
+                _verificationCameraStream.getTracks().forEach(t => t.stop());
+                _verificationCameraStream = null;
+            }
+        }
+
         function renderVerificationBanner(status, rejectionReason) {
             const banner  = document.getElementById('verificationBanner');
             const content = document.getElementById('verificationBannerContent');
             if (!banner || !content) return;
+
+            stopVerificationCamera();
+            _verificationCapturedBlob = null;
 
             if (status === 'verified') {
                 banner.style.display = 'none';
@@ -1966,16 +1982,86 @@
                     <i class="fas fa-user-shield text-primary fa-lg mt-1"></i>
                     <div style="flex:1;min-width:220px;">
                         <strong>Verify your account</strong>
-                        <p class="mb-2 small text-muted">HerShield is a women-only safety platform. Upload a quick selfie so our team can verify your account. You can keep using HerShield in the meantime.</p>
+                        <p class="mb-2 small text-muted">HerShield is a women-only safety platform. Take a quick live photo so our team can verify your account — no gallery uploads, to keep this to an actual photo of you right now. You can keep using HerShield in the meantime.</p>
                         ${rejectedNotice}
-                        <div class="d-flex align-items-center gap-2 flex-wrap">
-                            <input type="file" id="verificationSelfieInput" accept="image/png,image/jpeg,image/webp" class="form-control form-control-sm" style="max-width:240px;">
-                            <button class="btn btn-sm btn-primary" id="verificationSubmitBtn" onclick="submitVerificationSelfie()">
-                                <i class="fas fa-upload me-1"></i>Submit
+                        <div id="verificationCameraArea">
+                            <button class="btn btn-sm btn-primary" id="verificationOpenCameraBtn" onclick="openVerificationCamera()">
+                                <i class="fas fa-camera me-1"></i>Open Camera to Verify
                             </button>
                         </div>
                     </div>
                 </div>`;
+        }
+
+        async function openVerificationCamera() {
+            const area = document.getElementById('verificationCameraArea');
+            if (!area) return;
+
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showNotification('Camera Unavailable', 'Your browser does not support camera capture.', 'error');
+                return;
+            }
+
+            area.innerHTML = `
+                <div class="d-flex flex-column gap-2" style="max-width:320px;">
+                    <video id="verificationVideo" autoplay playsinline muted style="width:100%;border-radius:10px;background:#000;"></video>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-primary" id="verificationCaptureBtn" onclick="captureVerificationPhoto()">
+                            <i class="fas fa-circle me-1"></i>Capture Photo
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="cancelVerificationCamera()">Cancel</button>
+                    </div>
+                </div>`;
+
+            try {
+                _verificationCameraStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'user' }, audio: false,
+                });
+                document.getElementById('verificationVideo').srcObject = _verificationCameraStream;
+            } catch (err) {
+                showNotification('Camera Access Denied', 'Please allow camera access to verify your account: ' + err.message, 'error');
+                cancelVerificationCamera();
+            }
+        }
+
+        function cancelVerificationCamera() {
+            stopVerificationCamera();
+            const area = document.getElementById('verificationCameraArea');
+            if (!area) return;
+            area.innerHTML = `
+                <button class="btn btn-sm btn-primary" id="verificationOpenCameraBtn" onclick="openVerificationCamera()">
+                    <i class="fas fa-camera me-1"></i>Open Camera to Verify
+                </button>`;
+        }
+
+        function captureVerificationPhoto() {
+            const video = document.getElementById('verificationVideo');
+            const area  = document.getElementById('verificationCameraArea');
+            if (!video || !area) return;
+
+            const canvas = document.createElement('canvas');
+            canvas.width  = video.videoWidth  || 480;
+            canvas.height = video.videoHeight || 360;
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            stopVerificationCamera(); // done with the live feed once we have the frame
+
+            canvas.toBlob((blob) => {
+                _verificationCapturedBlob = blob;
+                const previewUrl = URL.createObjectURL(blob);
+                area.innerHTML = `
+                    <div class="d-flex flex-column gap-2" style="max-width:320px;">
+                        <img src="${previewUrl}" alt="Captured selfie preview" style="width:100%;border-radius:10px;">
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-primary" id="verificationSubmitBtn" onclick="submitVerificationSelfie()">
+                                <i class="fas fa-upload me-1"></i>Submit
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="openVerificationCamera()">
+                                <i class="fas fa-redo me-1"></i>Retake
+                            </button>
+                        </div>
+                    </div>`;
+            }, 'image/jpeg', 0.9);
         }
 
         async function loadVerificationStatus() {
@@ -1998,10 +2084,9 @@
         }
 
         async function submitVerificationSelfie() {
-            const input = document.getElementById('verificationSelfieInput');
-            const btn   = document.getElementById('verificationSubmitBtn');
-            if (!input || !input.files || !input.files[0]) {
-                showNotification('Select a photo', 'Please choose a selfie image first.', 'warning');
+            const btn = document.getElementById('verificationSubmitBtn');
+            if (!_verificationCapturedBlob) {
+                showNotification('Capture a photo', 'Please capture a live photo first.', 'warning');
                 return;
             }
             const user = await getFirebaseUserWithRetry(1);
@@ -2017,7 +2102,7 @@
             try {
                 const token = await user.getIdToken();
                 const formData = new FormData();
-                formData.append('selfie', input.files[0]);
+                formData.append('selfie', _verificationCapturedBlob, 'selfie.jpg');
 
                 const res  = await fetch('/api/verification/submit', {
                     method:  'POST',
@@ -2027,7 +2112,7 @@
                 const data = await res.json();
                 if (!res.ok || !data.success) throw new Error(data.message || 'Submission failed');
 
-                showNotification('Submitted', 'Your selfie has been submitted for review.', 'success');
+                showNotification('Submitted', 'Your live photo has been submitted for review.', 'success');
                 renderVerificationBanner('pending');
             } catch (err) {
                 showNotification('Submission Failed', err.message, 'error');
@@ -2036,6 +2121,7 @@
             }
         }
 
+        window.addEventListener('pagehide', stopVerificationCamera);
         loadVerificationStatus();
 
         // ═══ Unified Emergency & Tracking History Loader ══════════════════════

@@ -717,6 +717,17 @@ tr:hover td{background:rgba(255,255,255,.02);}
   </div>
 </div>
 
+<!-- ── Selfie Lightbox Modal ── -->
+<div class="modal-overlay" id="selfieLightboxModal">
+  <div class="modal-box" style="max-width:420px;text-align:center;">
+    <div class="modal-title"><i class="fas fa-user-circle" style="color:var(--purple-lt);"></i> Verification Photo</div>
+    <img id="selfieLightboxImg" src="" alt="Full-size selfie" style="width:100%;border-radius:12px;max-height:60vh;object-fit:contain;background:rgba(255,255,255,.04);">
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('selfieLightboxModal')">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── Reject Verification Modal ── -->
 <div class="modal-overlay" id="rejectVerificationModal">
   <div class="modal-box">
@@ -925,6 +936,12 @@ async function loadUsers() {
     }
 }
 
+function accountStatusBadge(isActive) {
+    return isActive === false
+        ? '<span class="badge badge-red">Deactivated</span>'
+        : '<span class="badge badge-green">Active</span>';
+}
+
 function renderUsersTable(users) {
     const tbody = document.getElementById('usersTableBody');
     if (!users.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty"><i class="fas fa-users"></i>No users found</td></tr>'; return; }
@@ -932,16 +949,48 @@ function renderUsersTable(users) {
         const name = u.name || u.displayName || 'Unknown';
         const guardians = (u.emergencyContacts || u.guardians || []).length;
         const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+        const id = esc(u._id);
+        const isActive = u.isActive !== false;
         return `<tr>
             <td><div class="avatar-cell"><div class="avatar">${initials}</div><span class="td-main">${esc(name)}</span></div></td>
             <td>${esc(u.email||'—')}</td>
             <td>${esc(u.phone||u.phoneNumber||'—')}</td>
             <td><span class="badge ${guardians>0?'badge-green':'badge-gray'}">${guardians} guardian${guardians!==1?'s':''}</span></td>
             <td style="white-space:nowrap;">${timeAgo(u.createdAt)}</td>
-            <td>${sevBadge(u.status||'active')}</td>
-            <td><button class="btn btn-ghost btn-sm" onclick="viewUser('${esc(u._id)}')"><i class="fas fa-eye"></i> View</button></td>
+            <td>${accountStatusBadge(u.isActive)}</td>
+            <td style="display:flex;gap:.35rem;flex-wrap:wrap;">
+                <button class="btn btn-ghost btn-sm" onclick="viewUser('${id}')"><i class="fas fa-eye"></i> View</button>
+                <button class="btn btn-ghost btn-sm" onclick="toggleUserActive('${id}', ${isActive})">
+                    <i class="fas fa-${isActive ? 'user-slash' : 'user-check'}"></i> ${isActive ? 'Deactivate' : 'Reactivate'}
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="deleteUserAccount('${id}', '${esc(u.email || '')}')"><i class="fas fa-trash"></i> Delete</button>
+            </td>
         </tr>`;
     }).join('');
+}
+
+async function toggleUserActive(id, currentlyActive) {
+    const nextActive = !currentlyActive;
+    const verb = nextActive ? 'reactivate' : 'deactivate';
+    if (!confirm(`Are you sure you want to ${verb} this account?${nextActive ? '' : ' They will be immediately signed out and unable to log back in.'}`)) return;
+    try {
+        const result = await api('/users/' + id + '/deactivate', { method: 'POST', body: { active: nextActive } });
+        toast(result.message || `Account ${verb}d`);
+        loadUsers();
+    } catch (e) {
+        toast(`Failed to ${verb}: ` + e.message, 'error');
+    }
+}
+
+async function deleteUserAccount(id, email) {
+    if (!confirm(`Permanently delete the account for ${email || id}?\nThis removes their profile and login — it cannot be undone.`)) return;
+    try {
+        const result = await api('/users/' + id, { method: 'DELETE' });
+        toast(result.message || 'User deleted');
+        loadUsers();
+    } catch (e) {
+        toast('Delete failed: ' + e.message, 'error');
+    }
 }
 
 function filterUsers() {
@@ -984,7 +1033,7 @@ function renderVerificationsTable(list, status) {
                <button class="btn btn-danger btn-sm" onclick="openRejectModal('${id}')"><i class="fas fa-times"></i> Reject</button>`
             : (u.verificationRejectionReason ? `<span style="font-size:.75rem;color:var(--muted);">${esc(u.verificationRejectionReason)}</span>` : '—');
         return `<tr>
-            <td>${hasSelfie ? `<img data-selfie-user="${id}" class="verification-selfie-thumb" style="width:44px;height:44px;border-radius:8px;object-fit:cover;background:rgba(255,255,255,.05);" alt="selfie">` : '<span style="color:var(--muted);">none</span>'}</td>
+            <td>${hasSelfie ? `<img data-selfie-user="${id}" class="verification-selfie-thumb" style="width:44px;height:44px;border-radius:8px;object-fit:cover;background:rgba(255,255,255,.05);cursor:pointer;" alt="selfie" title="Click to view full size" onclick="openSelfieLightbox(this)">` : '<span style="color:var(--muted);">none</span>'}</td>
             <td>${esc(u.name || 'Unknown')}</td>
             <td>${esc(u.email || '—')}</td>
             <td style="white-space:nowrap;">${timeAgo(u.verificationSubmittedAt)}</td>
@@ -1005,6 +1054,11 @@ function renderVerificationsTable(list, status) {
             img.src = URL.createObjectURL(blob);
         } catch (_) { /* leave placeholder */ }
     });
+}
+
+function openSelfieLightbox(imgEl) {
+    document.getElementById('selfieLightboxImg').src = imgEl.src;
+    document.getElementById('selfieLightboxModal').classList.add('show');
 }
 
 async function approveVerification(userId) {

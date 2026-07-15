@@ -20,6 +20,7 @@ const {
     usersListAll,
     usersFindById,
     usersSave,
+    usersDelete,
     incidentsFetchAll,
     communityFindByKind,
     communityInsert,
@@ -173,6 +174,90 @@ router.get('/users/:id', async (req, res) => {
         if (!user) return res.status(404).json({ success: false, message: 'User not found' });
         const { password, passwordHash, ...safe } = user;
         res.json({ success: true, user: safe });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  POST /api/admin/users/:id/deactivate
+//  Body: { active: boolean } — toggles isActive AND the real Firebase Auth
+//  account (disabled accounts can't sign in at all — isActive alone isn't
+//  checked anywhere else in the app today, so both are kept in sync).
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+router.post('/users/:id/deactivate', async (req, res) => {
+    try {
+        const { active } = req.body || {};
+        if (typeof active !== 'boolean') {
+            return res.status(400).json({ success: false, message: '"active" (boolean) is required in the request body.' });
+        }
+        const user = await usersFindById(req.params.id);
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+        user.isActive = active;
+        user.updatedAt = new Date();
+        await usersSave(user);
+
+        let authUpdated = false;
+        try {
+            const admin = require('firebase-admin');
+            if (admin.apps.length) {
+                await admin.auth().updateUser(req.params.id, { disabled: !active });
+                authUpdated = true;
+            }
+        } catch (authErr) {
+            console.warn('[Admin] Could not update Firebase Auth disabled state:', authErr.message);
+        }
+
+        await log(req, active ? 'REACTIVATE_USER' : 'DEACTIVATE_USER', { userId: user._id, email: user.email, authUpdated });
+        res.json({
+            success: true,
+            message: active
+                ? (authUpdated ? 'Account reactivated.' : 'Account marked active, but re-enabling Firebase Auth failed — check server logs.')
+                : (authUpdated ? 'Account deactivated.' : 'Account marked inactive, but disabling Firebase Auth failed — check server logs.'),
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  DELETE /api/admin/users/:id
+//  Permanently deletes the Firestore user doc, the Firebase Auth account,
+//  and any verification selfie on disk. Does NOT cascade-delete the user's
+//  community posts / incident reports / SOS history — those stay for
+//  community/audit integrity, just detached from a live account.
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+router.delete('/users/:id', async (req, res) => {
+    try {
+        const user = await usersFindById(req.params.id);
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+        if (user.verificationSelfiePath) {
+            const filePath = path.join(VERIFICATION_UPLOADS_DIR, path.basename(user.verificationSelfiePath));
+            fs.unlink(filePath, () => {});
+        }
+
+        let authDeleted = false;
+        try {
+            const admin = require('firebase-admin');
+            if (admin.apps.length) {
+                await admin.auth().deleteUser(req.params.id);
+                authDeleted = true;
+            }
+        } catch (authErr) {
+            console.warn('[Admin] Could not delete Firebase Auth account:', authErr.message);
+        }
+
+        await usersDelete(req.params.id);
+
+        await log(req, 'DELETE_USER', { userId: req.params.id, email: user.email, authDeleted });
+        res.json({
+            success: true,
+            message: authDeleted
+                ? 'User deleted (Firestore + Firebase Auth).'
+                : 'User deleted from Firestore, but Firebase Auth deletion failed — check server logs.',
+        });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }

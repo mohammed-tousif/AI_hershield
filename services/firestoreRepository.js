@@ -206,6 +206,11 @@ async function usersSave(user) {
     await db.collection(COL.USERS).doc(user._id).set(payload, { merge: true });
 }
 
+async function usersDelete(userId) {
+    const db = firestoreOrThrow();
+    await db.collection(COL.USERS).doc(userId).delete();
+}
+
 async function trackingCodeExists(code) {
     const db = firestoreOrThrow();
     const q = await db.collection(COL.TRACKING_SESSIONS).where('trackingCode', '==', code).limit(1).get();
@@ -720,6 +725,7 @@ module.exports = {
     usersFindByEmail,
     usersCreate,
     usersSave,
+    usersDelete,
     usersListAll,
     trackingCodeExists,
     trackingCreate,
