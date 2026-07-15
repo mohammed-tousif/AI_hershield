@@ -95,10 +95,16 @@ const usersRoutes = require('./routes/users');
 const communityRoutes = require('./routes/community');
 const adminRoutes     = require('./routes/admin');
 
-// Admin-specific strict rate limiter (20 req / min)
+// Admin-specific rate limiter. Raised from 20 → 60/min: Overview's 30s
+// auto-refresh alone now fires ~6 requests/cycle (stats, verifications,
+// logs, users, sos, incidents — needed for the trend charts), leaving too
+// little headroom at 20/min for actual admin clicks (exports, deletes, tab
+// switches). Still a real ceiling — this is a single authenticated admin,
+// not a public endpoint, so generous throttling here is about basic abuse
+// protection, not user-facing rate limiting.
 const adminLimiter = rateLimit({
     windowMs: 60 * 1000,
-    max: 20,
+    max: 60,
     message: 'Too many admin requests',
     standardHeaders: true,
     legacyHeaders: false,

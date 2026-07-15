@@ -639,6 +639,11 @@ async function usersListAll(limitN = 500) {
     return rows;
 }
 
+async function incidentsDelete(docId) {
+    const db = firestoreOrThrow();
+    await db.collection(COL.INCIDENTS).doc(docId).delete();
+}
+
 async function communityDeletePost(docId) {
     const db = firestoreOrThrow();
     await db.collection(COL.COMMUNITY).doc(docId).delete();
@@ -737,6 +742,7 @@ module.exports = {
     incidentsGetById,
     incidentsCreate,
     incidentsSave,
+    incidentsDelete,
     communityInsert,
     communityFindByKind,
     communityLikePost,

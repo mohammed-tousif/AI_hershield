@@ -22,6 +22,7 @@ const {
     usersSave,
     usersDelete,
     incidentsFetchAll,
+    incidentsDelete,
     communityFindByKind,
     communityInsert,
     communityDeletePost,
@@ -478,6 +479,19 @@ router.get('/incidents', async (req, res) => {
         const incidents = await incidentsFetchAll(500);
         incidents.sort((a,b) => new Date(b.createdAt||0) - new Date(a.createdAt||0));
         res.json({ success: true, incidents });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  DELETE /api/admin/incidents/:id
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+router.delete('/incidents/:id', async (req, res) => {
+    try {
+        await incidentsDelete(req.params.id);
+        await log(req, 'DELETE_INCIDENT', { incidentId: req.params.id });
+        res.json({ success: true, message: 'Incident deleted' });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }

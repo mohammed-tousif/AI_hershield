@@ -59,7 +59,7 @@ nav{flex:1;padding:.75rem 0;overflow-y:auto;}
   text-decoration:none;transition:all .15s;border:none;background:none;width:calc(100% - 1rem);text-align:left;
 }
 .nav-item i{width:18px;text-align:center;font-size:.9rem;}
-.nav-item:hover,.nav-item.active{background:rgba(139,92,246,.12);color:var(--purple-lt);}
+.nav-item:hover,.nav-item.active{background:rgba(139,92,246,.12);color:var(--purple-lt);transform:translateX(2px);}
 .nav-item.active{color:#fff;background:rgba(139,92,246,.2);}
 .nav-badge{margin-left:auto;background:var(--red);color:#fff;border-radius:99px;font-size:.65rem;font-weight:700;padding:.1rem .45rem;}
 
@@ -122,7 +122,8 @@ nav{flex:1;padding:.75rem 0;overflow-y:auto;}
 .sec-title i{color:var(--purple-lt);}
 
 /* ── Table card ── */
-.table-card{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;}
+.table-card{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;transition:border-color .2s;}
+.table-card:hover{border-color:rgba(139,92,246,.2);}
 .table-toolbar{
   padding:1rem 1.25rem;border-bottom:1px solid var(--border);
   display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;
@@ -173,7 +174,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
   border:none;transition:all .15s;font-family:inherit;
 }
 .btn-primary{background:var(--purple);color:#fff;}
-.btn-primary:hover{background:#FF9A86;}
+.btn-primary:hover{background:#7c3aed;}
 .btn-danger{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.2);}
 .btn-danger:hover{background:rgba(239,68,68,.25);}
 .btn-success{background:rgba(34,197,94,.15);color:#86efac;border:1px solid rgba(34,197,94,.2);}
@@ -251,6 +252,22 @@ tr:hover td{background:rgba(255,255,255,.02);}
 /* ── Loading spinner ── */
 .spin{animation:spin .7s linear infinite;display:inline-block;}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Skeleton loading shimmer ── */
+.skeleton-bar{
+  height:14px;border-radius:6px;
+  background:linear-gradient(90deg,var(--card2) 25%,rgba(255,255,255,.06) 37%,var(--card2) 63%);
+  background-size:400% 100%;
+  animation:shimmer 1.4s ease infinite;
+}
+@keyframes shimmer{0%{background-position:100% 50%}100%{background-position:0 50%}}
+
+/* ── Empty state subtext ── */
+.empty-sub{font-size:.78rem;color:var(--muted);margin-top:.25rem;opacity:.8;}
+
+/* ── Bulk selection bar ── */
+.bulk-bar{background:rgba(139,92,246,.07)!important;}
+.row-check{accent-color:var(--purple);width:16px;height:16px;cursor:pointer;}
 
 /* ── Recent Activity ── */
 .activity-list{display:flex;flex-direction:column;gap:.6rem;}
@@ -372,6 +389,21 @@ tr:hover td{background:rgba(255,255,255,.02);}
           <div id="recentActivityList"><div class="empty"><i class="fas fa-spinner spin"></i></div></div>
         </div>
       </div>
+
+      <div class="chart-row" style="grid-template-columns:1fr 1fr 1fr;">
+        <div class="mini-chart">
+          <div class="chart-title"><i class="fas fa-user-plus me-2" style="color:var(--purple-lt);"></i>Signups (14d)</div>
+          <div style="height:160px;"><canvas id="chartSignups"></canvas></div>
+        </div>
+        <div class="mini-chart">
+          <div class="chart-title"><i class="fas fa-exclamation-triangle me-2" style="color:var(--red);"></i>SOS Events (14d)</div>
+          <div style="height:160px;"><canvas id="chartSos"></canvas></div>
+        </div>
+        <div class="mini-chart">
+          <div class="chart-title"><i class="fas fa-file-alt me-2" style="color:var(--amber);"></i>Incident Reports (14d)</div>
+          <div style="height:160px;"><canvas id="chartIncidents"></canvas></div>
+        </div>
+      </div>
     </div>
 
     <!-- ════ USERS ════ -->
@@ -382,14 +414,25 @@ tr:hover td{background:rgba(255,255,255,.02);}
           <button class="btn btn-ghost" onclick="exportUsers()"><i class="fas fa-download"></i> Export</button>
         </div>
       </div>
+      <div id="usersBulkBar" class="table-toolbar bulk-bar" style="display:none;">
+        <span class="bulk-count" style="color:#fff;font-weight:600;font-size:.85rem;"></span>
+        <button class="btn btn-ghost btn-sm" onclick="exportSelected('users')"><i class="fas fa-download"></i> Export Selected</button>
+        <button class="btn btn-danger btn-sm" onclick="bulkDelete('users')"><i class="fas fa-trash"></i> Delete Selected</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearSelection('users')">Clear</button>
+      </div>
       <div class="table-card">
         <div class="table-toolbar">
-          <div class="search-box"><i class="fas fa-search"></i><input type="text" placeholder="Search users…" id="userSearch" oninput="filterUsers()"></div>
+          <div class="search-box"><i class="fas fa-search"></i><input type="text" placeholder="Search users…" id="usersSearch" oninput="filterUsers()"></div>
+          <select class="form-select" id="usersSort" style="max-width:190px;" onchange="filterUsers()">
+            <option value="createdAt_desc">Newest first</option>
+            <option value="createdAt_asc">Oldest first</option>
+            <option value="name_asc">Name (A-Z)</option>
+          </select>
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>User</th><th>Email</th><th>Phone</th><th>Guardians</th><th>Joined</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody id="usersTableBody"><tr><td colspan="7" class="empty"><i class="fas fa-spinner spin"></i> Loading...</td></tr></tbody>
+            <thead><tr><th style="width:36px;"><input type="checkbox" class="row-check" onclick="toggleSelectAllVisible('users',this.checked)"></th><th>User</th><th>Email</th><th>Phone</th><th>Guardians</th><th>Joined</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="usersTableBody"><tr><td colspan="8" class="empty"><i class="fas fa-spinner spin"></i> Loading...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -412,6 +455,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
             <option value="rejected">Rejected</option>
             <option value="unverified">Unverified (no submission)</option>
           </select>
+          <div class="search-box"><i class="fas fa-search"></i><input type="text" placeholder="Search by name or email…" id="verificationsSearch" oninput="filterVerifications()"></div>
         </div>
         <div class="table-wrap">
           <table>
@@ -426,16 +470,30 @@ tr:hover td{background:rgba(255,255,255,.02);}
     <div class="section" id="sec-posts">
       <div class="sec-header">
         <div class="sec-title"><i class="fas fa-comments"></i> Community Posts</div>
-        <button class="btn btn-primary" onclick="openNewPostModal()"><i class="fas fa-plus"></i> New Post</button>
+        <div style="display:flex;gap:.5rem;">
+          <button class="btn btn-ghost" onclick="exportSelected('posts')"><i class="fas fa-download"></i> Export</button>
+          <button class="btn btn-primary" onclick="openNewPostModal()"><i class="fas fa-plus"></i> New Post</button>
+        </div>
+      </div>
+      <div id="postsBulkBar" class="table-toolbar bulk-bar" style="display:none;">
+        <span class="bulk-count" style="color:#fff;font-weight:600;font-size:.85rem;"></span>
+        <button class="btn btn-ghost btn-sm" onclick="exportSelected('posts')"><i class="fas fa-download"></i> Export Selected</button>
+        <button class="btn btn-danger btn-sm" onclick="bulkDelete('posts')"><i class="fas fa-trash"></i> Delete Selected</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearSelection('posts')">Clear</button>
       </div>
       <div class="table-card">
         <div class="table-toolbar">
-          <div class="search-box"><i class="fas fa-search"></i><input type="text" placeholder="Search posts…" id="postSearch" oninput="filterPosts()"></div>
+          <div class="search-box"><i class="fas fa-search"></i><input type="text" placeholder="Search posts…" id="postsSearch" oninput="filterPosts()"></div>
+          <select class="form-select" id="postsSort" style="max-width:190px;" onchange="filterPosts()">
+            <option value="createdAt_desc">Newest first</option>
+            <option value="createdAt_asc">Oldest first</option>
+            <option value="likes_desc">Most liked</option>
+          </select>
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Author</th><th>Content</th><th>Category</th><th>Likes</th><th>Posted</th><th>Actions</th></tr></thead>
-            <tbody id="postsTableBody"><tr><td colspan="6" class="empty"><i class="fas fa-spinner spin"></i> Loading...</td></tr></tbody>
+            <thead><tr><th style="width:36px;"><input type="checkbox" class="row-check" onclick="toggleSelectAllVisible('posts',this.checked)"></th><th>Author</th><th>Content</th><th>Category</th><th>Likes</th><th>Posted</th><th>Actions</th></tr></thead>
+            <tbody id="postsTableBody"><tr><td colspan="7" class="empty"><i class="fas fa-spinner spin"></i> Loading...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -445,12 +503,27 @@ tr:hover td{background:rgba(255,255,255,.02);}
     <div class="section" id="sec-alerts">
       <div class="sec-header">
         <div class="sec-title"><i class="fas fa-bell"></i> Safety Alerts</div>
+        <button class="btn btn-ghost" onclick="exportSelected('alerts')"><i class="fas fa-download"></i> Export</button>
+      </div>
+      <div id="alertsBulkBar" class="table-toolbar bulk-bar" style="display:none;">
+        <span class="bulk-count" style="color:#fff;font-weight:600;font-size:.85rem;"></span>
+        <button class="btn btn-ghost btn-sm" onclick="exportSelected('alerts')"><i class="fas fa-download"></i> Export Selected</button>
+        <button class="btn btn-danger btn-sm" onclick="bulkDelete('alerts')"><i class="fas fa-trash"></i> Delete Selected</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearSelection('alerts')">Clear</button>
       </div>
       <div class="table-card">
+        <div class="table-toolbar">
+          <div class="search-box"><i class="fas fa-search"></i><input type="text" placeholder="Search alerts…" id="alertsSearch" oninput="filterAlerts()"></div>
+          <select class="form-select" id="alertsSort" style="max-width:190px;" onchange="filterAlerts()">
+            <option value="createdAt_desc">Newest first</option>
+            <option value="createdAt_asc">Oldest first</option>
+            <option value="severity_desc">Severity</option>
+          </select>
+        </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Title</th><th>Message</th><th>Severity</th><th>Location</th><th>Source</th><th>Time</th><th>Actions</th></tr></thead>
-            <tbody id="alertsTableBody"><tr><td colspan="7" class="empty"><i class="fas fa-spinner spin"></i> Loading...</td></tr></tbody>
+            <thead><tr><th style="width:36px;"><input type="checkbox" class="row-check" onclick="toggleSelectAllVisible('alerts',this.checked)"></th><th>Title</th><th>Message</th><th>Severity</th><th>Location</th><th>Source</th><th>Time</th><th>Actions</th></tr></thead>
+            <tbody id="alertsTableBody"><tr><td colspan="8" class="empty"><i class="fas fa-spinner spin"></i> Loading...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -462,6 +535,14 @@ tr:hover td{background:rgba(255,255,255,.02);}
         <div class="sec-title"><i class="fas fa-exclamation-triangle" style="color:var(--red);"></i> SOS Emergency Events</div>
       </div>
       <div class="table-card">
+        <div class="table-toolbar">
+          <div class="search-box"><i class="fas fa-search"></i><input type="text" placeholder="Search SOS events…" id="sosSearch" oninput="filterSos()"></div>
+          <select class="form-select" id="sosSort" style="max-width:190px;" onchange="filterSos()">
+            <option value="triggeredAt_desc">Newest first</option>
+            <option value="triggeredAt_asc">Oldest first</option>
+            <option value="status_asc">Status</option>
+          </select>
+        </div>
         <div class="table-wrap">
           <table>
             <thead><tr><th>User</th><th>Email</th><th>Status</th><th>Location</th><th>Triggered</th><th>Resolved</th><th>Guardians Notified</th></tr></thead>
@@ -477,11 +558,25 @@ tr:hover td{background:rgba(255,255,255,.02);}
         <div class="sec-title"><i class="fas fa-map-marker-alt"></i> Incident Reports</div>
         <button class="btn btn-ghost" onclick="exportIncidents()"><i class="fas fa-download"></i> Export CSV</button>
       </div>
+      <div id="incidentsBulkBar" class="table-toolbar bulk-bar" style="display:none;">
+        <span class="bulk-count" style="color:#fff;font-weight:600;font-size:.85rem;"></span>
+        <button class="btn btn-ghost btn-sm" onclick="exportSelected('incidents')"><i class="fas fa-download"></i> Export Selected</button>
+        <button class="btn btn-danger btn-sm" onclick="bulkDelete('incidents')"><i class="fas fa-trash"></i> Delete Selected</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearSelection('incidents')">Clear</button>
+      </div>
       <div class="table-card">
+        <div class="table-toolbar">
+          <div class="search-box"><i class="fas fa-search"></i><input type="text" placeholder="Search incidents…" id="incidentsSearch" oninput="filterIncidents()"></div>
+          <select class="form-select" id="incidentsSort" style="max-width:190px;" onchange="filterIncidents()">
+            <option value="createdAt_desc">Newest first</option>
+            <option value="createdAt_asc">Oldest first</option>
+            <option value="severity_desc">Severity</option>
+          </select>
+        </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Type</th><th>Description</th><th>Severity</th><th>Location</th><th>Reporter</th><th>Date</th></tr></thead>
-            <tbody id="incidentsTableBody"><tr><td colspan="6" class="empty"><i class="fas fa-spinner spin"></i> Loading...</td></tr></tbody>
+            <thead><tr><th style="width:36px;"><input type="checkbox" class="row-check" onclick="toggleSelectAllVisible('incidents',this.checked)"></th><th>Type</th><th>Description</th><th>Severity</th><th>Location</th><th>Reporter</th><th>Date</th><th>Actions</th></tr></thead>
+            <tbody id="incidentsTableBody"><tr><td colspan="8" class="empty"><i class="fas fa-spinner spin"></i> Loading...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -493,6 +588,14 @@ tr:hover td{background:rgba(255,255,255,.02);}
         <div class="sec-title"><i class="fas fa-satellite-dish"></i> Live Tracking Sessions</div>
       </div>
       <div class="table-card">
+        <div class="table-toolbar">
+          <div class="search-box"><i class="fas fa-search"></i><input type="text" placeholder="Search tracking sessions…" id="trackingSearch" oninput="filterTracking()"></div>
+          <select class="form-select" id="trackingSort" style="max-width:190px;" onchange="filterTracking()">
+            <option value="startTime_desc">Newest first</option>
+            <option value="startTime_asc">Oldest first</option>
+            <option value="status_asc">Status</option>
+          </select>
+        </div>
         <div class="table-wrap">
           <table>
             <thead><tr><th>User</th><th>Route</th><th>Transport</th><th>Status</th><th>Started</th><th>Guardians</th></tr></thead>
@@ -675,6 +778,14 @@ tr:hover td{background:rgba(255,255,255,.02);}
         <div class="sec-title"><i class="fas fa-history"></i> Audit Logs</div>
       </div>
       <div class="table-card">
+        <div class="table-toolbar">
+          <div class="search-box"><i class="fas fa-search"></i><input type="text" placeholder="Search logs by admin or action…" id="logsSearch" oninput="filterLogs()"></div>
+          <select class="form-select" id="logsSort" style="max-width:190px;" onchange="filterLogs()">
+            <option value="timestamp_desc">Newest first</option>
+            <option value="timestamp_asc">Oldest first</option>
+            <option value="action_asc">Action (A-Z)</option>
+          </select>
+        </div>
         <div class="table-wrap">
           <table>
             <thead><tr><th>Time</th><th>Admin</th><th>Action</th><th>Details</th><th>IP</th></tr></thead>
@@ -803,6 +914,180 @@ const sevBadge = s => {
     return `<span class="badge badge-${map[(s||'').toLowerCase()]||'gray'}">${esc(s||'—')}</span>`;
 };
 
+function skeletonRows(cols, n = 4) {
+    return Array.from({length:n}).map(() =>
+        `<tr>${Array.from({length:cols}).map(() => `<td><div class="skeleton-bar" style="width:${55 + Math.round(Math.random()*30)}%;"></div></td>`).join('')}</tr>`
+    ).join('');
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  SEARCH / SORT ENGINE (shared across all tables)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function getPath(obj, path) { return path.split('.').reduce((o,k) => (o && o[k] !== undefined) ? o[k] : undefined, obj); }
+
+const SEVERITY_RANK = { critical:5, high:4, medium:3, low:2, safe:1, info:0 };
+
+const TABLE_CONFIG = {
+    users:        { searchKeys:['name','email','phone'], defaultSort:'createdAt_desc' },
+    posts:        { searchKeys:['content','userName'],   defaultSort:'createdAt_desc' },
+    alerts:       { searchKeys:['title','message','location','userName'], defaultSort:'createdAt_desc' },
+    sos:          { searchKeys:['name','userName','email','userEmail','location.address'], defaultSort:'triggeredAt_desc' },
+    incidents:    { searchKeys:['incidentType','description','location.address','reporterName'], defaultSort:'createdAt_desc' },
+    tracking:     { searchKeys:['name','userName','source','destination','transportMode'], defaultSort:'startTime_desc' },
+    logs:         { searchKeys:['admin','action'], defaultSort:'timestamp_desc' },
+};
+
+function sortValueFor(item, key) {
+    if (key === 'severity') return SEVERITY_RANK[(getPath(item,key)||'').toLowerCase()] ?? -1;
+    if (key === 'likes') return Number(getPath(item,key)) || 0;
+    const raw = getPath(item, key);
+    if (/At$|Time$/.test(key)) return new Date(raw || 0).getTime();
+    return String(raw ?? '').toLowerCase();
+}
+
+function applyTableToolbar(key, list) {
+    const cfg = TABLE_CONFIG[key] || {};
+    const searchEl = document.getElementById(key + 'Search');
+    const q = (searchEl?.value || '').toLowerCase().trim();
+    let out = q
+        ? list.filter(item => (cfg.searchKeys||[]).some(k => String(getPath(item,k) || '').toLowerCase().includes(q)))
+        : list.slice();
+
+    const sortEl = document.getElementById(key + 'Sort');
+    const sortVal = sortEl ? sortEl.value : cfg.defaultSort;
+    if (sortVal) {
+        const [sortKey, dir] = sortVal.split('_');
+        const mul = dir === 'asc' ? 1 : -1;
+        out.sort((a,b) => {
+            const va = sortValueFor(a, sortKey), vb = sortValueFor(b, sortKey);
+            if (va < vb) return -1 * mul;
+            if (va > vb) return 1 * mul;
+            return 0;
+        });
+    }
+    return out;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  BULK SELECTION + CSV EXPORT
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const selection = { users: new Set(), posts: new Set(), alerts: new Set(), incidents: new Set() };
+const BULK_DELETE_ENDPOINT = { users:'/users/', posts:'/posts/', alerts:'/alerts/', incidents:'/incidents/' };
+
+function toggleRow(entity, id, checked) {
+    checked ? selection[entity].add(id) : selection[entity].delete(id);
+    updateBulkBar(entity);
+}
+
+function toggleSelectAllVisible(entity, checked) {
+    document.querySelectorAll('#' + entity + 'TableBody .row-check').forEach(cb => {
+        cb.checked = checked;
+        const id = cb.getAttribute('data-id');
+        checked ? selection[entity].add(id) : selection[entity].delete(id);
+    });
+    updateBulkBar(entity);
+}
+
+function updateBulkBar(entity) {
+    const bar = document.getElementById(entity + 'BulkBar');
+    if (!bar) return;
+    const n = selection[entity].size;
+    bar.style.display = n ? 'flex' : 'none';
+    const countEl = bar.querySelector('.bulk-count');
+    if (countEl) countEl.textContent = n + ' selected';
+}
+
+function clearSelection(entity) {
+    selection[entity].clear();
+    document.querySelectorAll('#' + entity + 'TableBody .row-check').forEach(cb => cb.checked = false);
+    updateBulkBar(entity);
+}
+
+async function bulkDelete(entity) {
+    const ids = [...selection[entity]];
+    if (!ids.length) return;
+    if (!confirm(`Delete ${ids.length} ${entity}? This cannot be undone.`)) return;
+    const endpoint = BULK_DELETE_ENDPOINT[entity];
+    const results = await Promise.allSettled(ids.map(id => api(endpoint + id, { method: 'DELETE' })));
+    const failed = results.filter(r => r.status === 'rejected').length;
+    toast(failed ? `${ids.length-failed}/${ids.length} deleted, ${failed} failed` : `${ids.length} deleted`, failed ? 'error' : 'success');
+    selection[entity].clear();
+    loadSection(entity);
+}
+
+const BULK_ENTITY_ALL = { users: () => allUsers, posts: () => allPosts, alerts: () => allAlerts, incidents: () => allIncidents };
+
+const toCsvRows = {
+    users: list => { const rows=[['Name','Email','Phone','Guardians','Joined']]; list.forEach(u=>rows.push([u.name||'',u.email||'',u.phone||'',(u.emergencyContacts||[]).length,fmtDate(u.createdAt)])); return rows; },
+    posts: list => { const rows=[['Author','Content','Category','Likes','Posted']]; list.forEach(p=>rows.push([p.userName||'',p.content||'',p.category||'',p.likes||0,fmtDate(p.createdAt)])); return rows; },
+    alerts: list => { const rows=[['Title','Message','Severity','Location','Source','Time']]; list.forEach(a=>rows.push([a.title||'',a.message||'',a.severity||'',a.location||'',a.source||'',fmtDate(a.createdAt)])); return rows; },
+    incidents: list => { const rows=[['Type','Description','Severity','Location','Reporter','Date']]; list.forEach(i=>rows.push([i.incidentType||'',i.description||'',i.severity||'',i.location?.address||'',i.reporterName||'',fmtDate(i.createdAt)])); return rows; },
+};
+
+function exportSelected(entity) {
+    const all = BULK_ENTITY_ALL[entity] ? BULK_ENTITY_ALL[entity]() : [];
+    if (!all.length) return toast(`No ${entity} to export`, 'error');
+    const rows = selection[entity] && selection[entity].size
+        ? all.filter(x => selection[entity].has(x._id))
+        : applyTableToolbar(entity, all);
+    downloadCSV(toCsvRows[entity](rows), `hershield_${entity}.csv`);
+    toast(`${rows.length} ${entity} exported`);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  TREND CHARTS (Chart.js)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function bucketByDay(items, dateField, days = 14) {
+    const buckets = {};
+    const today = new Date();
+    for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(today); d.setDate(d.getDate() - i);
+        buckets[d.toISOString().slice(0,10)] = 0;
+    }
+    (items||[]).forEach(it => {
+        const raw = getPath(it, dateField);
+        if (!raw) return;
+        const key = new Date(raw).toISOString().slice(0,10);
+        if (key in buckets) buckets[key]++;
+    });
+    return buckets;
+}
+
+const _chartInstances = {};
+function renderTrendChart(canvasId, buckets, color) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || typeof Chart === 'undefined') return;
+    if (_chartInstances[canvasId]) _chartInstances[canvasId].destroy();
+    const labels = Object.keys(buckets).map(d => d.slice(5));
+    const data = Object.values(buckets);
+    _chartInstances[canvasId] = new Chart(canvas, {
+        type: 'line',
+        data: { labels, datasets: [{ data, borderColor: color, backgroundColor: color + '22', fill: true, tension: .35, pointRadius: 2 }] },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { x: { grid: { display: false } }, y: { beginAtZero: true, ticks: { precision: 0 } } },
+        },
+    });
+}
+
+// Loaded dynamically (not a static <script src>) so the rest of the admin
+// dashboard boots regardless of whether the CDN is reachable — charts are a
+// nice-to-have, not a blocker for the rest of the panel.
+const chartsReadyPromise = new Promise((resolve) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4';
+    s.onload = () => {
+        const rootStyle = getComputedStyle(document.documentElement);
+        Chart.defaults.color = rootStyle.getPropertyValue('--muted2').trim();
+        Chart.defaults.font.family = "'Inter',sans-serif";
+        Chart.defaults.borderColor = rootStyle.getPropertyValue('--border').trim();
+        resolve(true);
+    };
+    s.onerror = () => resolve(false);
+    document.head.appendChild(s);
+});
+
 let toastTimer;
 function toast(msg, type = 'success') {
     const t = document.getElementById('adminToast');
@@ -918,6 +1203,22 @@ async function loadOverview() {
                 </div>
             </div>`).join('') || '<div class="empty"><i class="fas fa-history"></i>No actions yet</div>';
     } catch(_) {}
+
+    // Trend charts — also conveniently pre-populates the Users/SOS/Incidents
+    // module arrays so those tabs don't need to re-fetch if visited right after.
+    try {
+        const [usersRes, sosRes, incidentsRes] = await Promise.all([api('/users'), api('/sos'), api('/incidents')]);
+        allUsers = usersRes.users || allUsers;
+        allSos = sosRes.events || allSos;
+        allIncidents = incidentsRes.incidents || allIncidents;
+        const chartsOk = await chartsReadyPromise;
+        if (chartsOk) {
+            const rootStyle = getComputedStyle(document.documentElement);
+            renderTrendChart('chartSignups', bucketByDay(allUsers, 'createdAt', 14), rootStyle.getPropertyValue('--purple').trim());
+            renderTrendChart('chartSos', bucketByDay(allSos, 'triggeredAt', 14), rootStyle.getPropertyValue('--red').trim());
+            renderTrendChart('chartIncidents', bucketByDay(allIncidents, 'createdAt', 14), rootStyle.getPropertyValue('--amber').trim());
+        }
+    } catch (_) { /* charts are non-critical */ }
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -926,13 +1227,13 @@ async function loadOverview() {
 let allUsers = [];
 async function loadUsers() {
     const tbody = document.getElementById('usersTableBody');
-    tbody.innerHTML = '<tr><td colspan="7" class="empty"><i class="fas fa-spinner spin"></i> Loading…</td></tr>';
+    tbody.innerHTML = skeletonRows(8);
     try {
         const { users } = await api('/users');
         allUsers = users || [];
-        renderUsersTable(allUsers);
+        filterUsers();
     } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="7" class="empty" style="color:var(--red);">Error: ${esc(e.message)}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="empty" style="color:var(--red);">Error: ${esc(e.message)}</td></tr>`;
     }
 }
 
@@ -944,14 +1245,16 @@ function accountStatusBadge(isActive) {
 
 function renderUsersTable(users) {
     const tbody = document.getElementById('usersTableBody');
-    if (!users.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty"><i class="fas fa-users"></i>No users found</td></tr>'; return; }
+    if (!users.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty"><i class="fas fa-users"></i>No users found<div class="empty-sub">Users will appear here once they sign up.</div></td></tr>'; return; }
     tbody.innerHTML = users.map(u => {
         const name = u.name || u.displayName || 'Unknown';
         const guardians = (u.emergencyContacts || u.guardians || []).length;
         const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
         const id = esc(u._id);
         const isActive = u.isActive !== false;
+        const checked = selection.users.has(u._id) ? 'checked' : '';
         return `<tr>
+            <td><input type="checkbox" class="row-check" data-id="${id}" ${checked} onclick="toggleRow('users','${id}',this.checked)"></td>
             <td><div class="avatar-cell"><div class="avatar">${initials}</div><span class="td-main">${esc(name)}</span></div></td>
             <td>${esc(u.email||'—')}</td>
             <td>${esc(u.phone||u.phoneNumber||'—')}</td>
@@ -967,6 +1270,7 @@ function renderUsersTable(users) {
             </td>
         </tr>`;
     }).join('');
+    updateBulkBar('users');
 }
 
 async function toggleUserActive(id, currentlyActive) {
@@ -993,30 +1297,35 @@ async function deleteUserAccount(id, email) {
     }
 }
 
-function filterUsers() {
-    const q = document.getElementById('userSearch').value.toLowerCase();
-    renderUsersTable(allUsers.filter(u =>
-        (u.name||'').toLowerCase().includes(q) ||
-        (u.email||'').toLowerCase().includes(q) ||
-        (u.phone||'').toLowerCase().includes(q)
-    ));
-}
+function filterUsers() { renderUsersTable(applyTableToolbar('users', allUsers)); }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  GENDER VERIFICATION REVIEW
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 let rejectTargetUserId = null;
+let allVerifications = [];
+let lastVerificationStatus = 'pending';
 
 async function loadVerifications() {
     const tbody = document.getElementById('verificationsTableBody');
     const status = document.getElementById('verificationStatusFilter').value;
-    tbody.innerHTML = '<tr><td colspan="6" class="empty"><i class="fas fa-spinner spin"></i> Loading…</td></tr>';
+    lastVerificationStatus = status;
+    tbody.innerHTML = skeletonRows(6);
     try {
         const { verifications } = await api('/verifications?status=' + encodeURIComponent(status));
-        renderVerificationsTable(verifications || [], status);
+        allVerifications = verifications || [];
+        filterVerifications();
     } catch (e) {
         tbody.innerHTML = `<tr><td colspan="6" class="empty" style="color:var(--red);">Error: ${esc(e.message)}</td></tr>`;
     }
+}
+
+function filterVerifications() {
+    const q = (document.getElementById('verificationsSearch')?.value || '').toLowerCase().trim();
+    const filtered = q
+        ? allVerifications.filter(u => (u.name||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q))
+        : allVerifications;
+    renderVerificationsTable(filtered, lastVerificationStatus);
 }
 
 function renderVerificationsTable(list, status) {
@@ -1123,13 +1432,7 @@ async function viewUser(id) {
     }
 }
 
-function exportUsers() {
-    if (!allUsers.length) return toast('No users to export', 'error');
-    const rows = [['Name','Email','Phone','Guardians','Joined']];
-    allUsers.forEach(u => rows.push([u.name||'',u.email||'',u.phone||'',(u.emergencyContacts||[]).length,fmtDate(u.createdAt)]));
-    downloadCSV(rows, 'hershield_users.csv');
-    toast('Users exported');
-}
+function exportUsers() { exportSelected('users'); }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  POSTS
@@ -1137,33 +1440,36 @@ function exportUsers() {
 let allPosts = [];
 async function loadPosts() {
     const tbody = document.getElementById('postsTableBody');
-    tbody.innerHTML = '<tr><td colspan="6" class="empty"><i class="fas fa-spinner spin"></i> Loading…</td></tr>';
+    tbody.innerHTML = skeletonRows(7);
     try {
         const { posts } = await api('/posts');
         allPosts = posts || [];
-        renderPostsTable(allPosts);
+        filterPosts();
     } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="6" style="color:var(--red);padding:1rem;">${esc(e.message)}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="color:var(--red);padding:1rem;">${esc(e.message)}</td></tr>`;
     }
 }
 
 function renderPostsTable(posts) {
     const tbody = document.getElementById('postsTableBody');
-    if (!posts.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty"><i class="fas fa-comments"></i>No posts</td></tr>'; return; }
-    tbody.innerHTML = posts.map(p => `<tr>
+    if (!posts.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty"><i class="fas fa-comments"></i>No posts<div class="empty-sub">Community posts will show up here.</div></td></tr>'; return; }
+    tbody.innerHTML = posts.map(p => {
+        const id = esc(p._id);
+        const checked = selection.posts.has(p._id) ? 'checked' : '';
+        return `<tr>
+        <td><input type="checkbox" class="row-check" data-id="${id}" ${checked} onclick="toggleRow('posts','${id}',this.checked)"></td>
         <td><div class="avatar-cell"><div class="avatar" style="font-size:.65rem;">${(p.userName||'?')[0]}</div><span class="td-main">${esc(p.userName||'—')}</span></div></td>
         <td style="max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc((p.content||'').substring(0,80))}${(p.content||'').length>80?'…':''}</td>
         <td>${sevBadge(p.category||'general')}</td>
         <td>${p.likes||0}</td>
         <td style="white-space:nowrap;">${timeAgo(p.createdAt)}</td>
-        <td><button class="btn btn-danger btn-sm" onclick="deletePost('${esc(p._id)}')"><i class="fas fa-trash"></i></button></td>
-    </tr>`).join('');
+        <td><button class="btn btn-danger btn-sm" onclick="deletePost('${id}')"><i class="fas fa-trash"></i></button></td>
+    </tr>`;
+    }).join('');
+    updateBulkBar('posts');
 }
 
-function filterPosts() {
-    const q = document.getElementById('postSearch').value.toLowerCase();
-    renderPostsTable(allPosts.filter(p => (p.content||'').toLowerCase().includes(q) || (p.userName||'').toLowerCase().includes(q)));
-}
+function filterPosts() { renderPostsTable(applyTableToolbar('posts', allPosts)); }
 
 async function deletePost(id) {
     if (!confirm('Delete this post? This cannot be undone.')) return;
@@ -1193,23 +1499,38 @@ async function submitNewPost() {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  ALERTS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let allAlerts = [];
 async function loadAlerts() {
     const tbody = document.getElementById('alertsTableBody');
-    tbody.innerHTML = '<tr><td colspan="7" class="empty"><i class="fas fa-spinner spin"></i> Loading…</td></tr>';
+    tbody.innerHTML = skeletonRows(8);
     try {
         const { alerts } = await api('/alerts');
-        if (!alerts.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty"><i class="fas fa-bell"></i>No alerts</td></tr>'; return; }
-        tbody.innerHTML = alerts.map(a => `<tr>
+        allAlerts = alerts || [];
+        filterAlerts();
+    } catch (e) { tbody.innerHTML = `<tr><td colspan="8" style="color:var(--red);padding:1rem;">${esc(e.message)}</td></tr>`; }
+}
+
+function renderAlertsTable(alerts) {
+    const tbody = document.getElementById('alertsTableBody');
+    if (!alerts.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty"><i class="fas fa-bell"></i>No alerts<div class="empty-sub">Safety alerts will appear here.</div></td></tr>'; return; }
+    tbody.innerHTML = alerts.map(a => {
+        const id = esc(a._id);
+        const checked = selection.alerts.has(a._id) ? 'checked' : '';
+        return `<tr>
+            <td><input type="checkbox" class="row-check" data-id="${id}" ${checked} onclick="toggleRow('alerts','${id}',this.checked)"></td>
             <td class="td-main">${esc(a.title||'—')}</td>
             <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc((a.message||'').substring(0,70))}</td>
             <td>${sevBadge(a.severity)}</td>
             <td>${esc(a.location||'—')}</td>
             <td><span class="badge badge-purple">${esc(a.source||'community')}</span></td>
             <td style="white-space:nowrap;">${timeAgo(a.createdAt)}</td>
-            <td>${a.source!=='incident-report'?`<button class="btn btn-danger btn-sm" onclick="deleteAlert('${esc(a._id)}')"><i class="fas fa-trash"></i></button>`:'<span style="color:var(--muted);font-size:.75rem;">auto</span>'}</td>
-        </tr>`).join('');
-    } catch (e) { tbody.innerHTML = `<tr><td colspan="7" style="color:var(--red);padding:1rem;">${esc(e.message)}</td></tr>`; }
+            <td>${a.source!=='incident-report'?`<button class="btn btn-danger btn-sm" onclick="deleteAlert('${id}')"><i class="fas fa-trash"></i></button>`:'<span style="color:var(--muted);font-size:.75rem;">auto</span>'}</td>
+        </tr>`;
+    }).join('');
+    updateBulkBar('alerts');
 }
+
+function filterAlerts() { renderAlertsTable(applyTableToolbar('alerts', allAlerts)); }
 
 async function deleteAlert(id) {
     if (!confirm('Delete this alert?')) return;
@@ -1220,26 +1541,35 @@ async function deleteAlert(id) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  SOS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let allSos = [];
 async function loadSos() {
     const tbody = document.getElementById('sosTableBody');
-    tbody.innerHTML = '<tr><td colspan="7" class="empty"><i class="fas fa-spinner spin"></i> Loading…</td></tr>';
+    tbody.innerHTML = skeletonRows(7);
     try {
         const { events } = await api('/sos');
-        if (!events.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty"><i class="fas fa-check-circle"></i>No SOS events</td></tr>'; return; }
-        tbody.innerHTML = events.map(e => {
-            const isActive = e.status === 'active';
-            return `<tr class="${isActive?'sos-active':''}">
-                <td class="td-main">${esc(e.name||e.userName||'—')}</td>
-                <td>${esc(e.email||e.userEmail||'—')}</td>
-                <td>${sevBadge(e.status)}</td>
-                <td>${esc(e.location?.address||e.address||'—')}</td>
-                <td style="white-space:nowrap;">${fmtDate(e.triggeredAt)}</td>
-                <td style="white-space:nowrap;">${fmtDate(e.resolvedAt)||'—'}</td>
-                <td>${(e.emergencyContacts||[]).length} contact(s)</td>
-            </tr>`;
-        }).join('');
+        allSos = events || [];
+        filterSos();
     } catch(e2) { tbody.innerHTML = `<tr><td colspan="7" style="color:var(--red);padding:1rem;">${esc(e2.message)}</td></tr>`; }
 }
+
+function renderSosTable(events) {
+    const tbody = document.getElementById('sosTableBody');
+    if (!events.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty"><i class="fas fa-check-circle"></i>No SOS events<div class="empty-sub">Emergency alerts will show up here.</div></td></tr>'; return; }
+    tbody.innerHTML = events.map(e => {
+        const isActive = e.status === 'active';
+        return `<tr class="${isActive?'sos-active':''}">
+            <td class="td-main">${esc(e.name||e.userName||'—')}</td>
+            <td>${esc(e.email||e.userEmail||'—')}</td>
+            <td>${sevBadge(e.status)}</td>
+            <td>${esc(e.location?.address||e.address||'—')}</td>
+            <td style="white-space:nowrap;">${fmtDate(e.triggeredAt)}</td>
+            <td style="white-space:nowrap;">${fmtDate(e.resolvedAt)||'—'}</td>
+            <td>${(e.emergencyContacts||[]).length} contact(s)</td>
+        </tr>`;
+    }).join('');
+}
+
+function filterSos() { renderSosTable(applyTableToolbar('sos', allSos)); }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  INCIDENTS
@@ -1247,49 +1577,75 @@ async function loadSos() {
 let allIncidents = [];
 async function loadIncidents() {
     const tbody = document.getElementById('incidentsTableBody');
-    tbody.innerHTML = '<tr><td colspan="6" class="empty"><i class="fas fa-spinner spin"></i> Loading…</td></tr>';
+    tbody.innerHTML = skeletonRows(8);
     try {
         const { incidents } = await api('/incidents');
         allIncidents = incidents || [];
-        if (!incidents.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty"><i class="fas fa-map-marker"></i>No incidents</td></tr>'; return; }
-        tbody.innerHTML = incidents.map(i => `<tr>
+        filterIncidents();
+    } catch (e) { tbody.innerHTML = `<tr><td colspan="8" style="color:var(--red);padding:1rem;">${esc(e.message)}</td></tr>`; }
+}
+
+function renderIncidentsTable(incidents) {
+    const tbody = document.getElementById('incidentsTableBody');
+    if (!incidents.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty"><i class="fas fa-map-marker"></i>No incidents<div class="empty-sub">Reports will appear here as users submit them.</div></td></tr>'; return; }
+    tbody.innerHTML = incidents.map(i => {
+        const id = esc(i._id);
+        const checked = selection.incidents.has(i._id) ? 'checked' : '';
+        return `<tr>
+            <td><input type="checkbox" class="row-check" data-id="${id}" ${checked} onclick="toggleRow('incidents','${id}',this.checked)"></td>
             <td class="td-main">${esc(i.incidentType||'—')}</td>
             <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc((i.description||'').substring(0,80))}</td>
             <td>${sevBadge(i.severity)}</td>
             <td>${esc(i.location?.address||'—')}</td>
             <td>${esc(i.reporterName||'Anonymous')}</td>
             <td style="white-space:nowrap;">${timeAgo(i.createdAt)}</td>
-        </tr>`).join('');
-    } catch (e) { tbody.innerHTML = `<tr><td colspan="6" style="color:var(--red);padding:1rem;">${esc(e.message)}</td></tr>`; }
+            <td><button class="btn btn-danger btn-sm" onclick="deleteIncident('${id}')"><i class="fas fa-trash"></i></button></td>
+        </tr>`;
+    }).join('');
+    updateBulkBar('incidents');
 }
 
-function exportIncidents() {
-    if (!allIncidents.length) return toast('No incidents to export','error');
-    const rows = [['Type','Description','Severity','Location','Reporter','Date']];
-    allIncidents.forEach(i => rows.push([i.incidentType||'',i.description||'',i.severity||'',i.location?.address||'',i.reporterName||'',fmtDate(i.createdAt)]));
-    downloadCSV(rows, 'hershield_incidents.csv');
-    toast('Incidents exported');
+function filterIncidents() { renderIncidentsTable(applyTableToolbar('incidents', allIncidents)); }
+
+async function deleteIncident(id) {
+    if (!confirm('Delete this incident report? This cannot be undone.')) return;
+    try {
+        await api('/incidents/' + id, { method: 'DELETE' });
+        toast('Incident deleted');
+        loadIncidents();
+    } catch (e) { toast('Delete failed: ' + e.message, 'error'); }
 }
+
+function exportIncidents() { exportSelected('incidents'); }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  TRACKING
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let allTracking = [];
 async function loadTracking() {
     const tbody = document.getElementById('trackingTableBody');
-    tbody.innerHTML = '<tr><td colspan="6" class="empty"><i class="fas fa-spinner spin"></i> Loading…</td></tr>';
+    tbody.innerHTML = skeletonRows(6);
     try {
         const { sessions } = await api('/tracking');
-        if (!sessions.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty"><i class="fas fa-satellite-dish"></i>No sessions</td></tr>'; return; }
-        tbody.innerHTML = sessions.map(s => `<tr>
-            <td class="td-main">${esc(s.name||s.userName||'—')}</td>
-            <td>${esc(s.source||'—')} → ${esc(s.destination||'—')}</td>
-            <td>${esc(s.transportMode||'—')}</td>
-            <td>${sevBadge(s.status||'unknown')}</td>
-            <td style="white-space:nowrap;">${timeAgo(s.startTime)}</td>
-            <td>${(s.emergencyContacts||[]).length} contact(s)</td>
-        </tr>`).join('');
+        allTracking = sessions || [];
+        filterTracking();
     } catch (e) { tbody.innerHTML = `<tr><td colspan="6" style="color:var(--red);padding:1rem;">${esc(e.message)}</td></tr>`; }
 }
+
+function renderTrackingTable(sessions) {
+    const tbody = document.getElementById('trackingTableBody');
+    if (!sessions.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty"><i class="fas fa-satellite-dish"></i>No sessions<div class="empty-sub">Live tracking sessions will appear here.</div></td></tr>'; return; }
+    tbody.innerHTML = sessions.map(s => `<tr>
+        <td class="td-main">${esc(s.name||s.userName||'—')}</td>
+        <td>${esc(s.source||'—')} → ${esc(s.destination||'—')}</td>
+        <td>${esc(s.transportMode||'—')}</td>
+        <td>${sevBadge(s.status||'unknown')}</td>
+        <td style="white-space:nowrap;">${timeAgo(s.startTime)}</td>
+        <td>${(s.emergencyContacts||[]).length} contact(s)</td>
+    </tr>`).join('');
+}
+
+function filterTracking() { renderTrackingTable(applyTableToolbar('tracking', allTracking)); }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  BROADCAST
@@ -1329,21 +1685,30 @@ function clearBroadcast() {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  LOGS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let allLogs = [];
 async function loadLogs() {
     const tbody = document.getElementById('logsTableBody');
-    tbody.innerHTML = '<tr><td colspan="5" class="empty"><i class="fas fa-spinner spin"></i> Loading…</td></tr>';
+    tbody.innerHTML = skeletonRows(5);
     try {
         const { logs } = await api('/logs');
-        if (!logs.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty"><i class="fas fa-history"></i>No logs yet</td></tr>'; return; }
-        tbody.innerHTML = logs.map(l => `<tr>
-            <td style="white-space:nowrap;">${timeAgo(l.timestamp)}</td>
-            <td>${esc(l.admin||'—')}</td>
-            <td><span class="log-action">${esc(l.action||'—')}</span></td>
-            <td style="font-size:.75rem;color:var(--muted);">${esc(JSON.stringify(l.detail||{}))}</td>
-            <td style="font-size:.75rem;">${esc(l.ip||'—')}</td>
-        </tr>`).join('');
+        allLogs = logs || [];
+        filterLogs();
     } catch (e) { tbody.innerHTML = `<tr><td colspan="5" style="color:var(--red);padding:1rem;">${esc(e.message)}</td></tr>`; }
 }
+
+function renderLogsTable(logs) {
+    const tbody = document.getElementById('logsTableBody');
+    if (!logs.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty"><i class="fas fa-history"></i>No logs yet<div class="empty-sub">Admin actions will be recorded here.</div></td></tr>'; return; }
+    tbody.innerHTML = logs.map(l => `<tr>
+        <td style="white-space:nowrap;">${timeAgo(l.timestamp)}</td>
+        <td>${esc(l.admin||'—')}</td>
+        <td><span class="log-action">${esc(l.action||'—')}</span></td>
+        <td style="font-size:.75rem;color:var(--muted);">${esc(JSON.stringify(l.detail||{}))}</td>
+        <td style="font-size:.75rem;">${esc(l.ip||'—')}</td>
+    </tr>`).join('');
+}
+
+function filterLogs() { renderLogsTable(applyTableToolbar('logs', allLogs)); }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  UTILS
