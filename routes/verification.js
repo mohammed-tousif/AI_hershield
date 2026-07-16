@@ -14,34 +14,24 @@
  * verification status (verification here informs admin moderation, not
  * automatic access control — Emergency/SOS is never touched by this).
  *
+ * Selfies are stored in Firebase Cloud Storage, NOT local disk — Render's
+ * filesystem is ephemeral and wipes local files on every redeploy/restart,
+ * which silently broke selfie viewing in an earlier version of this file.
+ *
  * Routes:
  *   POST /api/verification/submit  — upload a selfie, sets status 'pending'
  *   GET  /api/verification/status  — the caller's own verification status
  */
 const path = require('path');
-const fs = require('fs');
 const express = require('express');
 const multer = require('multer');
 const router = express.Router();
 const { requireAuth } = require('../middleware/requireAuth');
+const { getStorageBucket } = require('../config/firestoreAdmin');
 const { usersFindById, usersSave } = require('../services/firestoreRepository');
 
-// Selfies must NEVER be served by Express static hosting — kept outside
-// /public (unlike routes/community.js's post images, which are meant to be public).
-const UPLOADS_DIR = path.join(__dirname, '..', 'uploads', 'verification');
-if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-
-const storage = multer.diskStorage({
-    destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
-    filename: (req, file, cb) => {
-        const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
-        // Keyed by the *verified* Firebase uid (from requireAuth), not anything
-        // client-supplied — requireAuth runs before multer in the chain below.
-        cb(null, `${req.authUser.uid}_${Date.now()}${ext}`);
-    },
-});
 const upload = multer({
-    storage,
+    storage: multer.memoryStorage(),
     limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
     fileFilter: (_req, file, cb) => {
         const allowed = /jpeg|jpg|png|webp/;
@@ -70,14 +60,27 @@ router.post('/submit', requireAuth, upload.single('selfie'), async (req, res) =>
             return res.status(400).json({ success: false, message: 'A selfie image is required (field name "selfie").' });
         }
 
-        // Clean up a previous rejected-attempt file, if any.
-        if (user.verificationSelfiePath) {
-            const prev = path.join(UPLOADS_DIR, path.basename(user.verificationSelfiePath));
-            fs.unlink(prev, () => {});
+        const bucket = getStorageBucket();
+        if (!bucket) {
+            return res.status(503).json({ success: false, message: 'Photo storage is not configured on the server.' });
         }
 
+        // Clean up a previous rejected-attempt file, if any.
+        if (user.verificationSelfiePath) {
+            await bucket.file(user.verificationSelfiePath).delete().catch(() => {});
+        }
+
+        const ext = path.extname(req.file.originalname).toLowerCase() || '.jpg';
+        // Keyed by the *verified* Firebase uid (from requireAuth), not anything
+        // client-supplied. Not under a publicly-served prefix — only reachable
+        // via the admin-authenticated streaming route in routes/admin.js.
+        const storagePath = `verification-selfies/${uid}_${Date.now()}${ext}`;
+        await bucket.file(storagePath).save(req.file.buffer, {
+            metadata: { contentType: req.file.mimetype },
+        });
+
         user.verificationStatus = 'pending';
-        user.verificationSelfiePath = req.file.filename;
+        user.verificationSelfiePath = storagePath;
         user.verificationSubmittedAt = new Date();
         user.verificationRejectionReason = null;
         user.updatedAt = new Date();

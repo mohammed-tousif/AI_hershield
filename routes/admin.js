@@ -8,12 +8,11 @@ const express  = require('express');
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
 const multer   = require('multer');
-const fs       = require('fs');
-const path     = require('path');
 const { Readable } = require('stream');
 const csvParser = require('csv-parser');
 const router   = express.Router();
 const { adminAuth, ADMIN_JWT_SECRET } = require('../middleware/adminAuth');
+const { getStorageBucket } = require('../config/firestoreAdmin');
 
 const {
     isFirestoreConfigured,
@@ -235,8 +234,8 @@ router.delete('/users/:id', async (req, res) => {
         if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
         if (user.verificationSelfiePath) {
-            const filePath = path.join(VERIFICATION_UPLOADS_DIR, path.basename(user.verificationSelfiePath));
-            fs.unlink(filePath, () => {});
+            const bucket = getStorageBucket();
+            if (bucket) await bucket.file(user.verificationSelfiePath).delete().catch(() => {});
         }
 
         let authDeleted = false;
@@ -268,9 +267,9 @@ router.delete('/users/:id', async (req, res) => {
 //  GENDER VERIFICATION REVIEW QUEUE
 //  Self-declaration + selfie + human review (NOT automated gender
 //  detection, NOT a feature-access gate — see routes/verification.js).
+//  Selfies live in Firebase Storage, not local disk — Render's filesystem
+//  is ephemeral and wipes local files on every redeploy/restart.
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-const VERIFICATION_UPLOADS_DIR = path.join(__dirname, '..', 'uploads', 'verification');
-
 router.get('/verifications', async (req, res) => {
     try {
         const status = (req.query.status || 'pending').toLowerCase();
@@ -292,11 +291,19 @@ router.get('/verifications/:userId/selfie', async (req, res) => {
         if (!user || !user.verificationSelfiePath) {
             return res.status(404).json({ success: false, message: 'No selfie on file for this user.' });
         }
-        const filePath = path.join(VERIFICATION_UPLOADS_DIR, path.basename(user.verificationSelfiePath));
-        if (!fs.existsSync(filePath)) {
-            return res.status(404).json({ success: false, message: 'Selfie file missing on server.' });
+        const bucket = getStorageBucket();
+        if (!bucket) {
+            return res.status(503).json({ success: false, message: 'Photo storage is not configured on the server.' });
         }
-        res.sendFile(filePath);
+        const file = bucket.file(user.verificationSelfiePath);
+        const [exists] = await file.exists();
+        if (!exists) {
+            return res.status(404).json({ success: false, message: 'Selfie file missing in storage.' });
+        }
+        const [buffer] = await file.download();
+        const [metadata] = await file.getMetadata();
+        res.setHeader('Content-Type', metadata.contentType || 'image/jpeg');
+        res.send(buffer);
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }

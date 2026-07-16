@@ -84,4 +84,24 @@ function getFirestoreAdmin() {
     return firestoreAdmin;
 }
 
-module.exports = { getFirestoreAdmin };
+/**
+ * Cloud Storage bucket for server-side file uploads (e.g. gender-verification
+ * selfies — see routes/verification.js). Unlike local disk, this survives
+ * Render redeploys/restarts, which wipe any ephemeral filesystem storage.
+ * Returns null if Firestore Admin isn't configured or FIREBASE_STORAGE_BUCKET
+ * isn't set — callers must handle that (503, not a crash).
+ */
+function getStorageBucket() {
+    if (!getFirestoreAdmin()) return null; // ensures the admin app is initialized
+    const bucketName = process.env.FIREBASE_STORAGE_BUCKET;
+    if (!bucketName) return null;
+    try {
+        const admin = require('firebase-admin');
+        return admin.storage().bucket(bucketName);
+    } catch (err) {
+        console.warn('⚠️  Firebase Storage bucket unavailable:', err.message);
+        return null;
+    }
+}
+
+module.exports = { getFirestoreAdmin, getStorageBucket };

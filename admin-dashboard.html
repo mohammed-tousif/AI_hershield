@@ -35,10 +35,12 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
   display:flex;align-items:center;gap:.75rem;
 }
 .sidebar-logo .badge{
-  width:38px;height:38px;border-radius:10px;flex-shrink:0;
+  width:40px;height:40px;border-radius:12px;flex-shrink:0;
   background:linear-gradient(135deg,var(--purple),var(--pink));
-  display:flex;align-items:center;justify-content:center;font-size:1.1rem;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 14px rgba(139,92,246,.35);
 }
+.sidebar-logo .badge svg{width:22px;height:22px;display:block;}
 .sidebar-logo h2{font-size:.95rem;font-weight:700;color:#fff;}
 .sidebar-logo small{font-size:.7rem;color:var(--muted);display:block;margin-top:1px;}
 .admin-info{padding:.75rem 1.25rem;border-bottom:1px solid var(--border);}
@@ -265,10 +267,6 @@ tr:hover td{background:rgba(255,255,255,.02);}
 /* ── Empty state subtext ── */
 .empty-sub{font-size:.78rem;color:var(--muted);margin-top:.25rem;opacity:.8;}
 
-/* ── Bulk selection bar ── */
-.bulk-bar{background:rgba(139,92,246,.07)!important;}
-.row-check{accent-color:var(--purple);width:16px;height:16px;cursor:pointer;}
-
 /* ── Recent Activity ── */
 .activity-list{display:flex;flex-direction:column;gap:.6rem;}
 .activity-item{
@@ -290,7 +288,12 @@ tr:hover td{background:rgba(255,255,255,.02);}
 <!-- ── Sidebar ── -->
 <aside class="sidebar">
   <div class="sidebar-logo">
-    <div class="badge">🛡️</div>
+    <div class="badge">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2.5L4.5 5.3v5.9c0 5.2 3.3 9.6 7.5 10.8 4.2-1.2 7.5-5.6 7.5-10.8V5.3L12 2.5z" fill="white" fill-opacity=".16" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M8.8 12.3l2.2 2.2 4.2-4.6" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
     <div>
       <h2>HerShield</h2>
       <small>Admin Control Panel</small>
@@ -328,7 +331,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
       <span class="nav-badge" id="navSosCount" style="display:none;">!</span>
     </button>
     <button class="nav-item" onclick="showSection('incidents',this)">
-      <i class="fas fa-map-marker-exclamation"></i> Incidents
+      <i class="fas fa-map-marker-alt"></i> Incidents
     </button>
     <button class="nav-item" onclick="showSection('tracking',this)">
       <i class="fas fa-satellite-dish"></i> Live Tracking
@@ -414,12 +417,6 @@ tr:hover td{background:rgba(255,255,255,.02);}
           <button class="btn btn-ghost" onclick="exportUsers()"><i class="fas fa-download"></i> Export</button>
         </div>
       </div>
-      <div id="usersBulkBar" class="table-toolbar bulk-bar" style="display:none;">
-        <span class="bulk-count" style="color:#fff;font-weight:600;font-size:.85rem;"></span>
-        <button class="btn btn-ghost btn-sm" onclick="exportSelected('users')"><i class="fas fa-download"></i> Export Selected</button>
-        <button class="btn btn-danger btn-sm" onclick="bulkDelete('users')"><i class="fas fa-trash"></i> Delete Selected</button>
-        <button class="btn btn-ghost btn-sm" onclick="clearSelection('users')">Clear</button>
-      </div>
       <div class="table-card">
         <div class="table-toolbar">
           <div class="search-box"><i class="fas fa-search"></i><input type="text" placeholder="Search users…" id="usersSearch" oninput="filterUsers()"></div>
@@ -431,8 +428,8 @@ tr:hover td{background:rgba(255,255,255,.02);}
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th style="width:36px;"><input type="checkbox" class="row-check" onclick="toggleSelectAllVisible('users',this.checked)"></th><th>User</th><th>Email</th><th>Phone</th><th>Guardians</th><th>Joined</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody id="usersTableBody"><tr><td colspan="8" class="empty"><i class="fas fa-spinner spin"></i> Loading...</td></tr></tbody>
+            <thead><tr><th>User</th><th>Email</th><th>Phone</th><th>Guardians</th><th>Joined</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="usersTableBody"><tr><td colspan="7" class="empty"><i class="fas fa-spinner spin"></i> Loading...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -475,12 +472,6 @@ tr:hover td{background:rgba(255,255,255,.02);}
           <button class="btn btn-primary" onclick="openNewPostModal()"><i class="fas fa-plus"></i> New Post</button>
         </div>
       </div>
-      <div id="postsBulkBar" class="table-toolbar bulk-bar" style="display:none;">
-        <span class="bulk-count" style="color:#fff;font-weight:600;font-size:.85rem;"></span>
-        <button class="btn btn-ghost btn-sm" onclick="exportSelected('posts')"><i class="fas fa-download"></i> Export Selected</button>
-        <button class="btn btn-danger btn-sm" onclick="bulkDelete('posts')"><i class="fas fa-trash"></i> Delete Selected</button>
-        <button class="btn btn-ghost btn-sm" onclick="clearSelection('posts')">Clear</button>
-      </div>
       <div class="table-card">
         <div class="table-toolbar">
           <div class="search-box"><i class="fas fa-search"></i><input type="text" placeholder="Search posts…" id="postsSearch" oninput="filterPosts()"></div>
@@ -492,8 +483,8 @@ tr:hover td{background:rgba(255,255,255,.02);}
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th style="width:36px;"><input type="checkbox" class="row-check" onclick="toggleSelectAllVisible('posts',this.checked)"></th><th>Author</th><th>Content</th><th>Category</th><th>Likes</th><th>Posted</th><th>Actions</th></tr></thead>
-            <tbody id="postsTableBody"><tr><td colspan="7" class="empty"><i class="fas fa-spinner spin"></i> Loading...</td></tr></tbody>
+            <thead><tr><th>Author</th><th>Content</th><th>Category</th><th>Likes</th><th>Posted</th><th>Actions</th></tr></thead>
+            <tbody id="postsTableBody"><tr><td colspan="6" class="empty"><i class="fas fa-spinner spin"></i> Loading...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -504,12 +495,6 @@ tr:hover td{background:rgba(255,255,255,.02);}
       <div class="sec-header">
         <div class="sec-title"><i class="fas fa-bell"></i> Safety Alerts</div>
         <button class="btn btn-ghost" onclick="exportSelected('alerts')"><i class="fas fa-download"></i> Export</button>
-      </div>
-      <div id="alertsBulkBar" class="table-toolbar bulk-bar" style="display:none;">
-        <span class="bulk-count" style="color:#fff;font-weight:600;font-size:.85rem;"></span>
-        <button class="btn btn-ghost btn-sm" onclick="exportSelected('alerts')"><i class="fas fa-download"></i> Export Selected</button>
-        <button class="btn btn-danger btn-sm" onclick="bulkDelete('alerts')"><i class="fas fa-trash"></i> Delete Selected</button>
-        <button class="btn btn-ghost btn-sm" onclick="clearSelection('alerts')">Clear</button>
       </div>
       <div class="table-card">
         <div class="table-toolbar">
@@ -522,8 +507,8 @@ tr:hover td{background:rgba(255,255,255,.02);}
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th style="width:36px;"><input type="checkbox" class="row-check" onclick="toggleSelectAllVisible('alerts',this.checked)"></th><th>Title</th><th>Message</th><th>Severity</th><th>Location</th><th>Source</th><th>Time</th><th>Actions</th></tr></thead>
-            <tbody id="alertsTableBody"><tr><td colspan="8" class="empty"><i class="fas fa-spinner spin"></i> Loading...</td></tr></tbody>
+            <thead><tr><th>Title</th><th>Message</th><th>Severity</th><th>Location</th><th>Source</th><th>Time</th><th>Actions</th></tr></thead>
+            <tbody id="alertsTableBody"><tr><td colspan="7" class="empty"><i class="fas fa-spinner spin"></i> Loading...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -558,12 +543,6 @@ tr:hover td{background:rgba(255,255,255,.02);}
         <div class="sec-title"><i class="fas fa-map-marker-alt"></i> Incident Reports</div>
         <button class="btn btn-ghost" onclick="exportIncidents()"><i class="fas fa-download"></i> Export CSV</button>
       </div>
-      <div id="incidentsBulkBar" class="table-toolbar bulk-bar" style="display:none;">
-        <span class="bulk-count" style="color:#fff;font-weight:600;font-size:.85rem;"></span>
-        <button class="btn btn-ghost btn-sm" onclick="exportSelected('incidents')"><i class="fas fa-download"></i> Export Selected</button>
-        <button class="btn btn-danger btn-sm" onclick="bulkDelete('incidents')"><i class="fas fa-trash"></i> Delete Selected</button>
-        <button class="btn btn-ghost btn-sm" onclick="clearSelection('incidents')">Clear</button>
-      </div>
       <div class="table-card">
         <div class="table-toolbar">
           <div class="search-box"><i class="fas fa-search"></i><input type="text" placeholder="Search incidents…" id="incidentsSearch" oninput="filterIncidents()"></div>
@@ -575,8 +554,8 @@ tr:hover td{background:rgba(255,255,255,.02);}
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th style="width:36px;"><input type="checkbox" class="row-check" onclick="toggleSelectAllVisible('incidents',this.checked)"></th><th>Type</th><th>Description</th><th>Severity</th><th>Location</th><th>Reporter</th><th>Date</th><th>Actions</th></tr></thead>
-            <tbody id="incidentsTableBody"><tr><td colspan="8" class="empty"><i class="fas fa-spinner spin"></i> Loading...</td></tr></tbody>
+            <thead><tr><th>Type</th><th>Description</th><th>Severity</th><th>Location</th><th>Reporter</th><th>Date</th><th>Actions</th></tr></thead>
+            <tbody id="incidentsTableBody"><tr><td colspan="7" class="empty"><i class="fas fa-spinner spin"></i> Loading...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -969,53 +948,9 @@ function applyTableToolbar(key, list) {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  BULK SELECTION + CSV EXPORT
+//  CSV EXPORT (always exports all currently filtered/visible rows)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-const selection = { users: new Set(), posts: new Set(), alerts: new Set(), incidents: new Set() };
-const BULK_DELETE_ENDPOINT = { users:'/users/', posts:'/posts/', alerts:'/alerts/', incidents:'/incidents/' };
-
-function toggleRow(entity, id, checked) {
-    checked ? selection[entity].add(id) : selection[entity].delete(id);
-    updateBulkBar(entity);
-}
-
-function toggleSelectAllVisible(entity, checked) {
-    document.querySelectorAll('#' + entity + 'TableBody .row-check').forEach(cb => {
-        cb.checked = checked;
-        const id = cb.getAttribute('data-id');
-        checked ? selection[entity].add(id) : selection[entity].delete(id);
-    });
-    updateBulkBar(entity);
-}
-
-function updateBulkBar(entity) {
-    const bar = document.getElementById(entity + 'BulkBar');
-    if (!bar) return;
-    const n = selection[entity].size;
-    bar.style.display = n ? 'flex' : 'none';
-    const countEl = bar.querySelector('.bulk-count');
-    if (countEl) countEl.textContent = n + ' selected';
-}
-
-function clearSelection(entity) {
-    selection[entity].clear();
-    document.querySelectorAll('#' + entity + 'TableBody .row-check').forEach(cb => cb.checked = false);
-    updateBulkBar(entity);
-}
-
-async function bulkDelete(entity) {
-    const ids = [...selection[entity]];
-    if (!ids.length) return;
-    if (!confirm(`Delete ${ids.length} ${entity}? This cannot be undone.`)) return;
-    const endpoint = BULK_DELETE_ENDPOINT[entity];
-    const results = await Promise.allSettled(ids.map(id => api(endpoint + id, { method: 'DELETE' })));
-    const failed = results.filter(r => r.status === 'rejected').length;
-    toast(failed ? `${ids.length-failed}/${ids.length} deleted, ${failed} failed` : `${ids.length} deleted`, failed ? 'error' : 'success');
-    selection[entity].clear();
-    loadSection(entity);
-}
-
-const BULK_ENTITY_ALL = { users: () => allUsers, posts: () => allPosts, alerts: () => allAlerts, incidents: () => allIncidents };
+const ENTITY_ALL = { users: () => allUsers, posts: () => allPosts, alerts: () => allAlerts, incidents: () => allIncidents };
 
 const toCsvRows = {
     users: list => { const rows=[['Name','Email','Phone','Guardians','Joined']]; list.forEach(u=>rows.push([u.name||'',u.email||'',u.phone||'',(u.emergencyContacts||[]).length,fmtDate(u.createdAt)])); return rows; },
@@ -1025,11 +960,9 @@ const toCsvRows = {
 };
 
 function exportSelected(entity) {
-    const all = BULK_ENTITY_ALL[entity] ? BULK_ENTITY_ALL[entity]() : [];
+    const all = ENTITY_ALL[entity] ? ENTITY_ALL[entity]() : [];
     if (!all.length) return toast(`No ${entity} to export`, 'error');
-    const rows = selection[entity] && selection[entity].size
-        ? all.filter(x => selection[entity].has(x._id))
-        : applyTableToolbar(entity, all);
+    const rows = applyTableToolbar(entity, all);
     downloadCSV(toCsvRows[entity](rows), `hershield_${entity}.csv`);
     toast(`${rows.length} ${entity} exported`);
 }
@@ -1227,13 +1160,13 @@ async function loadOverview() {
 let allUsers = [];
 async function loadUsers() {
     const tbody = document.getElementById('usersTableBody');
-    tbody.innerHTML = skeletonRows(8);
+    tbody.innerHTML = skeletonRows(7);
     try {
         const { users } = await api('/users');
         allUsers = users || [];
         filterUsers();
     } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="8" class="empty" style="color:var(--red);">Error: ${esc(e.message)}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="empty" style="color:var(--red);">Error: ${esc(e.message)}</td></tr>`;
     }
 }
 
@@ -1245,16 +1178,14 @@ function accountStatusBadge(isActive) {
 
 function renderUsersTable(users) {
     const tbody = document.getElementById('usersTableBody');
-    if (!users.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty"><i class="fas fa-users"></i>No users found<div class="empty-sub">Users will appear here once they sign up.</div></td></tr>'; return; }
+    if (!users.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty"><i class="fas fa-users"></i>No users found<div class="empty-sub">Users will appear here once they sign up.</div></td></tr>'; return; }
     tbody.innerHTML = users.map(u => {
         const name = u.name || u.displayName || 'Unknown';
         const guardians = (u.emergencyContacts || u.guardians || []).length;
         const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
         const id = esc(u._id);
         const isActive = u.isActive !== false;
-        const checked = selection.users.has(u._id) ? 'checked' : '';
         return `<tr>
-            <td><input type="checkbox" class="row-check" data-id="${id}" ${checked} onclick="toggleRow('users','${id}',this.checked)"></td>
             <td><div class="avatar-cell"><div class="avatar">${initials}</div><span class="td-main">${esc(name)}</span></div></td>
             <td>${esc(u.email||'—')}</td>
             <td>${esc(u.phone||u.phoneNumber||'—')}</td>
@@ -1270,7 +1201,6 @@ function renderUsersTable(users) {
             </td>
         </tr>`;
     }).join('');
-    updateBulkBar('users');
 }
 
 async function toggleUserActive(id, currentlyActive) {
@@ -1358,10 +1288,15 @@ function renderVerificationsTable(list, status) {
             const r = await fetch('/api/admin/verifications/' + uid + '/selfie', {
                 headers: { 'Authorization': 'Bearer ' + TOKEN },
             });
-            if (!r.ok) return;
+            if (!r.ok) {
+                img.outerHTML = '<span style="color:var(--muted);font-size:.7rem;" title="Photo unavailable">unavailable</span>';
+                return;
+            }
             const blob = await r.blob();
             img.src = URL.createObjectURL(blob);
-        } catch (_) { /* leave placeholder */ }
+        } catch (_) {
+            img.outerHTML = '<span style="color:var(--muted);font-size:.7rem;" title="Photo unavailable">unavailable</span>';
+        }
     });
 }
 
@@ -1440,24 +1375,22 @@ function exportUsers() { exportSelected('users'); }
 let allPosts = [];
 async function loadPosts() {
     const tbody = document.getElementById('postsTableBody');
-    tbody.innerHTML = skeletonRows(7);
+    tbody.innerHTML = skeletonRows(6);
     try {
         const { posts } = await api('/posts');
         allPosts = posts || [];
         filterPosts();
     } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="7" style="color:var(--red);padding:1rem;">${esc(e.message)}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="color:var(--red);padding:1rem;">${esc(e.message)}</td></tr>`;
     }
 }
 
 function renderPostsTable(posts) {
     const tbody = document.getElementById('postsTableBody');
-    if (!posts.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty"><i class="fas fa-comments"></i>No posts<div class="empty-sub">Community posts will show up here.</div></td></tr>'; return; }
+    if (!posts.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty"><i class="fas fa-comments"></i>No posts<div class="empty-sub">Community posts will show up here.</div></td></tr>'; return; }
     tbody.innerHTML = posts.map(p => {
         const id = esc(p._id);
-        const checked = selection.posts.has(p._id) ? 'checked' : '';
         return `<tr>
-        <td><input type="checkbox" class="row-check" data-id="${id}" ${checked} onclick="toggleRow('posts','${id}',this.checked)"></td>
         <td><div class="avatar-cell"><div class="avatar" style="font-size:.65rem;">${(p.userName||'?')[0]}</div><span class="td-main">${esc(p.userName||'—')}</span></div></td>
         <td style="max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc((p.content||'').substring(0,80))}${(p.content||'').length>80?'…':''}</td>
         <td>${sevBadge(p.category||'general')}</td>
@@ -1466,7 +1399,6 @@ function renderPostsTable(posts) {
         <td><button class="btn btn-danger btn-sm" onclick="deletePost('${id}')"><i class="fas fa-trash"></i></button></td>
     </tr>`;
     }).join('');
-    updateBulkBar('posts');
 }
 
 function filterPosts() { renderPostsTable(applyTableToolbar('posts', allPosts)); }
@@ -1502,22 +1434,20 @@ async function submitNewPost() {
 let allAlerts = [];
 async function loadAlerts() {
     const tbody = document.getElementById('alertsTableBody');
-    tbody.innerHTML = skeletonRows(8);
+    tbody.innerHTML = skeletonRows(7);
     try {
         const { alerts } = await api('/alerts');
         allAlerts = alerts || [];
         filterAlerts();
-    } catch (e) { tbody.innerHTML = `<tr><td colspan="8" style="color:var(--red);padding:1rem;">${esc(e.message)}</td></tr>`; }
+    } catch (e) { tbody.innerHTML = `<tr><td colspan="7" style="color:var(--red);padding:1rem;">${esc(e.message)}</td></tr>`; }
 }
 
 function renderAlertsTable(alerts) {
     const tbody = document.getElementById('alertsTableBody');
-    if (!alerts.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty"><i class="fas fa-bell"></i>No alerts<div class="empty-sub">Safety alerts will appear here.</div></td></tr>'; return; }
+    if (!alerts.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty"><i class="fas fa-bell"></i>No alerts<div class="empty-sub">Safety alerts will appear here.</div></td></tr>'; return; }
     tbody.innerHTML = alerts.map(a => {
         const id = esc(a._id);
-        const checked = selection.alerts.has(a._id) ? 'checked' : '';
         return `<tr>
-            <td><input type="checkbox" class="row-check" data-id="${id}" ${checked} onclick="toggleRow('alerts','${id}',this.checked)"></td>
             <td class="td-main">${esc(a.title||'—')}</td>
             <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc((a.message||'').substring(0,70))}</td>
             <td>${sevBadge(a.severity)}</td>
@@ -1527,7 +1457,6 @@ function renderAlertsTable(alerts) {
             <td>${a.source!=='incident-report'?`<button class="btn btn-danger btn-sm" onclick="deleteAlert('${id}')"><i class="fas fa-trash"></i></button>`:'<span style="color:var(--muted);font-size:.75rem;">auto</span>'}</td>
         </tr>`;
     }).join('');
-    updateBulkBar('alerts');
 }
 
 function filterAlerts() { renderAlertsTable(applyTableToolbar('alerts', allAlerts)); }
@@ -1577,22 +1506,20 @@ function filterSos() { renderSosTable(applyTableToolbar('sos', allSos)); }
 let allIncidents = [];
 async function loadIncidents() {
     const tbody = document.getElementById('incidentsTableBody');
-    tbody.innerHTML = skeletonRows(8);
+    tbody.innerHTML = skeletonRows(7);
     try {
         const { incidents } = await api('/incidents');
         allIncidents = incidents || [];
         filterIncidents();
-    } catch (e) { tbody.innerHTML = `<tr><td colspan="8" style="color:var(--red);padding:1rem;">${esc(e.message)}</td></tr>`; }
+    } catch (e) { tbody.innerHTML = `<tr><td colspan="7" style="color:var(--red);padding:1rem;">${esc(e.message)}</td></tr>`; }
 }
 
 function renderIncidentsTable(incidents) {
     const tbody = document.getElementById('incidentsTableBody');
-    if (!incidents.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty"><i class="fas fa-map-marker"></i>No incidents<div class="empty-sub">Reports will appear here as users submit them.</div></td></tr>'; return; }
+    if (!incidents.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty"><i class="fas fa-map-marker"></i>No incidents<div class="empty-sub">Reports will appear here as users submit them.</div></td></tr>'; return; }
     tbody.innerHTML = incidents.map(i => {
         const id = esc(i._id);
-        const checked = selection.incidents.has(i._id) ? 'checked' : '';
         return `<tr>
-            <td><input type="checkbox" class="row-check" data-id="${id}" ${checked} onclick="toggleRow('incidents','${id}',this.checked)"></td>
             <td class="td-main">${esc(i.incidentType||'—')}</td>
             <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc((i.description||'').substring(0,80))}</td>
             <td>${sevBadge(i.severity)}</td>
@@ -1602,7 +1529,6 @@ function renderIncidentsTable(incidents) {
             <td><button class="btn btn-danger btn-sm" onclick="deleteIncident('${id}')"><i class="fas fa-trash"></i></button></td>
         </tr>`;
     }).join('');
-    updateBulkBar('incidents');
 }
 
 function filterIncidents() { renderIncidentsTable(applyTableToolbar('incidents', allIncidents)); }

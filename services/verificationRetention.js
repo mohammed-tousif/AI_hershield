@@ -5,18 +5,16 @@
  * Automatic cleanup for gender-verification selfies (routes/verification.js).
  *
  * Selfies are only needed for the admin review window (routes/admin.js).
- * 90 days after submission we delete the image file from disk and clear
- * the pointer on the user doc, regardless of outcome (verified/rejected/
- * pending) — this minimizes how long a sensitive biometric photo sits on
- * the server. verificationStatus itself is never touched by this sweep:
- * a user who was verified stays verified after their photo is purged.
+ * 90 days after submission we delete the image from Firebase Storage and
+ * clear the pointer on the user doc, regardless of outcome (verified/
+ * rejected/pending) — this minimizes how long a sensitive biometric photo
+ * sits on the server. verificationStatus itself is never touched by this
+ * sweep: a user who was verified stays verified after their photo is purged.
  */
-const path = require('path');
-const fs = require('fs');
+const { getStorageBucket } = require('../config/firestoreAdmin');
 const { usersListAll, usersSave } = require('./firestoreRepository');
 
 const RETENTION_DAYS = 90;
-const UPLOADS_DIR = path.join(__dirname, '..', 'uploads', 'verification');
 
 function toDate(value) {
     if (!value) return null;
@@ -35,18 +33,20 @@ async function purgeExpiredVerificationSelfies() {
     try {
         const users = await usersListAll(5000);
         const cutoffMs = Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000;
+        const bucket = getStorageBucket();
 
         for (const user of users) {
             if (!user.verificationSelfiePath) continue;
             const submittedAt = toDate(user.verificationSubmittedAt);
             if (!submittedAt || submittedAt.getTime() > cutoffMs) continue;
 
-            const filePath = path.join(UPLOADS_DIR, path.basename(user.verificationSelfiePath));
-            fs.unlink(filePath, (err) => {
-                if (err && err.code !== 'ENOENT') {
-                    console.warn(`[VerificationRetention] Failed to delete ${filePath}:`, err.message);
-                }
-            });
+            if (bucket) {
+                await bucket.file(user.verificationSelfiePath).delete().catch((err) => {
+                    if (err.code !== 404) {
+                        console.warn(`[VerificationRetention] Failed to delete ${user.verificationSelfiePath}:`, err.message);
+                    }
+                });
+            }
 
             user.verificationSelfiePath = null;
             user.updatedAt = new Date();
