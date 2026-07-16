@@ -11,7 +11,11 @@ import {
     OAuthProvider,
     updateProfile,
     RecaptchaVerifier,
-    signInWithPhoneNumber
+    signInWithPhoneNumber,
+    getAdditionalUserInfo,
+    EmailAuthProvider,
+    linkWithCredential,
+    deleteUser
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { auth } from "./firebase-config.js";
 
@@ -228,7 +232,21 @@ class FirebaseAuthService {
         }
     }
 
-    async loginWithGoogle() {
+    /**
+     * @param {'login'|'signup'} mode - Firebase's signInWithPopup does not
+     * distinguish "log into an existing account" from "create a new one" —
+     * it silently creates an account the first time any Google identity is
+     * used. We enforce the distinction ourselves via isNewUser:
+     *   - mode 'login'  + isNewUser  -> reject: delete the just-created
+     *     account, sign out, tell the user to sign up first.
+     *   - mode 'login'  + !isNewUser -> normal login (existing behavior).
+     *   - mode 'signup' + isNewUser  -> real signup; caller (auth.html) must
+     *     then collect phone + the ToS/gender declaration (and optionally a
+     *     password to link) via a follow-up step — result.isNewUser signals this.
+     *   - mode 'signup' + !isNewUser -> reject: sign out, tell the user this
+     *     Google account is already registered, to log in instead.
+     */
+    async loginWithGoogle(mode = 'login') {
         try {
             const provider = new GoogleAuthProvider();
             provider.addScope('profile');
@@ -236,6 +254,20 @@ class FirebaseAuthService {
 
             const result = await signInWithPopup(auth, provider);
             const user = result.user;
+            const isNewUser = !!getAdditionalUserInfo(result)?.isNewUser;
+
+            if (mode === 'login' && isNewUser) {
+                // Firebase already created this account under the hood — undo it
+                // rather than silently log the user into a brand-new account.
+                try { await deleteUser(user); } catch (_) { /* best-effort */ }
+                await signOut(auth);
+                return { success: false, error: 'Account not found. Please sign up first.', code: 'no-account' };
+            }
+
+            if (mode === 'signup' && !isNewUser) {
+                await signOut(auth);
+                return { success: false, error: 'This Google account is already registered. Please log in instead.', code: 'already-exists' };
+            }
 
             localStorage.setItem('hershield_logged_in', 'true');
             localStorage.setItem('hershield_user_email', user.email);
@@ -244,7 +276,7 @@ class FirebaseAuthService {
             // Sync / create Firestore user document
             await syncUserToFirestore(user);
 
-            return { success: true, user };
+            return { success: true, user, isNewUser };
         } catch (error) {
             console.error('Google sign-in error:', error);
 
@@ -260,6 +292,24 @@ class FirebaseAuthService {
             }
 
             return { success: false, error: errorMessage };
+        }
+    }
+
+    /**
+     * Links an email/password credential to the currently signed-in user
+     * (used right after a Google signup, so the account can also log in
+     * with email/password afterward). Non-fatal on failure — Google sign-in
+     * keeps working regardless.
+     */
+    async linkPassword(password) {
+        if (!this.currentUser) return { success: false, error: 'Not signed in' };
+        try {
+            const credential = EmailAuthProvider.credential(this.currentUser.email, password);
+            await linkWithCredential(this.currentUser, credential);
+            return { success: true };
+        } catch (error) {
+            console.warn('Password linking failed:', error);
+            return { success: false, error: error.message };
         }
     }
 

@@ -16,6 +16,7 @@
             --gradient-start: #FF9A86;
             --gradient-middle: #FFB399;
             --gradient-end: #FFD6A6;
+            --text-dark: #2b2117;
         }
 
         body {
@@ -233,6 +234,37 @@
             color: var(--text-dark);
         }
 
+        .consent-group {
+            background: rgba(255, 154, 134, 0.06);
+            border: 1px solid rgba(255, 154, 134, 0.18);
+            border-radius: 14px;
+            padding: 0.9rem 1rem;
+        }
+
+        .consent-group .form-check {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.6rem;
+            margin-bottom: 0.75rem;
+            padding-left: 0;
+        }
+
+        .consent-group .form-check:last-child {
+            margin-bottom: 0;
+        }
+
+        .consent-group .form-check-input {
+            margin: 0.15rem 0 0 0;
+            flex-shrink: 0;
+        }
+
+        .consent-group .form-check-label {
+            font-size: 0.82rem;
+            font-weight: 400;
+            color: #6b5b52;
+            line-height: 1.5;
+        }
+
         .auth-form {
             display: none;
             opacity: 0;
@@ -329,7 +361,7 @@
                 <div class="text-center mt-4">
                     <p class="text-muted fw-500">Or login with</p>
                     <div class="social-login">
-                        <a href="#" class="social-btn" onclick="handleSocialLogin(event, 'google')"><i
+                        <a href="#" class="social-btn" onclick="handleSocialLogin(event, 'google', 'login')"><i
                                 class="fab fa-google"></i></a>
                         <a href="#" class="social-btn" onclick="handleSocialLogin(event, 'facebook')"><i
                                 class="fab fa-facebook-f"></i></a>
@@ -369,16 +401,32 @@
                             </button>
                         </div>
                     </div>
-                    <div class="form-check mb-4">
-                        <input class="form-check-input" type="checkbox" id="termsCheck" required>
-                        <label class="form-check-label" for="termsCheck">
-                            I agree to the Terms of Service and Privacy Policy, and I confirm I am registering as a woman.
-                            HerShield is a women-only safety platform — false declaration may result in account
-                            termination and legal liability under IT Act 2000 §66D (impersonation).
-                        </label>
+                    <div class="consent-group mb-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="termsCheck" required>
+                            <label class="form-check-label" for="termsCheck">
+                                I agree to the Terms of Service and Privacy Policy.
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="genderDeclarationCheck" required>
+                            <label class="form-check-label" for="genderDeclarationCheck">
+                                I confirm I am registering as a woman. HerShield is a women-only safety platform —
+                                false declaration may result in account termination and legal liability under
+                                IT Act 2000 §66D (impersonation).
+                            </label>
+                        </div>
                     </div>
                     <button type="submit" class="btn btn-modern w-100">Create Account</button>
                 </form>
+
+                <div class="text-center mt-4">
+                    <p class="text-muted fw-500">Or sign up with</p>
+                    <div class="social-login">
+                        <a href="#" class="social-btn" onclick="handleSocialLogin(event, 'google', 'signup')"><i
+                                class="fab fa-google"></i></a>
+                    </div>
+                </div>
             </div>
 
             <!-- Password Recovery Form -->
@@ -422,6 +470,60 @@
                 </div>
                 <div class="modal-footer border-0 justify-content-center pb-4">
                     <button type="button" class="btn btn-modern px-4" data-bs-dismiss="modal">Okay</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Complete Your Account Modal (shown once, right after a first-time Google signup) -->
+    <div class="modal fade" id="completeAccountModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 24px; overflow: hidden;">
+                <div class="modal-header border-0 text-white"
+                    style="background: linear-gradient(135deg, var(--gradient-start), var(--gradient-middle));">
+                    <h5 class="modal-title fw-bold">Complete your account</h5>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-muted mb-3" style="font-size:.9rem;">Just a couple more things to finish setting up your HerShield account.</p>
+                    <div class="form-floating mb-3">
+                        <input type="tel" class="form-control" id="completePhone" placeholder="Phone Number" required>
+                        <label for="completePhone">Phone Number</label>
+                    </div>
+                    <div class="mb-3">
+                        <div class="input-group">
+                            <div class="form-floating flex-grow-1">
+                                <input type="password" class="form-control" id="completePassword" placeholder="Password (optional)" style="border-right:0; border-radius: 12px 0 0 12px;">
+                                <label for="completePassword">Set a password (optional)</label>
+                            </div>
+                            <button class="btn btn-outline-secondary" type="button" id="toggleCompletePassword"
+                                onclick="togglePasswordVisibility('completePassword','toggleCompletePassword')"
+                                style="border-left:0; border-radius:0 12px 12px 0; background:#fff; border-color:#dee2e6;"
+                                title="Show/hide password">
+                                <i class="fas fa-eye" id="toggleCompletePasswordIcon"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted">Optional — lets you also log in with email/password later, not just Google.</small>
+                    </div>
+                    <div class="consent-group mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="completeTermsCheck" required>
+                            <label class="form-check-label" for="completeTermsCheck">
+                                I agree to the Terms of Service and Privacy Policy.
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="completeGenderDeclarationCheck" required>
+                            <label class="form-check-label" for="completeGenderDeclarationCheck">
+                                I confirm I am registering as a woman. HerShield is a women-only safety platform —
+                                false declaration may result in account termination and legal liability under
+                                IT Act 2000 §66D (impersonation).
+                            </label>
+                        </div>
+                    </div>
+                    <div id="completeAccountError" class="text-danger mb-2" style="font-size:.85rem;display:none;"></div>
+                </div>
+                <div class="modal-footer border-0 justify-content-center pb-4">
+                    <button type="button" class="btn btn-modern px-4 w-100" id="completeAccountBtn" onclick="submitCompleteAccount()">Continue</button>
                 </div>
             </div>
         </div>
@@ -604,13 +706,13 @@
             return false;
         }
 
-        window.handleSocialLogin = async function handleSocialLogin(event, provider) {
+        window.handleSocialLogin = async function handleSocialLogin(event, provider, mode) {
             if (event) event.preventDefault();
             try {
                 let result;
                 switch (provider) {
                     case 'google':
-                        result = await window.authService.loginWithGoogle();
+                        result = await window.authService.loginWithGoogle(mode || 'login');
                         break;
                     case 'facebook':
                         result = await window.authService.loginWithFacebook();
@@ -623,6 +725,12 @@
                 }
 
                 if (result.success) {
+                    if (provider === 'google' && result.isNewUser) {
+                        // First-time Google signup — collect phone + the ToS/gender
+                        // declaration + optionally a password before continuing.
+                        new bootstrap.Modal(document.getElementById('completeAccountModal')).show();
+                        return;
+                    }
                     // Wait for Firebase auth state to propagate before redirecting
                     setTimeout(() => {
                         window.location.replace('dashboard.html');
@@ -631,7 +739,63 @@
                     throw new Error(result.error);
                 }
             } catch (error) {
-                showNotification('Login Failed', error.message, 'error');
+                showNotification(mode === 'signup' ? 'Sign Up Failed' : 'Login Failed', error.message, 'error');
+            }
+        }
+
+        window.submitCompleteAccount = async function submitCompleteAccount() {
+            const phone = document.getElementById('completePhone').value.trim();
+            const password = document.getElementById('completePassword').value;
+            const agreed = document.getElementById('completeTermsCheck').checked
+                && document.getElementById('completeGenderDeclarationCheck').checked;
+            const errorEl = document.getElementById('completeAccountError');
+            const btn = document.getElementById('completeAccountBtn');
+            errorEl.style.display = 'none';
+
+            if (!phone) {
+                errorEl.textContent = 'Phone number is required.';
+                errorEl.style.display = 'block';
+                return;
+            }
+            if (!agreed) {
+                errorEl.textContent = 'Please agree to the Terms of Service to continue.';
+                errorEl.style.display = 'block';
+                return;
+            }
+            if (password && password.length < 6) {
+                errorEl.textContent = 'Password must be at least 6 characters.';
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+
+            try {
+                const user = window.authService.getCurrentUser();
+                if (user) {
+                    await fetch(`/api/users/profile/${encodeURIComponent(user.uid)}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ phone }),
+                    }).catch(() => {});
+                }
+
+                if (password) {
+                    const linkResult = await window.authService.linkPassword(password);
+                    if (!linkResult.success) {
+                        console.warn('Password linking failed (non-fatal):', linkResult.error);
+                    }
+                }
+
+                const modalEl = document.getElementById('completeAccountModal');
+                bootstrap.Modal.getInstance(modalEl)?.hide();
+                window.location.replace('dashboard.html');
+            } catch (error) {
+                btn.disabled = false;
+                btn.innerHTML = 'Continue';
+                errorEl.textContent = 'Something went wrong: ' + error.message;
+                errorEl.style.display = 'block';
             }
         }
         // Password visibility toggle

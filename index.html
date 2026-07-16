@@ -135,8 +135,12 @@
         }
 
         .feature-card:hover {
-            transform: translateY(-20px) rotateX(10deg) rotateY(10deg);
+            transform: translateY(-8px);
             box-shadow: 0 20px 40px rgba(255, 154, 134, 0.2);
+        }
+
+        .feature-card:hover .feature-icon {
+            transform: translateZ(50px) scale(1.1);
         }
 
         .feature-card::before {
@@ -325,7 +329,7 @@
             border-bottom: 2px solid var(--primary-color);
         }
 
-        .navbar .btn-get-started {
+        .btn-get-started {
             background: var(--gradient-1);
             color: #fff;
             border: none;
@@ -335,7 +339,8 @@
             transition: all 0.3s ease;
         }
 
-        .navbar .btn-get-started:hover {
+        .btn-get-started:hover {
+            color: #fff;
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(255,154,134,0.35);
         }
@@ -853,30 +858,30 @@
                         </div>
                     </div>
                     <div class="col-lg-6" data-aos="fade-left">
-                        <h3 class="mb-4">Visual Safety Assessment</h3>
-                        <p class="lead mb-4">Our interactive safety map combines multiple data sources to provide a
+                        <h3 class="mb-4" style="color:var(--text-on-dark);">Visual Safety Assessment</h3>
+                        <p class="lead mb-4" style="color:rgba(253,249,245,0.85);">Our interactive safety map combines multiple data sources to provide a
                             comprehensive view of safety conditions in your area.</p>
 
                         <div class="d-flex align-items-center mb-3">
                             <div class="me-3"
                                 style="width: 30px; height: 30px; background: linear-gradient(to right, green, yellow, red); border-radius: 4px;">
                             </div>
-                            <p class="mb-0">Color-coded safety indicators based on real-time analysis</p>
+                            <p class="mb-0" style="color:rgba(253,249,245,0.75);">Color-coded safety indicators based on real-time analysis</p>
                         </div>
 
                         <div class="d-flex align-items-center mb-3">
                             <div class="me-3"><i class="fas fa-map-marker-alt text-danger fa-2x"></i></div>
-                            <p class="mb-0">Location-specific safety insights and recommendations</p>
+                            <p class="mb-0" style="color:rgba(253,249,245,0.75);">Location-specific safety insights and recommendations</p>
                         </div>
 
                         <div class="d-flex align-items-center mb-3">
                             <div class="me-3"><i class="fas fa-clock text-primary fa-2x"></i></div>
-                            <p class="mb-0">Time-based safety forecasting for journey planning</p>
+                            <p class="mb-0" style="color:rgba(253,249,245,0.75);">Time-based safety forecasting for journey planning</p>
                         </div>
 
                         <div class="d-flex align-items-center mb-4">
                             <div class="me-3"><i class="fas fa-sliders-h text-success fa-2x"></i></div>
-                            <p class="mb-0">Customizable filters to adjust map visualization to your needs</p>
+                            <p class="mb-0" style="color:rgba(253,249,245,0.75);">Customizable filters to adjust map visualization to your needs</p>
                         </div>
 
                         <button class="btn btn-primary">
@@ -1133,64 +1138,6 @@
                                 rotateX(${rotation}deg)
                             `;
                         }
-                    }
-                });
-            });
-
-            // Enhanced 3D card effect
-            const cards = document.querySelectorAll('.feature-card');
-            cards.forEach(card => {
-                card.addEventListener('mousemove', e => {
-                    const rect = card.getBoundingClientRect();
-                    const x = e.clientX - rect.left;
-                    const y = e.clientY - rect.top;
-
-                    const centerX = rect.width / 2;
-                    const centerY = rect.height / 2;
-
-                    const deltaX = (x - centerX) / centerX;
-                    const deltaY = (y - centerY) / centerY;
-
-                    gsap.to(card, {
-                        duration: 0.5,
-                        transform: `
-                            perspective(1000px)
-                            rotateY(${deltaX * 20}deg)
-                            rotateX(${-deltaY * 20}deg)
-                            translateZ(50px)
-                        `,
-                        ease: 'power2.out'
-                    });
-
-                    const icon = card.querySelector('.feature-icon');
-                    if (icon) {
-                        gsap.to(icon, {
-                            duration: 0.5,
-                            transform: `
-                                translateZ(100px)
-                                scale(1.2)
-                                rotateY(${deltaX * 30}deg)
-                                rotateX(${-deltaY * 30}deg)
-                            `,
-                            ease: 'power2.out'
-                        });
-                    }
-                });
-
-                card.addEventListener('mouseleave', () => {
-                    gsap.to(card, {
-                        duration: 0.5,
-                        transform: 'perspective(1000px) rotateY(0) rotateX(0) translateZ(0)',
-                        ease: 'power3.out'
-                    });
-
-                    const icon = card.querySelector('.feature-icon');
-                    if (icon) {
-                        gsap.to(icon, {
-                            duration: 0.5,
-                            transform: 'translateZ(50px) scale(1) rotateY(0) rotateX(0)',
-                            ease: 'power3.out'
-                        });
                     }
                 });
             });
