@@ -75,7 +75,7 @@ nav{flex:1;padding:.75rem 0;overflow-y:auto;}
 .logout-btn:hover{background:rgba(239,68,68,.15);}
 
 /* ── Main ── */
-.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh;}
+.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh;min-width:0;}
 .topbar{
   background:rgba(10,10,20,.8);backdrop-filter:blur(12px);
   border-bottom:1px solid var(--border);
@@ -95,7 +95,7 @@ nav{flex:1;padding:.75rem 0;overflow-y:auto;}
 .refresh-btn:hover{background:rgba(255,255,255,.1);color:#fff;}
 
 /* ── Content ── */
-.content{flex:1;padding:1.5rem 1.75rem;}
+.content{flex:1;padding:1.5rem 1.75rem;min-width:0;}
 .section{display:none;animation:fadeIn .25s ease;}
 .section.active{display:block;}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
@@ -147,7 +147,7 @@ th{
 }
 td{
   padding:.75rem 1rem;font-size:.83rem;border-bottom:1px solid rgba(255,255,255,.04);
-  color:var(--muted2);vertical-align:middle;
+  color:var(--muted2);vertical-align:middle;overflow-wrap:anywhere;
 }
 tr:last-child td{border-bottom:none;}
 tr:hover td{background:rgba(255,255,255,.02);}
@@ -209,22 +209,22 @@ tr:hover td{background:rgba(255,255,255,.02);}
 @keyframes sosBlink{0%,100%{opacity:1}50%{opacity:.6}}
 
 /* ── Charts placeholder ── */
-.chart-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;}
-.chart-row.chart-row-3{grid-template-columns:1fr 1fr 1fr;}
-@media(max-width:900px){.chart-row.chart-row-3{grid-template-columns:1fr 1fr;}}
+.chart-row{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.75rem;}
+.chart-row.chart-row-3{grid-template-columns:repeat(3,minmax(0,1fr));}
+@media(max-width:1100px){.chart-row.chart-row-3{grid-template-columns:1fr 1fr;}}
 @media(max-width:768px){.chart-row{grid-template-columns:1fr;}.sidebar{transform:translateX(-100%)}.main{margin-left:0}}
 .mini-chart{
-  background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.25rem;
+  background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.5rem;
 }
-.mini-chart .chart-title{font-size:.82rem;font-weight:600;color:#fff;margin-bottom:1rem;}
+.mini-chart .chart-title{font-size:.82rem;font-weight:600;color:#fff;margin-bottom:1.1rem;}
 .chart-title-sub{font-weight:400;color:var(--muted2);font-size:.72rem;margin-left:.15rem;}
 
 .trend-card{display:flex;flex-direction:column;}
-.trend-chart{height:148px;display:flex;flex-direction:column;}
-.trend-total{font-size:1.5rem;font-weight:700;color:#fff;line-height:1.1;margin-bottom:.35rem;}
+.trend-chart{height:190px;display:flex;flex-direction:column;}
+.trend-total{font-size:1.6rem;font-weight:700;color:#fff;line-height:1.1;margin-bottom:.75rem;}
 .trend-total-lbl{font-size:.68rem;font-weight:400;color:var(--muted2);margin-left:.4rem;}
 .trend-svg-wrap{flex:1;min-height:0;}
-.trend-axis{display:flex;justify-content:space-between;margin-top:.35rem;}
+.trend-axis{display:flex;justify-content:space-between;margin-top:.6rem;}
 .trend-axis span{font-size:.65rem;color:var(--muted2);}
 .trend-empty{height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted2);font-size:.78rem;text-align:center;gap:.4rem;}
 .bar-row{display:flex;align-items:center;gap:.75rem;margin-bottom:.6rem;}
@@ -912,7 +912,7 @@ const timeAgo = d => {
 };
 const fmtDate = d => d ? new Date(d).toLocaleString('en-IN', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
 const sevBadge = s => {
-    const map = {critical:'red',high:'red',medium:'amber',low:'green',info:'cyan',safe:'green',active:'red',expired:'gray',verified:'green',pending:'amber',rejected:'red',unverified:'gray'};
+    const map = {critical:'red',high:'red',medium:'amber',low:'green',info:'cyan',safe:'green',active:'red',expired:'gray',verified:'green',pending:'amber',rejected:'red',unverified:'red'};
     return `<span class="badge badge-${map[(s||'').toLowerCase()]||'gray'}">${esc(s||'—')}</span>`;
 };
 
@@ -1232,12 +1232,6 @@ async function loadUsers() {
     }
 }
 
-function accountStatusBadge(isActive) {
-    return isActive === false
-        ? '<span class="badge badge-red">Deactivated</span>'
-        : '<span class="badge badge-green">Active</span>';
-}
-
 function renderUsersTable(users) {
     const tbody = document.getElementById('usersTableBody');
     if (!users.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty"><i class="fas fa-users"></i>No users found<div class="empty-sub">Users will appear here once they sign up.</div></td></tr>'; return; }
@@ -1253,7 +1247,7 @@ function renderUsersTable(users) {
             <td>${esc(u.phone||u.phoneNumber||'—')}</td>
             <td><span class="badge ${guardians>0?'badge-green':'badge-gray'}">${guardians} guardian${guardians!==1?'s':''}</span></td>
             <td style="white-space:nowrap;">${timeAgo(u.createdAt)}</td>
-            <td>${accountStatusBadge(u.isActive)}</td>
+            <td>${sevBadge(u.verificationStatus || 'unverified')}</td>
             <td style="display:flex;gap:.35rem;flex-wrap:wrap;">
                 <button class="btn btn-ghost btn-sm" onclick="viewUser('${id}')"><i class="fas fa-eye"></i> View</button>
                 <button class="btn btn-ghost btn-sm" onclick="toggleUserActive('${id}', ${isActive})">
@@ -1691,7 +1685,7 @@ function renderLogsTable(logs) {
         <td style="white-space:nowrap;">${timeAgo(l.timestamp)}</td>
         <td>${esc(l.admin||'—')}</td>
         <td><span class="log-action">${esc(l.action||'—')}</span></td>
-        <td style="font-size:.75rem;color:var(--muted);">${esc(JSON.stringify(l.detail||{}))}</td>
+        <td style="max-width:320px;white-space:normal;word-break:break-all;font-size:.75rem;color:var(--muted);" title="${esc(JSON.stringify(l.detail||{}))}">${esc(JSON.stringify(l.detail||{}))}</td>
         <td style="font-size:.75rem;">${esc(l.ip||'—')}</td>
     </tr>`).join('');
 }
