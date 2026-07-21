@@ -247,7 +247,10 @@ router.get('/alerts', async (req, res) => {
                     severity:  (inc.severity || 'medium').toLowerCase(),
                     location:  inc?.location?.address || '',
                     source:    'incident-report',
-                    userName:  inc.reporterName || 'Anonymous',
+                    // The real reporter name is intentionally NOT exposed here — this is
+                    // a public, community-wide feed. Only the admin panel (routes/admin.js,
+                    // which reads incidentsFetchAll() directly) shows the real reporterName.
+                    userName:  'HerShield User',
                     createdAt: inc.createdAt || new Date().toISOString(),
                 }));
         } catch (_) { /* incidents optional */ }
@@ -304,7 +307,9 @@ router.get('/incident-reports', async (req, res) => {
                 severityLabel: SEVERITY_LABELS[(inc.severity || 'medium').toLowerCase()] || 'Medium',
                 location:     inc?.location?.address || '',
                 description:  (inc.description || '').slice(0, 200),
-                reporterName: inc.reporterName || 'Anonymous',
+                // Real reporter name intentionally withheld from this public feed — only
+                // the admin panel (which reads incidentsFetchAll() directly) sees it.
+                reporterName: 'HerShield User',
                 createdAt:    inc.createdAt || inc.timestamp || new Date().toISOString(),
             }));
 

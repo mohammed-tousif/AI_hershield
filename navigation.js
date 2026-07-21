@@ -1645,16 +1645,28 @@ class NavigationManager {
         // We no longer cap at 750KB because photos go to Firebase Storage, not localStorage
         const MAX_AVATAR_BYTES = 5 * 1024 * 1024; // 5 MB hard cap for upload
 
+        // This cache is tagged with the account it belongs to (_ownerUserId). Without
+        // this check, signing into (or up for) a DIFFERENT account in the same browser
+        // would inherit the previous account's cached blood group / allergies /
+        // medications / home address as a fallback wherever Firestore returns an empty
+        // field for the new account (see fillProfileForm's `u.field || ext.field` merge
+        // below) — a real cross-account data leak users have hit.
         const loadExtendedProfile = () => {
             try {
-                return JSON.parse(localStorage.getItem(PROFILE_STORAGE_KEY) || '{}');
+                const parsed = JSON.parse(localStorage.getItem(PROFILE_STORAGE_KEY) || '{}');
+                const currentUserId = localStorage.getItem('hershield_backend_user_id') || '';
+                if (parsed._ownerUserId && parsed._ownerUserId !== currentUserId) {
+                    return {};
+                }
+                return parsed;
             } catch {
                 return {};
             }
         };
 
         const saveExtendedProfile = (obj) => {
-            localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(obj));
+            const currentUserId = localStorage.getItem('hershield_backend_user_id') || '';
+            localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify({ ...obj, _ownerUserId: currentUserId }));
         };
 
         window.refreshHershieldSidebarProfile = () => {
