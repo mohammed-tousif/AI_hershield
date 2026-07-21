@@ -210,11 +210,23 @@ tr:hover td{background:rgba(255,255,255,.02);}
 
 /* ── Charts placeholder ── */
 .chart-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;}
+.chart-row.chart-row-3{grid-template-columns:1fr 1fr 1fr;}
+@media(max-width:900px){.chart-row.chart-row-3{grid-template-columns:1fr 1fr;}}
 @media(max-width:768px){.chart-row{grid-template-columns:1fr;}.sidebar{transform:translateX(-100%)}.main{margin-left:0}}
 .mini-chart{
   background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.25rem;
 }
 .mini-chart .chart-title{font-size:.82rem;font-weight:600;color:#fff;margin-bottom:1rem;}
+.chart-title-sub{font-weight:400;color:var(--muted2);font-size:.72rem;margin-left:.15rem;}
+
+.trend-card{display:flex;flex-direction:column;}
+.trend-chart{height:148px;display:flex;flex-direction:column;}
+.trend-total{font-size:1.5rem;font-weight:700;color:#fff;line-height:1.1;margin-bottom:.35rem;}
+.trend-total-lbl{font-size:.68rem;font-weight:400;color:var(--muted2);margin-left:.4rem;}
+.trend-svg-wrap{flex:1;min-height:0;}
+.trend-axis{display:flex;justify-content:space-between;margin-top:.35rem;}
+.trend-axis span{font-size:.65rem;color:var(--muted2);}
+.trend-empty{height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted2);font-size:.78rem;text-align:center;gap:.4rem;}
 .bar-row{display:flex;align-items:center;gap:.75rem;margin-bottom:.6rem;}
 .bar-label{font-size:.75rem;color:var(--muted);width:80px;flex-shrink:0;}
 .bar-track{flex:1;height:8px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;}
@@ -382,6 +394,21 @@ tr:hover td{background:rgba(255,255,255,.02);}
         <div class="stat-card"><div class="stat-icon" style="background:rgba(236,72,153,.12);color:var(--pink);"><i class="fas fa-bell"></i></div><div><div class="num" id="st-alerts">—</div><div class="lbl">Safety Alerts</div></div></div>
       </div>
 
+      <div class="chart-row chart-row-3">
+        <div class="mini-chart trend-card">
+          <div class="chart-title"><i class="fas fa-user-plus me-2" style="color:var(--purple-lt);"></i>Signups <span class="chart-title-sub">(14d)</span></div>
+          <div id="chartSignups" class="trend-chart"><div class="trend-empty"><i class="fas fa-spinner spin"></i></div></div>
+        </div>
+        <div class="mini-chart trend-card">
+          <div class="chart-title"><i class="fas fa-exclamation-triangle me-2" style="color:var(--red);"></i>SOS Events <span class="chart-title-sub">(14d)</span></div>
+          <div id="chartSos" class="trend-chart"><div class="trend-empty"><i class="fas fa-spinner spin"></i></div></div>
+        </div>
+        <div class="mini-chart trend-card">
+          <div class="chart-title"><i class="fas fa-file-alt me-2" style="color:var(--amber);"></i>Incident Reports <span class="chart-title-sub">(14d)</span></div>
+          <div id="chartIncidents" class="trend-chart"><div class="trend-empty"><i class="fas fa-spinner spin"></i></div></div>
+        </div>
+      </div>
+
       <div class="chart-row">
         <div class="mini-chart">
           <div class="chart-title"><i class="fas fa-chart-bar me-2" style="color:var(--purple-lt);"></i>Activity Breakdown</div>
@@ -390,21 +417,6 @@ tr:hover td{background:rgba(255,255,255,.02);}
         <div class="mini-chart">
           <div class="chart-title"><i class="fas fa-history me-2" style="color:var(--cyan);"></i>Recent Admin Actions</div>
           <div id="recentActivityList"><div class="empty"><i class="fas fa-spinner spin"></i></div></div>
-        </div>
-      </div>
-
-      <div class="chart-row" style="grid-template-columns:1fr 1fr 1fr;">
-        <div class="mini-chart">
-          <div class="chart-title"><i class="fas fa-user-plus me-2" style="color:var(--purple-lt);"></i>Signups (14d)</div>
-          <div style="height:160px;"><canvas id="chartSignups"></canvas></div>
-        </div>
-        <div class="mini-chart">
-          <div class="chart-title"><i class="fas fa-exclamation-triangle me-2" style="color:var(--red);"></i>SOS Events (14d)</div>
-          <div style="height:160px;"><canvas id="chartSos"></canvas></div>
-        </div>
-        <div class="mini-chart">
-          <div class="chart-title"><i class="fas fa-file-alt me-2" style="color:var(--amber);"></i>Incident Reports (14d)</div>
-          <div style="height:160px;"><canvas id="chartIncidents"></canvas></div>
         </div>
       </div>
     </div>
@@ -869,7 +881,18 @@ const api = async (path, opts = {}) => {
         headers: { 'Authorization': 'Bearer ' + TOKEN, 'Content-Type': 'application/json', ...(opts.headers || {}) },
         body: opts.body ? (typeof opts.body === 'string' ? opts.body : JSON.stringify(opts.body)) : undefined,
     });
-    const d = await r.json();
+    // Defensive: don't assume the body is JSON. A rate-limit 429, a proxy/
+    // gateway error page, or any other non-JSON response would otherwise
+    // throw a raw "Unexpected token... is not valid JSON" SyntaxError that
+    // surfaces verbatim in every table on the page — read as text first and
+    // only parse if it looks like JSON, falling back to a readable message.
+    const raw = await r.text();
+    let d;
+    try {
+        d = raw ? JSON.parse(raw) : {};
+    } catch (_) {
+        d = { success: false, message: r.status === 429 ? 'Too many requests — please wait a moment and try again.' : (raw || `Request failed (${r.status})`) };
+    }
     if (r.status === 401) { adminLogout(); throw new Error('Session expired'); }
     return d;
 };
@@ -986,40 +1009,77 @@ function bucketByDay(items, dateField, days = 14) {
     return buckets;
 }
 
-const _chartInstances = {};
-function renderTrendChart(canvasId, buckets, color) {
-    const canvas = document.getElementById(canvasId);
-    if (!canvas || typeof Chart === 'undefined') return;
-    if (_chartInstances[canvasId]) _chartInstances[canvasId].destroy();
-    const labels = Object.keys(buckets).map(d => d.slice(5));
-    const data = Object.values(buckets);
-    _chartInstances[canvasId] = new Chart(canvas, {
-        type: 'line',
-        data: { labels, datasets: [{ data, borderColor: color, backgroundColor: color + '22', fill: true, tension: .35, pointRadius: 2 }] },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: { x: { grid: { display: false } }, y: { beginAtZero: true, ticks: { precision: 0 } } },
-        },
-    });
+// Self-contained inline-SVG sparkline — no external chart library, so these
+// panels always render regardless of CDN reachability, ad-blockers, or
+// corporate firewalls (previously depended on Chart.js from a CDN, which
+// silently left the panels blank with no error whenever that script failed
+// to load or any of the underlying data fetches errored).
+// Catmull-Rom → cubic-bezier smoothing so the line doesn't look like a jagged zig-zag.
+function smoothPath(points) {
+    if (points.length < 3) {
+        return points.map((p, i) => (i === 0 ? 'M' : 'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+    }
+    let d = `M ${points[0][0].toFixed(1)},${points[0][1].toFixed(1)}`;
+    for (let i = 0; i < points.length - 1; i++) {
+        const p0 = points[i === 0 ? i : i - 1];
+        const p1 = points[i];
+        const p2 = points[i + 1];
+        const p3 = points[i + 2 < points.length ? i + 2 : i + 1];
+        const cp1x = p1[0] + (p2[0] - p0[0]) / 6;
+        const cp1y = p1[1] + (p2[1] - p0[1]) / 6;
+        const cp2x = p2[0] - (p3[0] - p1[0]) / 6;
+        const cp2y = p2[1] - (p3[1] - p1[1]) / 6;
+        d += ` C ${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
+    }
+    return d;
 }
 
-// Loaded dynamically (not a static <script src>) so the rest of the admin
-// dashboard boots regardless of whether the CDN is reachable — charts are a
-// nice-to-have, not a blocker for the rest of the panel.
-const chartsReadyPromise = new Promise((resolve) => {
-    const s = document.createElement('script');
-    s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4';
-    s.onload = () => {
-        const rootStyle = getComputedStyle(document.documentElement);
-        Chart.defaults.color = rootStyle.getPropertyValue('--muted2').trim();
-        Chart.defaults.font.family = "'Inter',sans-serif";
-        Chart.defaults.borderColor = rootStyle.getPropertyValue('--border').trim();
-        resolve(true);
-    };
-    s.onerror = () => resolve(false);
-    document.head.appendChild(s);
-});
+function renderTrendChart(containerId, buckets, color) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const labels = Object.keys(buckets).map(d => d.slice(5));
+    const data = Object.values(buckets);
+    const total = data.reduce((a, b) => a + b, 0);
+    if (!data.length || total === 0) {
+        container.innerHTML = '<div class="trend-empty"><i class="fas fa-inbox"></i><span>No data in the last 14 days</span></div>';
+        return;
+    }
+    const w = 300, h = 100, pad = 8;
+    const max = Math.max(...data, 1);
+    const stepX = (w - pad * 2) / Math.max(data.length - 1, 1);
+    const points = data.map((v, i) => [
+        pad + i * stepX,
+        h - pad - (v / max) * (h - pad * 2),
+    ]);
+    const linePath = smoothPath(points);
+    const areaPath = `${linePath} L${points[points.length - 1][0].toFixed(1)},${h - pad} L${points[0][0].toFixed(1)},${h - pad} Z`;
+    const gradId = `grad-${containerId}`;
+    const gridLines = [0.25, 0.5, 0.75].map(f => {
+        const y = (pad + f * (h - pad * 2)).toFixed(1);
+        return `<line x1="${pad}" y1="${y}" x2="${w - pad}" y2="${y}" stroke="var(--border)" stroke-width="1" stroke-dasharray="3,4"></line>`;
+    }).join('');
+    const last = points[points.length - 1];
+    container.innerHTML = `
+        <div class="trend-total">${total}<span class="trend-total-lbl">total this period</span></div>
+        <div class="trend-svg-wrap">
+            <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="width:100%;height:100%;display:block;">
+                <defs>
+                    <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="${color}" stop-opacity="0.32"></stop>
+                        <stop offset="100%" stop-color="${color}" stop-opacity="0"></stop>
+                    </linearGradient>
+                </defs>
+                ${gridLines}
+                <path d="${areaPath}" fill="url(#${gradId})" stroke="none"></path>
+                <path d="${linePath}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"></path>
+                <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="3" fill="${color}" stroke="var(--card)" stroke-width="1.5"></circle>
+            </svg>
+        </div>
+        <div class="trend-axis">
+            <span>${labels[0]}</span>
+            <span>${labels[labels.length - 1]}</span>
+        </div>`;
+}
 
 let toastTimer;
 function toast(msg, type = 'success') {
@@ -1144,14 +1204,16 @@ async function loadOverview() {
         allUsers = usersRes.users || allUsers;
         allSos = sosRes.events || allSos;
         allIncidents = incidentsRes.incidents || allIncidents;
-        const chartsOk = await chartsReadyPromise;
-        if (chartsOk) {
-            const rootStyle = getComputedStyle(document.documentElement);
-            renderTrendChart('chartSignups', bucketByDay(allUsers, 'createdAt', 14), rootStyle.getPropertyValue('--purple').trim());
-            renderTrendChart('chartSos', bucketByDay(allSos, 'triggeredAt', 14), rootStyle.getPropertyValue('--red').trim());
-            renderTrendChart('chartIncidents', bucketByDay(allIncidents, 'createdAt', 14), rootStyle.getPropertyValue('--amber').trim());
-        }
-    } catch (_) { /* charts are non-critical */ }
+        const rootStyle = getComputedStyle(document.documentElement);
+        renderTrendChart('chartSignups', bucketByDay(allUsers, 'createdAt', 14), rootStyle.getPropertyValue('--purple').trim());
+        renderTrendChart('chartSos', bucketByDay(allSos, 'triggeredAt', 14), rootStyle.getPropertyValue('--red').trim());
+        renderTrendChart('chartIncidents', bucketByDay(allIncidents, 'createdAt', 14), rootStyle.getPropertyValue('--amber').trim());
+    } catch (e) {
+        ['chartSignups', 'chartSos', 'chartIncidents'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = '<div class="trend-empty"><i class="fas fa-triangle-exclamation"></i><span>Failed to load</span></div>';
+        });
+    }
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

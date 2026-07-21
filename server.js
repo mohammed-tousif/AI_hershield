@@ -65,10 +65,17 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // Rate limiting
+// NOTE: `message` must be a JSON-serializable value, not a plain string —
+// express-rate-limit sends it as the response body as-is on 429, and every
+// fetch() call across this app's frontend does response.json() unconditionally.
+// A plain string body isn't valid JSON, so JSON.parse would throw
+// `Unexpected token 'T', "Too many r"... is not valid JSON` — a real bug users
+// hit (every panel on the admin dashboard showing that exact parse error
+// whenever the limit tripped, instead of a readable rate-limit message).
 const limiter = rateLimit({
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
     max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
-    message: 'Too many requests from this IP, please try again later.',
+    message: { success: false, message: 'Too many requests from this IP, please try again later.' },
     standardHeaders: true,
     legacyHeaders: false,
 });
@@ -95,17 +102,20 @@ const usersRoutes = require('./routes/users');
 const communityRoutes = require('./routes/community');
 const adminRoutes     = require('./routes/admin');
 
-// Admin-specific rate limiter. Raised from 20 → 60/min: Overview's 30s
-// auto-refresh alone now fires ~6 requests/cycle (stats, verifications,
-// logs, users, sos, incidents — needed for the trend charts), leaving too
-// little headroom at 20/min for actual admin clicks (exports, deletes, tab
-// switches). Still a real ceiling — this is a single authenticated admin,
+// Admin-specific rate limiter. Raised 20 → 60 → 120/min: Overview's 30s
+// auto-refresh alone fires ~6 requests/cycle (stats, verifications, logs,
+// users, sos, incidents — needed for the trend charts), i.e. ~12/min just
+// from having that tab open, which left too little headroom at 60/min for
+// real admin activity (multiple tabs open, quick clicking between
+// sections, exports) — users were occasionally hitting the ceiling during
+// normal use. Still a real ceiling — this is a single authenticated admin,
 // not a public endpoint, so generous throttling here is about basic abuse
-// protection, not user-facing rate limiting.
+// protection, not user-facing rate limiting. `message` must be JSON, not a
+// plain string — see the comment on `limiter` above for why.
 const adminLimiter = rateLimit({
     windowMs: 60 * 1000,
-    max: 60,
-    message: 'Too many admin requests',
+    max: 120,
+    message: { success: false, message: 'Too many admin requests. Please wait a moment and try again.' },
     standardHeaders: true,
     legacyHeaders: false,
 });
