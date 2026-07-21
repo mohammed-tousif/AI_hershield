@@ -2,6 +2,7 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 const express = require('express');
+const { body, param, validationResult } = require('express-validator');
 const router = express.Router();
 const {
     liveSessionCreate,
@@ -18,6 +19,56 @@ const {
 const smsService = require('../services/smsService');
 const emailService = require('../services/emailService');
 const { getFrontendUrl, liveTrackerLink } = require('../config/appUrls');
+const { stripHtml } = require('../services/sanitize');
+
+function checkValidation(req, res, next) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, message: errors.array()[0].msg, details: errors.array() });
+    }
+    next();
+}
+
+const startValidators = [
+    body('name').trim().notEmpty().withMessage('Name is required').isLength({ max: 100 }).withMessage('Name must be under 100 characters'),
+    body('source').optional({ nullable: true }).isString().isLength({ max: 200 }).withMessage('Source must be under 200 characters'),
+    body('destination').optional({ nullable: true }).isString().isLength({ max: 200 }).withMessage('Destination must be under 200 characters'),
+    body('transportMode').optional({ nullable: true }).isString().isLength({ max: 50 }),
+    body('pin').notEmpty().withMessage('PIN is required').isLength({ min: 4, max: 10 }).withMessage('PIN must be 4-10 characters'),
+    body('email').optional({ nullable: true }).isEmail().withMessage('Invalid email').normalizeEmail(),
+    body('emergencyContacts').optional({ nullable: true }).isArray({ max: 20 }).withMessage('emergencyContacts must be an array'),
+    body('emergencyContacts.*').optional().isEmail().withMessage('Each emergency contact must be a valid email'),
+    body('startLat').optional({ nullable: true }).isFloat({ min: -90, max: 90 }),
+    body('startLng').optional({ nullable: true }).isFloat({ min: -180, max: 180 }),
+    body('baseUrl').optional({ nullable: true }).isURL({ require_tld: false }).withMessage('baseUrl must be a valid URL'),
+];
+
+const updateLocationValidators = [
+    body('userId').trim().notEmpty().withMessage('userId is required').isLength({ max: 100 }),
+    body('lat').isFloat({ min: -90, max: 90 }).withMessage('lat must be a valid latitude'),
+    body('lng').isFloat({ min: -180, max: 180 }).withMessage('lng must be a valid longitude'),
+    body('accuracy').optional({ nullable: true }).isFloat({ min: 0 }),
+];
+
+const pinValidators = [
+    body('userId').trim().notEmpty().withMessage('userId is required').isLength({ max: 100 }),
+    body('pin').trim().notEmpty().withMessage('PIN is required').isLength({ min: 4, max: 10 }),
+];
+
+const userIdOnlyValidators = [
+    body('userId').trim().notEmpty().withMessage('userId is required').isLength({ max: 100 }),
+];
+
+const dashboardAlertValidators = [
+    body('userId').optional({ nullable: true }).isString().isLength({ max: 100 }),
+    body('userName').optional({ nullable: true }).isString().isLength({ max: 100 }),
+    body('userEmail').optional({ nullable: true }).isEmail().withMessage('Invalid email').normalizeEmail(),
+    body('contacts').optional({ nullable: true }).isArray({ max: 20 }).withMessage('contacts must be an array'),
+    body('location').optional({ nullable: true }).isObject().withMessage('location must be an object'),
+    body('location.lat').optional({ nullable: true }).isFloat({ min: -90, max: 90 }),
+    body('location.lng').optional({ nullable: true }).isFloat({ min: -180, max: 180 }),
+    body('location.accuracy').optional({ nullable: true }).isFloat({ min: 0 }),
+];
 
 // Sends via the Gmail REST API (HTTPS) instead of SMTP — see services/emailService.js
 // for why: Render blocks outbound SMTP entirely, on any port.
@@ -26,9 +77,13 @@ function hasEmailConfig() {
 }
 const transporter = { sendMail: (opts) => emailService.sendMail(opts) };
 
-router.post('/start', async (req, res) => {
+router.post('/start', startValidators, checkValidation, async (req, res) => {
     try {
-        const { name, source, destination, pin, emergencyContacts, transportMode, email, startLat, startLng, baseUrl } = req.body;
+        const name          = stripHtml(req.body.name);
+        const source        = stripHtml(req.body.source || '');
+        const destination    = stripHtml(req.body.destination || '');
+        const transportMode = stripHtml(req.body.transportMode || '');
+        const { pin, emergencyContacts, email, startLat, startLng } = req.body;
 
         const userEmail = email || process.env.EMAIL_USER;
         const userId    = Date.now().toString() + Math.floor(Math.random() * 1000);
@@ -127,7 +182,7 @@ router.post('/start', async (req, res) => {
 // arbitrary accuracy value, bypassing whatever the browser's own JS decided.
 const MAX_TRUSTED_ACCURACY_M = 2000;
 
-router.post('/update-location', async (req, res) => {
+router.post('/update-location', updateLocationValidators, checkValidation, async (req, res) => {
     try {
         const { userId, lat, lng, accuracy } = req.body;
 
@@ -169,7 +224,7 @@ router.post('/update-location', async (req, res) => {
 
 // ── GET /location/:userId — viewer polling fallback ────────────────────────────
 // Returns the most recent lat/lng from the Firestore locationLogs array.
-router.get('/location/:userId', async (req, res) => {
+router.get('/location/:userId', [param('userId').trim().notEmpty().isLength({ max: 100 })], checkValidation, async (req, res) => {
     try {
         const userId = req.params.userId;
         const session = await liveSessionGetByUserId(userId);
@@ -194,7 +249,7 @@ router.get('/location/:userId', async (req, res) => {
     }
 });
 
-router.post('/verify-pin', async (req, res) => {
+router.post('/verify-pin', pinValidators, checkValidation, async (req, res) => {
     try {
         const { userId, pin } = req.body;
 
@@ -220,7 +275,7 @@ router.post('/verify-pin', async (req, res) => {
     }
 });
 
-router.post('/trigger-alert', async (req, res) => {
+router.post('/trigger-alert', userIdOnlyValidators, checkValidation, async (req, res) => {
     try {
         const { userId } = req.body;
 
@@ -310,7 +365,7 @@ router.post('/trigger-alert', async (req, res) => {
     }
 });
 
-router.post('/stop', async (req, res) => {
+router.post('/stop', pinValidators, checkValidation, async (req, res) => {
     try {
         const { userId, pin } = req.body;
 
@@ -336,9 +391,10 @@ router.post('/stop', async (req, res) => {
     }
 });
 
-router.post('/dashboard-alert', async (req, res) => {
+router.post('/dashboard-alert', dashboardAlertValidators, checkValidation, async (req, res) => {
     try {
-        const { location, userEmail, userName, contacts, userId } = req.body;
+        const { location, userEmail, contacts, userId } = req.body;
+        const userName = stripHtml(req.body.userName || '');
 
         console.log('📩 dashboard-alert received:', JSON.stringify({
             userName, userEmail, userId,
@@ -523,7 +579,7 @@ router.post('/dashboard-alert', async (req, res) => {
 });
 
 // Resolve tracking code → session userId (for email links with ?code=)
-router.get('/lookup-code/:code', async (req, res) => {
+router.get('/lookup-code/:code', [param('code').trim().isLength({ max: 20 })], checkValidation, async (req, res) => {
     try {
         const code = (req.params.code || '').trim();
         if (!code) {

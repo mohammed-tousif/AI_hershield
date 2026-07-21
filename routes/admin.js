@@ -8,11 +8,14 @@ const express  = require('express');
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
 const multer   = require('multer');
+const { body, validationResult } = require('express-validator');
 const { Readable } = require('stream');
 const csvParser = require('csv-parser');
 const router   = express.Router();
 const { adminAuth, ADMIN_JWT_SECRET } = require('../middleware/adminAuth');
 const { getStorageBucket } = require('../config/firestoreAdmin');
+const { loginRateLimiter, loginBackoffGuard, recordLoginFailure, clearLoginFailures } = require('../middleware/loginThrottle');
+const { stripHtml } = require('../services/sanitize');
 
 const {
     isFirestoreConfigured,
@@ -65,13 +68,25 @@ async function log(req, action, detail = {}) {
     } catch (_) { /* non-blocking */ }
 }
 
+/** Shared express-validator error responder — used by every validated route below. */
+function checkValidation(req, res, next) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, message: errors.array()[0].msg, details: errors.array() });
+    }
+    next();
+}
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  POST /api/admin/login  (public — no auth)
+//  Layered abuse protection: a stricter per-IP rate limit (10/min) plus
+//  per-IP exponential backoff on consecutive failures — see
+//  middleware/loginThrottle.js for why this is per-IP, not per-account.
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-router.post('/login', async (req, res) => {
+router.post('/login', loginRateLimiter, loginBackoffGuard, async (req, res) => {
     try {
         const { email, password } = req.body;
-        if (!email || !password) {
+        if (!email || !password || typeof email !== 'string' || typeof password !== 'string') {
             return res.status(400).json({ success: false, message: 'Email and password required' });
         }
 
@@ -85,19 +100,26 @@ router.post('/login', async (req, res) => {
             });
         }
 
+        // Both branches below return the IDENTICAL message and both record a
+        // failure — this is deliberate: never reveal whether the email or the
+        // password was the wrong part (account-enumeration protection).
         if (email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+            recordLoginFailure(req);
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
         const valid = await bcrypt.compare(password, ADMIN_HASH);
         if (!valid) {
+            recordLoginFailure(req);
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
+
+        clearLoginFailures(req);
 
         const token = jwt.sign(
             { email: ADMIN_EMAIL, isAdmin: true, role: 'admin' },
             ADMIN_JWT_SECRET,
-            { expiresIn: '10h' }
+            { expiresIn: '2h' } // shortened from 10h — reduces the window a leaked token stays valid
         );
 
         res.json({ success: true, token, email: ADMIN_EMAIL });
@@ -328,9 +350,15 @@ router.post('/verifications/:userId/approve', async (req, res) => {
     }
 });
 
-router.post('/verifications/:userId/reject', async (req, res) => {
+const rejectVerificationValidators = [
+    body('reason').optional({ nullable: true }).isString().isLength({ max: 500 }).withMessage('Reason must be under 500 characters'),
+    body('deactivate').optional({ nullable: true }).isBoolean().withMessage('deactivate must be boolean'),
+];
+
+router.post('/verifications/:userId/reject', rejectVerificationValidators, checkValidation, async (req, res) => {
     try {
-        const { reason, deactivate } = req.body || {};
+        const { deactivate } = req.body || {};
+        const reason = stripHtml((req.body || {}).reason || '');
         const user = await usersFindById(req.params.userId);
         if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
@@ -390,18 +418,23 @@ router.get('/posts', async (req, res) => {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  POST /api/admin/posts  (create broadcast post)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-router.post('/posts', async (req, res) => {
+const adminPostValidators = [
+    body('content').trim().notEmpty().withMessage('Content required').isLength({ max: 2000 }).withMessage('Content must be under 2000 characters'),
+    body('category').optional({ nullable: true }).isIn(['general', 'alert', 'tip', 'experience', 'event', 'question']).withMessage('Invalid category'),
+    body('location').optional({ nullable: true }).isString().isLength({ max: 200 }).withMessage('Location must be under 200 characters'),
+];
+
+router.post('/posts', adminPostValidators, checkValidation, async (req, res) => {
     try {
         const { content, category, location } = req.body;
-        if (!content?.trim()) return res.status(400).json({ success: false, message: 'Content required' });
 
         const post = {
             _id:       `${Date.now()}_admin_${Math.floor(Math.random() * 9999)}`,
             kind:      'post',
-            content:   content.trim(),
+            content:   stripHtml(content.trim()),
             userName:  'HerShield Admin',
             userEmail: req.admin.email,
-            location:  location || '',
+            location:  stripHtml(location || ''),
             imageUrl:  '',
             category:  category || 'alert',
             isAdminPost: true,
@@ -531,12 +564,20 @@ router.get('/tracking', async (req, res) => {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  POST /api/admin/broadcast  (push alert to ALL users via Socket.IO)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-router.post('/broadcast', async (req, res) => {
+const broadcastValidators = [
+    body('title').trim().notEmpty().withMessage('Title required').isLength({ max: 200 }).withMessage('Title must be under 200 characters'),
+    body('message').trim().notEmpty().withMessage('Message required').isLength({ max: 2000 }).withMessage('Message must be under 2000 characters'),
+    body('severity').optional({ nullable: true }).isIn(['info', 'low', 'medium', 'high', 'critical']).withMessage('Invalid severity'),
+    body('location').optional({ nullable: true }).isString().isLength({ max: 200 }),
+    body('saveAsAlert').optional({ nullable: true }).isBoolean().withMessage('saveAsAlert must be boolean'),
+];
+
+router.post('/broadcast', broadcastValidators, checkValidation, async (req, res) => {
     try {
-        const { title, message, severity, location, saveAsAlert } = req.body;
-        if (!title || !message) {
-            return res.status(400).json({ success: false, message: 'Title and message required' });
-        }
+        const title    = stripHtml(req.body.title);
+        const message  = stripHtml(req.body.message);
+        const location = stripHtml(req.body.location || '');
+        const { severity, saveAsAlert } = req.body;
 
         const payload = {
             _id:      `bcast_${Date.now()}`,

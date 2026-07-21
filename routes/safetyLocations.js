@@ -1,4 +1,5 @@
 const express = require('express');
+const { body, validationResult } = require('express-validator');
 const router = express.Router();
 const {
     safetyLocationsList,
@@ -6,6 +7,23 @@ const {
     safetyLocationsSeedFromCsvIfEmpty,
     isFirestoreConfigured,
 } = require('../services/firestoreRepository');
+const { stripHtml } = require('../services/sanitize');
+
+function checkValidation(req, res, next) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ error: errors.array()[0].msg, details: errors.array() });
+    }
+    next();
+}
+
+const addLocationValidators = [
+    body('latitude').isFloat({ min: -90, max: 90 }).withMessage('latitude must be between -90 and 90'),
+    body('longitude').isFloat({ min: -180, max: 180 }).withMessage('longitude must be between -180 and 180'),
+    body('risk_level').isInt({ min: 1, max: 3 }).withMessage('risk_level must be 1, 2, or 3'),
+    body('location').trim().notEmpty().withMessage('location is required').isLength({ max: 200 }).withMessage('location must be under 200 characters'),
+    body('category').optional({ nullable: true }).isString().isLength({ max: 50 }),
+];
 
 /**
  * GET /api/safety/locations
@@ -32,30 +50,18 @@ router.get('/locations', async (req, res) => {
 /**
  * POST /api/safety/locations
  */
-router.post('/locations', async (req, res) => {
+router.post('/locations', addLocationValidators, checkValidation, async (req, res) => {
     try {
-        const { latitude, longitude, risk_level, location, category } = req.body;
-
-        if (!latitude || !longitude || !risk_level || !location) {
-            return res.status(400).json({
-                error: 'Missing required fields',
-                required: ['latitude', 'longitude', 'risk_level', 'location'],
-            });
-        }
-
-        if (![1, 2, 3].includes(parseInt(risk_level, 10))) {
-            return res.status(400).json({
-                error: 'Invalid risk_level',
-                message: 'risk_level must be 1 (Low), 2 (Medium), or 3 (High)',
-            });
-        }
+        const { latitude, longitude, risk_level } = req.body;
+        const location = stripHtml(req.body.location.trim());
+        const category  = stripHtml(req.body.category || 'incident');
 
         const newLocation = {
             latitude: parseFloat(latitude),
             longitude: parseFloat(longitude),
             risk_level: parseInt(risk_level, 10),
             location,
-            category: category || 'incident',
+            category,
             last_updated: new Date().toISOString().split('T')[0],
         };
 

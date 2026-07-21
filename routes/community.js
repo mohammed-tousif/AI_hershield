@@ -7,6 +7,7 @@ const path    = require('path');
 const fs      = require('fs');
 const express = require('express');
 const multer  = require('multer');
+const { body, validationResult } = require('express-validator');
 const router  = express.Router();
 
 const {
@@ -16,6 +17,40 @@ const {
     incidentsFetchAll,
     isFirestoreConfigured,
 } = require('../services/firestoreRepository');
+const { stripHtml } = require('../services/sanitize');
+
+const VALID_CATEGORIES = ['general', 'alert', 'tip', 'experience', 'event', 'question'];
+
+function checkValidation(req, res, next) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, message: errors.array()[0].msg, details: errors.array() });
+    }
+    next();
+}
+
+const postValidators = [
+    body('content').trim().notEmpty().withMessage('Content is required').isLength({ max: 2000 }).withMessage('Content must be under 2000 characters'),
+    body('userName').optional({ nullable: true }).isString().isLength({ max: 100 }).withMessage('Name must be under 100 characters'),
+    body('userEmail').optional({ nullable: true }).isEmail().withMessage('Invalid email').normalizeEmail(),
+    body('location').optional({ nullable: true }).isString().isLength({ max: 200 }).withMessage('Location must be under 200 characters'),
+    body('imageUrl').optional({ nullable: true }).isString().isLength({ max: 2000 }),
+    body('category').optional({ nullable: true }).isIn(VALID_CATEGORIES).withMessage('Invalid category'),
+];
+
+const likeValidators = [
+    body('userEmail').optional({ nullable: true }).isEmail().withMessage('Invalid email').normalizeEmail(),
+    body('userId').optional({ nullable: true }).isString().isLength({ max: 200 }),
+];
+
+const alertValidators = [
+    body('title').trim().notEmpty().withMessage('Title is required').isLength({ max: 200 }).withMessage('Title must be under 200 characters'),
+    body('message').trim().notEmpty().withMessage('Message is required').isLength({ max: 2000 }).withMessage('Message must be under 2000 characters'),
+    body('severity').optional({ nullable: true }).isIn(['info', 'low', 'medium', 'high', 'critical']).withMessage('Invalid severity'),
+    body('location').optional({ nullable: true }).isString().isLength({ max: 200 }),
+    body('source').optional({ nullable: true }).isString().isLength({ max: 100 }),
+    body('userName').optional({ nullable: true }).isString().isLength({ max: 100 }),
+];
 
 // ── Uploads directory ─────────────────────────────────────────────────────────
 const UPLOADS_DIR = path.join(__dirname, '..', 'public', 'uploads', 'community');
@@ -63,18 +98,17 @@ router.get('/posts', async (req, res) => {
 });
 
 // ── POST /posts  (JSON body — text + optional imageUrl) ───────────────────────
-router.post('/posts', async (req, res) => {
+router.post('/posts', postValidators, checkValidation, async (req, res) => {
     try {
         const { content, userName, userEmail, location, imageUrl, category } = req.body;
-        if (!content?.trim()) return res.status(400).json({ success: false, message: 'Content is required' });
 
         const post = {
             _id:       `${Date.now()}_${Math.floor(Math.random() * 99999)}`,
             kind:      'post',
-            content:   content.trim(),
-            userName:  userName  || 'Community Member',
+            content:   stripHtml(content.trim()),
+            userName:  stripHtml(userName || 'Community Member'),
             userEmail: userEmail || '',
-            location:  location  || '',
+            location:  stripHtml(location || ''),
             imageUrl:  imageUrl  || '',
             category:  category  || 'general',
             likes:     0,
@@ -96,10 +130,9 @@ router.post('/posts', async (req, res) => {
 });
 
 // ── POST /posts/upload  (multipart/form-data with image file) ─────────────────
-router.post('/posts/upload', upload.single('image'), async (req, res) => {
+router.post('/posts/upload', upload.single('image'), postValidators, checkValidation, async (req, res) => {
     try {
         const { content, userName, userEmail, location, category } = req.body;
-        if (!content?.trim()) return res.status(400).json({ success: false, message: 'Content is required' });
 
         // Build public URL for the uploaded file
         const imageUrl = req.file
@@ -109,10 +142,10 @@ router.post('/posts/upload', upload.single('image'), async (req, res) => {
         const post = {
             _id:       `${Date.now()}_${Math.floor(Math.random() * 99999)}`,
             kind:      'post',
-            content:   content.trim(),
-            userName:  userName  || 'Community Member',
+            content:   stripHtml(content.trim()),
+            userName:  stripHtml(userName || 'Community Member'),
             userEmail: userEmail || '',
-            location:  location  || '',
+            location:  stripHtml(location || ''),
             imageUrl,
             category:  category  || 'general',
             likes:     0,
@@ -135,7 +168,7 @@ router.post('/posts/upload', upload.single('image'), async (req, res) => {
 });
 
 // ── POST /posts/:id/like ──────────────────────────────────────────────────────
-router.post('/posts/:id/like', async (req, res) => {
+router.post('/posts/:id/like', likeValidators, checkValidation, async (req, res) => {
     try {
         const { id } = req.params;
         // accept userEmail OR userId — email is the stable identifier in this app
@@ -152,10 +185,14 @@ router.post('/posts/:id/like', async (req, res) => {
 });
 
 // ── POST /alerts ──────────────────────────────────────────────────────────────
-router.post('/alerts', async (req, res) => {
+router.post('/alerts', alertValidators, checkValidation, async (req, res) => {
     try {
-        const { title, message, severity, location, source, userName } = req.body;
-        if (!title || !message) return res.status(400).json({ success: false, message: 'Title and message are required' });
+        const title    = stripHtml(req.body.title);
+        const message  = stripHtml(req.body.message);
+        const location = stripHtml(req.body.location || '');
+        const source   = stripHtml(req.body.source || '');
+        const userName = stripHtml(req.body.userName || '');
+        const { severity } = req.body;
 
         const alert = {
             _id:       `${Date.now()}_${Math.floor(Math.random() * 99999)}`,
