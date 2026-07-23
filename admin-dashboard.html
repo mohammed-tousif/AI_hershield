@@ -6,16 +6,54 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HerShield — Admin Dashboard</title>
 <meta name="robots" content="noindex,nofollow">
+<script>
+(function () {
+    // Runs synchronously before the stylesheet paints, so there's no flash of
+    // the wrong theme. Explicit user choice (localStorage) always wins;
+    // otherwise falls back to the OS-level light/dark preference.
+    try {
+        var saved = localStorage.getItem('hs_admin_theme');
+        var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+    } catch (_) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+    }
+})();
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#0a0a14;--sidebar:#0e0e1c;--card:#13131f;--card2:#1a1a2e;
-  --border:#1e1e35;--purple:#8b5cf6;--purple-lt:#a78bfa;--pink:#ec4899;
-  --cyan:#06b6d4;--green:#22c55e;--amber:#f59e0b;--red:#ef4444;
-  --text:#e2e8f0;--muted:#64748b;--muted2:#94a3b8;
+  --border:#1e1e35;--text:#e2e8f0;--text-strong:#fff;--muted:#64748b;--muted2:#94a3b8;
+  --wash-rgb:255,255,255;--topbar-bg:rgba(10,10,20,.8);
+
+  --accent:#67A2C5;--accent-rgb:103,162,197;--accent-ink:#8FC6E8;
+  --accent2:#FFB6A6;--accent2-rgb:255,182,166;--accent2-ink:#FFB6A6;
+  --accent3:#9BCEC1;--accent3-rgb:155,206,193;--accent3-ink:#9BCEC1;
+
+  --red:#ef4444;--red-rgb:239,68,68;--red-ink:#fca5a5;
+  --green:#22c55e;--green-rgb:34,197,94;--green-ink:#86efac;
+  --amber:#f59e0b;--amber-rgb:245,158,11;--amber-ink:#fcd34d;
+  --gray-rgb:100,116,139;
+
+  /* Back-compat aliases — nothing else in this file should still reference
+     these old names, but keeping them wired to the new tokens is a free
+     safety net in case a spot was missed. */
+  --purple:var(--accent);--purple-lt:var(--accent-ink);
+  --pink:var(--accent2);--cyan:var(--accent3);
+
   --sidebar-w:260px;
+}
+:root[data-theme="light"]{
+  --bg:#FFEBD3;--sidebar:#fffdfa;--card:#fff;--card2:#fffaf3;
+  --border:#f0ddc7;--text:#2b2117;--text-strong:#1a130d;--muted:#8a7a6c;--muted2:#5c4f45;
+  --wash-rgb:43,33,23;--topbar-bg:rgba(255,235,211,.85);
+
+  --accent-ink:#2f6d92;--accent2-ink:#c25f45;--accent3-ink:#2f7a68;
+  --red-ink:#b91c1c;--green-ink:#15803d;--amber-ink:#b45309;
+  --gray-rgb:138,122,108;
 }
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;overflow-x:hidden;}
 ::-webkit-scrollbar{width:5px;height:5px}
@@ -36,21 +74,21 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
 }
 .sidebar-logo .badge{
   width:40px;height:40px;border-radius:12px;flex-shrink:0;
-  background:linear-gradient(135deg,var(--purple),var(--pink));
+  background:linear-gradient(135deg,var(--accent2),var(--accent));
   display:flex;align-items:center;justify-content:center;
-  box-shadow:0 4px 14px rgba(139,92,246,.35);
+  box-shadow:0 4px 14px rgba(var(--accent-rgb),.35);
 }
 .sidebar-logo .badge svg{width:22px;height:22px;display:block;}
-.sidebar-logo h2{font-size:.95rem;font-weight:700;color:#fff;}
+.sidebar-logo h2{font-size:.95rem;font-weight:700;color:var(--text-strong);}
 .sidebar-logo small{font-size:.7rem;color:var(--muted);display:block;margin-top:1px;}
 .admin-info{padding:.75rem 1.25rem;border-bottom:1px solid var(--border);}
 .admin-info .chip{
   display:flex;align-items:center;gap:.5rem;
-  background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.2);
+  background:rgba(var(--accent-rgb),.1);border:1px solid rgba(var(--accent-rgb),.2);
   border-radius:8px;padding:.45rem .75rem;
 }
-.admin-info .chip i{color:var(--purple-lt);font-size:.8rem;}
-.admin-info .chip span{font-size:.75rem;color:var(--purple-lt);font-weight:500;}
+.admin-info .chip i{color:var(--accent-ink);font-size:.8rem;}
+.admin-info .chip span{font-size:.75rem;color:var(--accent-ink);font-weight:500;}
 
 nav{flex:1;padding:.75rem 0;overflow-y:auto;}
 .nav-section{font-size:.65rem;font-weight:600;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;padding:.5rem 1.25rem .25rem;}
@@ -61,38 +99,38 @@ nav{flex:1;padding:.75rem 0;overflow-y:auto;}
   text-decoration:none;transition:all .15s;border:none;background:none;width:calc(100% - 1rem);text-align:left;
 }
 .nav-item i{width:18px;text-align:center;font-size:.9rem;}
-.nav-item:hover,.nav-item.active{background:rgba(139,92,246,.12);color:var(--purple-lt);transform:translateX(2px);}
-.nav-item.active{color:#fff;background:rgba(139,92,246,.2);}
+.nav-item:hover,.nav-item.active{background:rgba(var(--accent-rgb),.12);color:var(--accent-ink);transform:translateX(2px);}
+.nav-item.active{background:rgba(var(--accent-rgb),.2);}
 .nav-badge{margin-left:auto;background:var(--red);color:#fff;border-radius:99px;font-size:.65rem;font-weight:700;padding:.1rem .45rem;}
 
 .sidebar-footer{padding:1rem 1.25rem;border-top:1px solid var(--border);}
 .logout-btn{
   display:flex;align-items:center;gap:.6rem;width:100%;padding:.6rem .75rem;
-  background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.15);
-  border-radius:8px;color:#fca5a5;font-size:.82rem;font-weight:500;
+  background:rgba(var(--red-rgb),.08);border:1px solid rgba(var(--red-rgb),.15);
+  border-radius:8px;color:var(--red-ink);font-size:.82rem;font-weight:500;
   cursor:pointer;transition:all .15s;
 }
-.logout-btn:hover{background:rgba(239,68,68,.15);}
+.logout-btn:hover{background:rgba(var(--red-rgb),.15);}
 
 /* ── Main ── */
 .main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh;min-width:0;}
 .topbar{
-  background:rgba(10,10,20,.8);backdrop-filter:blur(12px);
+  background:var(--topbar-bg);backdrop-filter:blur(12px);
   border-bottom:1px solid var(--border);
   padding:.9rem 1.75rem;display:flex;align-items:center;justify-content:space-between;
   position:sticky;top:0;z-index:50;
 }
-.topbar-title{font-size:1.05rem;font-weight:700;color:#fff;}
+.topbar-title{font-size:1.05rem;font-weight:700;color:var(--text-strong);}
 .topbar-right{display:flex;align-items:center;gap:.75rem;}
 .live-indicator{display:flex;align-items:center;gap:.4rem;font-size:.78rem;color:var(--green);}
 .live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 1.4s infinite;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-.refresh-btn{
-  background:rgba(255,255,255,.06);border:1px solid var(--border);
+.refresh-btn,.theme-toggle-btn{
+  background:rgba(var(--wash-rgb),.06);border:1px solid var(--border);
   color:var(--muted2);border-radius:8px;padding:.4rem .8rem;
   font-size:.8rem;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:.4rem;
 }
-.refresh-btn:hover{background:rgba(255,255,255,.1);color:#fff;}
+.refresh-btn:hover,.theme-toggle-btn:hover{background:rgba(var(--wash-rgb),.1);color:var(--text-strong);}
 
 /* ── Content ── */
 .content{flex:1;padding:1.5rem 1.75rem;min-width:0;}
@@ -107,67 +145,67 @@ nav{flex:1;padding:.75rem 0;overflow-y:auto;}
   padding:1.25rem 1.5rem;display:flex;align-items:center;gap:1rem;
   transition:border-color .2s,transform .2s;
 }
-.stat-card:hover{border-color:rgba(139,92,246,.3);transform:translateY(-2px);}
+.stat-card:hover{border-color:rgba(var(--accent-rgb),.3);transform:translateY(-2px);}
 .stat-icon{
   width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;
   font-size:1.3rem;flex-shrink:0;
 }
-.stat-card .num{font-size:1.8rem;font-weight:800;color:#fff;line-height:1;}
+.stat-card .num{font-size:1.8rem;font-weight:800;color:var(--text-strong);line-height:1;}
 .stat-card .lbl{font-size:.75rem;color:var(--muted);margin-top:.25rem;font-weight:500;}
 .stat-card .trend{font-size:.72rem;margin-top:.3rem;font-weight:600;}
-.trend.up{color:var(--green);}
-.trend.alert{color:var(--red);}
+.trend.up{color:var(--green-ink);}
+.trend.alert{color:var(--red-ink);}
 
 /* ── Section header ── */
 .sec-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem;}
-.sec-title{font-size:1.05rem;font-weight:700;color:#fff;display:flex;align-items:center;gap:.5rem;}
-.sec-title i{color:var(--purple-lt);}
+.sec-title{font-size:1.05rem;font-weight:700;color:var(--text-strong);display:flex;align-items:center;gap:.5rem;}
+.sec-title i{color:var(--accent-ink);}
 
 /* ── Table card ── */
 .table-card{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;transition:border-color .2s;}
-.table-card:hover{border-color:rgba(139,92,246,.2);}
+.table-card:hover{border-color:rgba(var(--accent-rgb),.2);}
 .table-toolbar{
   padding:1rem 1.25rem;border-bottom:1px solid var(--border);
   display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;
 }
 .search-box{
   display:flex;align-items:center;gap:.5rem;
-  background:rgba(255,255,255,.05);border:1px solid var(--border);
+  background:rgba(var(--wash-rgb),.05);border:1px solid var(--border);
   border-radius:8px;padding:.4rem .8rem;flex:1;min-width:200px;
 }
-.search-box input{background:none;border:none;color:#fff;font-family:inherit;font-size:.85rem;outline:none;width:100%;}
+.search-box input{background:none;border:none;color:var(--text-strong);font-family:inherit;font-size:.85rem;outline:none;width:100%;}
 .search-box i{color:var(--muted);font-size:.85rem;}
 .table-wrap{overflow-x:auto;}
 table{width:100%;border-collapse:collapse;}
 th{
-  background:rgba(255,255,255,.03);padding:.75rem 1rem;
+  background:rgba(var(--wash-rgb),.03);padding:.75rem 1rem;
   text-align:left;font-size:.72rem;color:var(--muted);
   font-weight:600;letter-spacing:.4px;text-transform:uppercase;
   border-bottom:1px solid var(--border);white-space:nowrap;
 }
 td{
-  padding:.75rem 1rem;font-size:.83rem;border-bottom:1px solid rgba(255,255,255,.04);
+  padding:.75rem 1rem;font-size:.83rem;border-bottom:1px solid rgba(var(--wash-rgb),.04);
   color:var(--muted2);vertical-align:middle;overflow-wrap:anywhere;
 }
 tr:last-child td{border-bottom:none;}
-tr:hover td{background:rgba(255,255,255,.02);}
-.td-main{color:#fff;font-weight:500;}
+tr:hover td{background:rgba(var(--wash-rgb),.02);}
+.td-main{color:var(--text-strong);font-weight:500;}
 .avatar-cell{display:flex;align-items:center;gap:.65rem;}
 .avatar{
   width:32px;height:32px;border-radius:8px;border:1px solid var(--border);
-  font-size:.75rem;background:linear-gradient(135deg,var(--purple),var(--pink));
+  font-size:.75rem;background:linear-gradient(135deg,var(--accent2),var(--accent));
   display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;
   flex-shrink:0;
 }
 
 /* ── Badges ── */
 .badge{display:inline-flex;align-items:center;font-size:.7rem;font-weight:600;padding:.2rem .55rem;border-radius:99px;}
-.badge-purple{background:rgba(139,92,246,.15);color:var(--purple-lt);}
-.badge-green{background:rgba(34,197,94,.12);color:#86efac;}
-.badge-red{background:rgba(239,68,68,.12);color:#fca5a5;}
-.badge-amber{background:rgba(245,158,11,.12);color:#fcd34d;}
-.badge-cyan{background:rgba(6,182,212,.12);color:#67e8f9;}
-.badge-gray{background:rgba(100,116,139,.12);color:var(--muted2);}
+.badge-purple{background:rgba(var(--accent-rgb),.15);color:var(--accent-ink);}
+.badge-green{background:rgba(var(--green-rgb),.12);color:var(--green-ink);}
+.badge-red{background:rgba(var(--red-rgb),.12);color:var(--red-ink);}
+.badge-amber{background:rgba(var(--amber-rgb),.12);color:var(--amber-ink);}
+.badge-cyan{background:rgba(var(--accent3-rgb),.12);color:var(--accent3-ink);}
+.badge-gray{background:rgba(var(--gray-rgb),.12);color:var(--muted2);}
 
 /* ── Action buttons ── */
 .btn{
@@ -175,14 +213,14 @@ tr:hover td{background:rgba(255,255,255,.02);}
   border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;
   border:none;transition:all .15s;font-family:inherit;
 }
-.btn-primary{background:var(--purple);color:#fff;}
-.btn-primary:hover{background:#7c3aed;}
-.btn-danger{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.2);}
-.btn-danger:hover{background:rgba(239,68,68,.25);}
-.btn-success{background:rgba(34,197,94,.15);color:#86efac;border:1px solid rgba(34,197,94,.2);}
-.btn-success:hover{background:rgba(34,197,94,.25);}
-.btn-ghost{background:rgba(255,255,255,.06);color:var(--muted2);border:1px solid var(--border);}
-.btn-ghost:hover{color:#fff;background:rgba(255,255,255,.1);}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{filter:brightness(.9);}
+.btn-danger{background:rgba(var(--red-rgb),.15);color:var(--red-ink);border:1px solid rgba(var(--red-rgb),.2);}
+.btn-danger:hover{background:rgba(var(--red-rgb),.25);}
+.btn-success{background:rgba(var(--green-rgb),.15);color:var(--green-ink);border:1px solid rgba(var(--green-rgb),.2);}
+.btn-success:hover{background:rgba(var(--green-rgb),.25);}
+.btn-ghost{background:rgba(var(--wash-rgb),.06);color:var(--muted2);border:1px solid var(--border);}
+.btn-ghost:hover{color:var(--text-strong);background:rgba(var(--wash-rgb),.1);}
 .btn-sm{padding:.3rem .65rem;font-size:.75rem;}
 .btn-icon{padding:.4rem;width:30px;height:30px;justify-content:center;gap:0;flex-shrink:0;}
 .action-cell{display:flex;gap:.4rem;flex-wrap:nowrap;white-space:nowrap;}
@@ -200,18 +238,18 @@ tr:hover td{background:rgba(255,255,255,.02);}
 .form-group label{display:block;font-size:.78rem;color:var(--muted);font-weight:500;margin-bottom:.45rem;}
 .form-input,.form-select,.form-textarea{
   width:100%;padding:.7rem 1rem;
-  background:rgba(255,255,255,.05);border:1px solid var(--border);
-  border-radius:10px;color:#fff;font-family:inherit;font-size:.88rem;outline:none;
+  background:rgba(var(--wash-rgb),.05);border:1px solid var(--border);
+  border-radius:10px;color:var(--text-strong);font-family:inherit;font-size:.88rem;outline:none;
   transition:border-color .2s;
 }
-.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--purple);}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--accent);}
 .form-textarea{resize:vertical;min-height:100px;}
-.form-select option{background:#1a1a2e;}
+.form-select option{background:var(--card2);color:var(--text);}
 .input-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
 @media(max-width:600px){.input-grid{grid-template-columns:1fr;}}
 
 /* ── Logs table ── */
-.log-action{font-family:monospace;font-size:.75rem;color:var(--cyan);}
+.log-action{font-family:monospace;font-size:.75rem;color:var(--accent3-ink);}
 
 /* ── SOS severity ── */
 .sos-active{animation:sosBlink 1.5s ease infinite;}
@@ -225,12 +263,12 @@ tr:hover td{background:rgba(255,255,255,.02);}
 .mini-chart{
   background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.5rem;
 }
-.mini-chart .chart-title{font-size:.82rem;font-weight:600;color:#fff;margin-bottom:1.1rem;}
+.mini-chart .chart-title{font-size:.82rem;font-weight:600;color:var(--text-strong);margin-bottom:1.1rem;}
 .chart-title-sub{font-weight:400;color:var(--muted2);font-size:.72rem;margin-left:.15rem;}
 
 .trend-card{display:flex;flex-direction:column;}
 .trend-chart{height:190px;display:flex;flex-direction:column;}
-.trend-total{font-size:1.6rem;font-weight:700;color:#fff;line-height:1.1;margin-bottom:.75rem;}
+.trend-total{font-size:1.6rem;font-weight:700;color:var(--text-strong);line-height:1.1;margin-bottom:.75rem;}
 .trend-total-lbl{font-size:.68rem;font-weight:400;color:var(--muted2);margin-left:.4rem;}
 .trend-svg-wrap{flex:1;min-height:0;}
 .trend-axis{display:flex;justify-content:space-between;margin-top:.6rem;}
@@ -238,8 +276,8 @@ tr:hover td{background:rgba(255,255,255,.02);}
 .trend-empty{height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted2);font-size:.78rem;text-align:center;gap:.4rem;}
 .bar-row{display:flex;align-items:center;gap:.75rem;margin-bottom:.6rem;}
 .bar-label{font-size:.75rem;color:var(--muted);width:80px;flex-shrink:0;}
-.bar-track{flex:1;height:8px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;}
-.bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--purple),var(--pink));transition:width .8s ease;}
+.bar-track{flex:1;height:8px;background:rgba(var(--wash-rgb),.06);border-radius:99px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent2),var(--accent));transition:width .8s ease;}
 .bar-val{font-size:.72rem;color:var(--muted2);width:30px;text-align:right;}
 
 /* ── Toast ── */
@@ -265,7 +303,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
   padding:2rem;width:100%;max-width:500px;margin:1rem;
   box-shadow:0 24px 60px rgba(0,0,0,.6);
 }
-.modal-title{font-size:1rem;font-weight:700;color:#fff;margin-bottom:1.5rem;display:flex;align-items:center;gap:.5rem;}
+.modal-title{font-size:1rem;font-weight:700;color:var(--text-strong);margin-bottom:1.5rem;display:flex;align-items:center;gap:.5rem;}
 .modal-footer{display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;}
 
 /* ── Empty state ── */
@@ -279,7 +317,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
 /* ── Skeleton loading shimmer ── */
 .skeleton-bar{
   height:14px;border-radius:6px;
-  background:linear-gradient(90deg,var(--card2) 25%,rgba(255,255,255,.06) 37%,var(--card2) 63%);
+  background:linear-gradient(90deg,var(--card2) 25%,rgba(var(--wash-rgb),.06) 37%,var(--card2) 63%);
   background-size:400% 100%;
   animation:shimmer 1.4s ease infinite;
 }
@@ -292,7 +330,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
 .activity-list{display:flex;flex-direction:column;gap:.6rem;}
 .activity-item{
   display:flex;align-items:start;gap:.75rem;
-  background:rgba(255,255,255,.03);border:1px solid var(--border);
+  background:rgba(var(--wash-rgb),.03);border:1px solid var(--border);
   border-radius:10px;padding:.75rem 1rem;
 }
 .activity-icon{
@@ -300,7 +338,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
   justify-content:center;font-size:.85rem;flex-shrink:0;
 }
 .activity-text{font-size:.82rem;color:var(--muted2);}
-.activity-text strong{color:#fff;}
+.activity-text strong{color:var(--text-strong);}
 .activity-time{font-size:.73rem;color:var(--muted);margin-top:.2rem;}
 </style>
 </head>
@@ -384,6 +422,9 @@ tr:hover td{background:rgba(255,255,255,.02);}
     <div class="topbar-title" id="topbarTitle">Overview</div>
     <div class="topbar-right">
       <div class="live-indicator"><span class="live-dot"></span>Live</div>
+      <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Switch theme">
+        <i class="fas fa-moon" id="themeToggleIcon"></i>
+      </button>
       <button class="refresh-btn" onclick="refreshCurrent()">
         <i class="fas fa-sync-alt"></i> Refresh
       </button>
@@ -395,12 +436,12 @@ tr:hover td{background:rgba(255,255,255,.02);}
     <!-- ════ OVERVIEW ════ -->
     <div class="section active" id="sec-overview">
       <div class="stats-grid" id="statsGrid">
-        <div class="stat-card"><div class="stat-icon" style="background:rgba(139,92,246,.15);color:var(--purple-lt);"><i class="fas fa-users"></i></div><div><div class="num" id="st-users">—</div><div class="lbl">Total Users</div><div class="trend up" id="st-users-new"></div></div></div>
-        <div class="stat-card"><div class="stat-icon" style="background:rgba(6,182,212,.12);color:var(--cyan);"><i class="fas fa-comments"></i></div><div><div class="num" id="st-posts">—</div><div class="lbl">Community Posts</div></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:rgba(var(--accent-rgb),.15);color:var(--accent-ink);"><i class="fas fa-users"></i></div><div><div class="num" id="st-users">—</div><div class="lbl">Total Users</div><div class="trend up" id="st-users-new"></div></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:rgba(var(--accent3-rgb),.12);color:var(--accent3);"><i class="fas fa-comments"></i></div><div><div class="num" id="st-posts">—</div><div class="lbl">Community Posts</div></div></div>
         <div class="stat-card"><div class="stat-icon" style="background:rgba(239,68,68,.12);color:var(--red);"><i class="fas fa-exclamation-triangle"></i></div><div><div class="num" id="st-sos">—</div><div class="lbl">SOS Events</div><div class="trend alert" id="st-sos-active"></div></div></div>
         <div class="stat-card"><div class="stat-icon" style="background:rgba(245,158,11,.12);color:var(--amber);"><i class="fas fa-file-alt"></i></div><div><div class="num" id="st-incidents">—</div><div class="lbl">Incident Reports</div></div></div>
         <div class="stat-card"><div class="stat-icon" style="background:rgba(34,197,94,.12);color:var(--green);"><i class="fas fa-satellite-dish"></i></div><div><div class="num" id="st-tracking">—</div><div class="lbl">Active Tracking</div></div></div>
-        <div class="stat-card"><div class="stat-icon" style="background:rgba(236,72,153,.12);color:var(--pink);"><i class="fas fa-bell"></i></div><div><div class="num" id="st-alerts">—</div><div class="lbl">Safety Alerts</div></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:rgba(var(--accent2-rgb),.12);color:var(--accent2);"><i class="fas fa-bell"></i></div><div><div class="num" id="st-alerts">—</div><div class="lbl">Safety Alerts</div></div></div>
       </div>
 
       <div class="chart-row chart-row-3">
@@ -666,7 +707,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
 
       <!-- Status card -->
       <div id="smsStatusCard" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.5rem;">
-        <div class="stat-card"><div class="stat-icon" style="background:rgba(139,92,246,.15);color:var(--purple-lt);"><i class="fas fa-plug"></i></div><div><div class="num" id="sms-configured">-</div><div class="lbl">Status</div></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:rgba(var(--accent-rgb),.15);color:var(--accent-ink);"><i class="fas fa-plug"></i></div><div><div class="num" id="sms-configured">-</div><div class="lbl">Status</div></div></div>
         <div class="stat-card"><div class="stat-icon" style="background:rgba(59,130,246,.12);color:#60a5fa;"><i class="fas fa-phone"></i></div><div><div class="num" id="sms-from" style="font-size:.95rem;">-</div><div class="lbl">From Number</div></div></div>
         <div class="stat-card"><div class="stat-icon" style="background:rgba(245,158,11,.12);color:#fbbf24;"><i class="fas fa-fingerprint"></i></div><div><div class="num" id="sms-sid" style="font-size:.9rem;">-</div><div class="lbl">Account SID</div></div></div>
       </div>
@@ -684,7 +725,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
           <span class="input-group-text"><i class="fas fa-mobile-alt"></i></span>
           <input type="tel" id="smsTestPhone" class="form-control"
             placeholder="+919876543210"
-            style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#fff;">
+            style="background:rgba(var(--wash-rgb),.05);border:1px solid rgba(var(--wash-rgb),.1);color:var(--text-strong);">
           <button class="btn btn-primary" id="smsTestBtn" onclick="runSmsTest()">
             <i class="fas fa-paper-plane me-1"></i> Send Test
           </button>
@@ -709,7 +750,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
 
       <!-- ── Current Stats ── -->
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1rem;margin-bottom:1.5rem;" id="safetyStatsGrid">
-        <div class="stat-card"><div class="stat-icon" style="background:rgba(139,92,246,.15);color:var(--purple-lt);"><i class="fas fa-database"></i></div><div><div class="num" id="sd-total">—</div><div class="lbl">Total Records</div></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:rgba(var(--accent-rgb),.15);color:var(--accent-ink);"><i class="fas fa-database"></i></div><div><div class="num" id="sd-total">—</div><div class="lbl">Total Records</div></div></div>
         <div class="stat-card"><div class="stat-icon" style="background:rgba(239,68,68,.12);color:var(--red);"><i class="fas fa-skull-crossbones"></i></div><div><div class="num" id="sd-high">—</div><div class="lbl">High Risk</div></div></div>
         <div class="stat-card"><div class="stat-icon" style="background:rgba(245,158,11,.12);color:var(--amber);"><i class="fas fa-exclamation"></i></div><div><div class="num" id="sd-medium">—</div><div class="lbl">Medium Risk</div></div></div>
         <div class="stat-card"><div class="stat-icon" style="background:rgba(34,197,94,.12);color:var(--green);"><i class="fas fa-shield-alt"></i></div><div><div class="num" id="sd-low">—</div><div class="lbl">Low Risk</div></div></div>
@@ -727,7 +768,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
           border:2px dashed var(--border);border-radius:14px;padding:2.5rem 1.5rem;
           text-align:center;cursor:pointer;margin-bottom:1.25rem;
           transition:border-color .2s,background .2s;
-        " ondragover="event.preventDefault();this.style.borderColor='var(--purple)';this.style.background='rgba(139,92,246,.06)';" ondragleave="this.style.borderColor='';this.style.background='';" ondrop="handleCsvDrop(event)" onclick="document.getElementById('csvFileInput').click()">
+        " ondragover="event.preventDefault();this.style.borderColor='var(--accent)';this.style.background='rgba(var(--accent-rgb),.06)';" ondragleave="this.style.borderColor='';this.style.background='';" ondrop="handleCsvDrop(event)" onclick="document.getElementById('csvFileInput').click()">
           <i class="fas fa-cloud-upload-alt" style="font-size:2rem;color:var(--muted);display:block;margin-bottom:.75rem;"></i>
           <div style="font-size:.9rem;color:var(--muted2);font-weight:500;">Drag & drop CSV here, or <span style="color:var(--purple-lt);text-decoration:underline;">click to browse</span></div>
           <div style="font-size:.75rem;color:var(--muted);margin-top:.4rem;">Max 10 MB · .csv only</div>
@@ -752,8 +793,8 @@ tr:hover td{background:rgba(255,255,255,.02);}
         <!-- Progress -->
         <div id="csvProgressWrap" style="display:none;margin-bottom:1rem;">
           <div style="font-size:.78rem;color:var(--muted);margin-bottom:.4rem;" id="csvProgressLabel">Uploading…</div>
-          <div style="background:rgba(255,255,255,.06);border-radius:99px;height:6px;overflow:hidden;">
-            <div id="csvProgressBar" style="height:100%;background:linear-gradient(90deg,var(--purple),var(--pink));width:0%;transition:width .4s ease;border-radius:99px;"></div>
+          <div style="background:rgba(var(--wash-rgb),.06);border-radius:99px;height:6px;overflow:hidden;">
+            <div id="csvProgressBar" style="height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));width:0%;transition:width .4s ease;border-radius:99px;"></div>
           </div>
         </div>
 
@@ -832,7 +873,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
 <div class="modal-overlay" id="selfieLightboxModal">
   <div class="modal-box" style="max-width:420px;text-align:center;">
     <div class="modal-title"><i class="fas fa-user-circle" style="color:var(--purple-lt);"></i> Verification Photo</div>
-    <img id="selfieLightboxImg" src="" alt="Full-size selfie" style="width:100%;border-radius:12px;max-height:60vh;object-fit:contain;background:rgba(255,255,255,.04);">
+    <img id="selfieLightboxImg" src="" alt="Full-size selfie" style="width:100%;border-radius:12px;max-height:60vh;object-fit:contain;background:rgba(var(--wash-rgb),.04);">
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('selfieLightboxModal')">Close</button>
     </div>
@@ -1109,6 +1150,29 @@ function adminLogout() {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  THEME (dark/light — see the early inline <script> in <head> for the
+//  flash-free initial theme choice; this just handles the toggle button)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function applyThemeIcon(theme) {
+    const icon = document.getElementById('themeToggleIcon');
+    if (icon) icon.className = theme === 'light' ? 'fas fa-sun' : 'fas fa-moon';
+}
+
+function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('hs_admin_theme', next);
+    applyThemeIcon(next);
+    // Chart lines and activity bars are rendered with a literal hex color
+    // baked in at render time (not a live var() reference), so re-render the
+    // current section to pick up the new theme's colors immediately.
+    if (typeof currentSection !== 'undefined') loadSection(currentSection);
+}
+
+applyThemeIcon(document.documentElement.getAttribute('data-theme') || 'dark');
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  NAVIGATION
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 let currentSection = 'overview';
@@ -1166,11 +1230,11 @@ async function loadOverview() {
         // Activity bars
         const max = Math.max(stats.totalUsers, stats.totalPosts, stats.totalSosEvents, stats.totalIncidents, 1);
         document.getElementById('activityBars').innerHTML = [
-            ['Users', stats.totalUsers, 'var(--purple)'],
-            ['Posts', stats.totalPosts, 'var(--cyan)'],
+            ['Users', stats.totalUsers, 'var(--accent)'],
+            ['Posts', stats.totalPosts, 'var(--accent3)'],
             ['SOS Events', stats.totalSosEvents, 'var(--red)'],
             ['Incidents', stats.totalIncidents, 'var(--amber)'],
-            ['Alerts', stats.totalAlerts, 'var(--pink)'],
+            ['Alerts', stats.totalAlerts, 'var(--accent2)'],
         ].map(([label, val, color]) => `
             <div class="bar-row">
                 <div class="bar-label">${label}</div>
@@ -1196,8 +1260,8 @@ async function loadOverview() {
         const actionIcons = { BROADCAST:'bullhorn', DELETE_POST:'trash', CREATE_POST:'plus', DELETE_ALERT:'times' };
         document.getElementById('recentActivityList').innerHTML = (logs||[]).slice(0,6).map(l => `
             <div class="activity-item">
-                <div class="activity-icon" style="background:rgba(139,92,246,.12);">
-                    <i class="fas fa-${actionIcons[l.action]||'cog'}" style="color:var(--purple-lt);font-size:.8rem;"></i>
+                <div class="activity-icon" style="background:rgba(var(--accent-rgb),.12);">
+                    <i class="fas fa-${actionIcons[l.action]||'cog'}" style="color:var(--accent-ink);font-size:.8rem;"></i>
                 </div>
                 <div>
                     <div class="activity-text"><strong>${esc(l.action)}</strong> by ${esc(l.admin)}</div>
@@ -1214,7 +1278,7 @@ async function loadOverview() {
         allSos = sosRes.events || allSos;
         allIncidents = incidentsRes.incidents || allIncidents;
         const rootStyle = getComputedStyle(document.documentElement);
-        renderTrendChart('chartSignups', bucketByDay(allUsers, 'createdAt', 14), rootStyle.getPropertyValue('--purple').trim());
+        renderTrendChart('chartSignups', bucketByDay(allUsers, 'createdAt', 14), rootStyle.getPropertyValue('--accent').trim());
         renderTrendChart('chartSos', bucketByDay(allSos, 'triggeredAt', 14), rootStyle.getPropertyValue('--red').trim());
         renderTrendChart('chartIncidents', bucketByDay(allIncidents, 'createdAt', 14), rootStyle.getPropertyValue('--amber').trim());
     } catch (e) {
@@ -1337,7 +1401,7 @@ function renderVerificationsTable(list, status) {
                <button class="btn btn-danger btn-sm" onclick="openRejectModal('${id}')"><i class="fas fa-times"></i> Reject</button>`
             : (u.verificationRejectionReason ? `<span style="font-size:.75rem;color:var(--muted);">${esc(u.verificationRejectionReason)}</span>` : '—');
         return `<tr>
-            <td>${hasSelfie ? `<img data-selfie-user="${id}" class="verification-selfie-thumb" style="width:44px;height:44px;border-radius:8px;object-fit:cover;background:rgba(255,255,255,.05);cursor:pointer;" alt="selfie" title="Click to view full size" onclick="openSelfieLightbox(this)">` : '<span style="color:var(--muted);">none</span>'}</td>
+            <td>${hasSelfie ? `<img data-selfie-user="${id}" class="verification-selfie-thumb" style="width:44px;height:44px;border-radius:8px;object-fit:cover;background:rgba(var(--wash-rgb),.05);cursor:pointer;" alt="selfie" title="Click to view full size" onclick="openSelfieLightbox(this)">` : '<span style="color:var(--muted);">none</span>'}</td>
             <td>${esc(u.name || 'Unknown')}</td>
             <td>${esc(u.email || '—')}</td>
             <td style="white-space:nowrap;">${timeAgo(u.verificationSubmittedAt)}</td>
@@ -1416,13 +1480,13 @@ async function viewUser(id) {
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1.25rem;">
                 ${[['Name',user.name||user.displayName||'—'],['Email',user.email||'—'],['Phone',user.phone||user.phoneNumber||'—'],
                    ['Location',user.city||user.location||'—'],['Joined',fmtDate(user.createdAt)],['Status',user.status||'active']]
-                   .map(([k,v])=>`<div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;padding:.65rem;">
+                   .map(([k,v])=>`<div style="background:rgba(var(--wash-rgb),.03);border:1px solid var(--border);border-radius:8px;padding:.65rem;">
                        <div style="font-size:.7rem;color:var(--muted);margin-bottom:.25rem;">${k}</div>
-                       <div style="font-size:.85rem;color:#fff;">${esc(String(v))}</div></div>`).join('')}
+                       <div style="font-size:.85rem;color:var(--text-strong);">${esc(String(v))}</div></div>`).join('')}
             </div>
             <div style="font-size:.78rem;color:var(--muted);margin-bottom:.6rem;font-weight:600;">GUARDIAN CONTACTS (${contacts.length})</div>
             ${contacts.length ? contacts.map(c=>`
-                <div style="background:rgba(139,92,246,.06);border:1px solid rgba(139,92,246,.15);border-radius:8px;padding:.65rem .9rem;margin-bottom:.5rem;">
+                <div style="background:rgba(var(--accent-rgb),.06);border:1px solid rgba(var(--accent-rgb),.15);border-radius:8px;padding:.65rem .9rem;margin-bottom:.5rem;">
                     <div style="font-weight:600;font-size:.85rem;">${esc(c.name||'Guardian')}</div>
                     <div style="font-size:.78rem;color:var(--muted2);">${esc(c.email||'')} ${c.phone?'· '+esc(c.phone):''} ${c.relationship?'· '+esc(c.relationship):''}</div>
                 </div>`).join('')
@@ -1657,9 +1721,9 @@ async function sendBroadcast() {
         });
         document.getElementById('bcastResult').style.display = 'block';
         document.getElementById('bcastResult').innerHTML = `
-            <div style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:10px;padding:.85rem 1rem;">
+            <div style="background:rgba(var(--green-rgb),.08);border:1px solid rgba(var(--green-rgb),.2);border-radius:10px;padding:.85rem 1rem;">
                 <i class="fas fa-check-circle" style="color:var(--green);"></i>
-                <strong style="color:#86efac;"> Broadcast sent</strong>
+                <strong style="color:var(--green-ink);"> Broadcast sent</strong>
                 <span style="color:var(--muted);font-size:.82rem;"> — reached ${connectedClients||0} connected user(s)</span>
             </div>`;
         toast('Broadcast sent to ' + (connectedClients||0) + ' users');
@@ -1812,13 +1876,13 @@ async function uploadCsvFile() {
 
         result.style.display = 'block';
         result.innerHTML = `
-            <div style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:10px;padding:1rem;">
-                <div style="font-weight:700;color:#86efac;margin-bottom:.5rem;">✅ Import Successful</div>
+            <div style="background:rgba(var(--green-rgb),.08);border:1px solid rgba(var(--green-rgb),.2);border-radius:10px;padding:1rem;">
+                <div style="font-weight:700;color:var(--green-ink);margin-bottom:.5rem;">✅ Import Successful</div>
                 <div style="font-size:.82rem;color:var(--muted2);line-height:1.7;">
-                    <b style="color:#fff;">${esc(json.imported)}</b> records imported<br>
-                    <b style="color:#fff;">${esc(json.skipped)}</b> rows skipped<br>
-                    ${json.mode==='replace'?`<b style="color:#fff;">${esc(json.deleted)}</b> old records deleted<br>`:''}
-                    File: <b style="color:#fff;">${esc(json.filename)}</b>
+                    <b style="color:var(--text-strong);">${esc(json.imported)}</b> records imported<br>
+                    <b style="color:var(--text-strong);">${esc(json.skipped)}</b> rows skipped<br>
+                    ${json.mode==='replace'?`<b style="color:var(--text-strong);">${esc(json.deleted)}</b> old records deleted<br>`:''}
+                    File: <b style="color:var(--text-strong);">${esc(json.filename)}</b>
                 </div>
             </div>`;
 
@@ -1829,7 +1893,7 @@ async function uploadCsvFile() {
     } catch(err) {
         bar.style.width = '100%'; bar.style.background = 'var(--red)'; label.textContent = 'Failed!';
         result.style.display = 'block';
-        result.innerHTML = `<div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:1rem;color:#fca5a5;font-size:.83rem;">❌ ${esc(err.message)}</div>`;
+        result.innerHTML = `<div style="background:rgba(var(--red-rgb),.08);border:1px solid rgba(var(--red-rgb),.2);border-radius:10px;padding:1rem;color:var(--red-ink);font-size:.83rem;">❌ ${esc(err.message)}</div>`;
         toast(err.message, 'error');
         btn.disabled = false; bar.style.background = '';
     } finally {
@@ -1861,7 +1925,7 @@ async function loadSmsStatus() {
         const cfgEl = document.getElementById('sms-configured');
         if (cfgEl) {
             cfgEl.textContent = s.configured ? '✅ Live' : '⚠️ Mock';
-            cfgEl.style.color = s.configured ? '#86efac' : '#fbbf24';
+            cfgEl.style.color = s.configured ? 'var(--green-ink)' : 'var(--amber-ink)';
         }
         const fromEl = document.getElementById('sms-from');
         if (fromEl) fromEl.textContent = s.fromNumber || '—';
@@ -1887,25 +1951,25 @@ async function runSmsTest() {
         result.style.display = 'block';
         if (json.success) {
             result.innerHTML = `
-                <div style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:10px;padding:.9rem 1rem;font-size:.82rem;">
-                    <div style="font-weight:700;color:#86efac;margin-bottom:.4rem;">✅ Test SMS Sent</div>
+                <div style="background:rgba(var(--green-rgb),.08);border:1px solid rgba(var(--green-rgb),.2);border-radius:10px;padding:.9rem 1rem;font-size:.82rem;">
+                    <div style="font-weight:700;color:var(--green-ink);margin-bottom:.4rem;">✅ Test SMS Sent</div>
                     <div style="color:var(--muted2);line-height:1.8;">
-                        To: <b style="color:#fff;">${esc(json.result?.to || phone)}</b><br>
+                        To: <b style="color:var(--text-strong);">${esc(json.result?.to || phone)}</b><br>
                         SID: <code style="font-size:.8rem;">${esc(json.result?.sid || 'mock')}</code><br>
-                        ${json.result?.mock ? '<span style="color:#fbbf24;">⚠️ Mock mode — Twilio not configured</span>' : `Status: <b style="color:#fff;">${esc(json.result?.status || 'queued')}</b>`}
+                        ${json.result?.mock ? '<span style="color:var(--amber-ink);">⚠️ Mock mode — Twilio not configured</span>' : `Status: <b style="color:var(--text-strong);">${esc(json.result?.status || 'queued')}</b>`}
                     </div>
                 </div>`;
             toast(`✅ Test SMS sent to ${json.result?.to || phone}`);
         } else {
             const r = json.result || {};
             result.innerHTML = `
-                <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:.9rem 1rem;font-size:.82rem;color:#fca5a5;">
+                <div style="background:rgba(var(--red-rgb),.08);border:1px solid rgba(var(--red-rgb),.2);border-radius:10px;padding:.9rem 1rem;font-size:.82rem;color:var(--red-ink);">
                     <div style="font-weight:700;margin-bottom:.4rem;">❌ Delivery Failed</div>
                     <div style="line-height:1.8;">
                         Category: <b>${esc(r.category || 'unknown')}</b><br>
                         Error: ${esc(r.error || json.message || 'Unknown error')}<br>
                         ${r.twilioCode ? `Twilio code: <code>${r.twilioCode}</code><br>` : ''}
-                        ${r.hint ? `<span style="color:#fbbf24;">${esc(r.hint)}</span>` : ''}
+                        ${r.hint ? `<span style="color:var(--amber-ink);">${esc(r.hint)}</span>` : ''}
                     </div>
                 </div>`;
             toast(r.error || json.message || 'SMS failed', 'error');
