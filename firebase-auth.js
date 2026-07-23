@@ -24,7 +24,7 @@ import { auth } from "./firebase-config.js";
  * Uses Firebase UID as the document key so the admin dashboard can
  * look up any user in O(1) without secondary indexes.
  */
-async function syncUserToFirestore(user) {
+async function syncUserToFirestore(user, consent = {}) {
     if (!user || !user.uid) return;
     try {
         const body = {
@@ -33,6 +33,12 @@ async function syncUserToFirestore(user) {
             name: user.displayName || user.email?.split('@')[0] || 'Her Shield User',
             photoURL: user.photoURL || null,
         };
+        // Only meaningful the first time a doc is created (routes/users.js
+        // POST /upsert ignores these on the update-existing-user branch) —
+        // passed through from registerWithEmail so consent is captured
+        // atomically at signup instead of a separate follow-up call.
+        if (consent.agreedToTerms !== undefined) body.agreedToTerms = !!consent.agreedToTerms;
+        if (consent.agreedToGenderDeclaration !== undefined) body.agreedToGenderDeclaration = !!consent.agreedToGenderDeclaration;
         const res = await fetch('/api/users/upsert', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -210,7 +216,7 @@ class FirebaseAuthService {
         }
     }
 
-    async registerWithEmail(email, password, displayName) {
+    async registerWithEmail(email, password, displayName, consent = {}) {
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
@@ -224,7 +230,7 @@ class FirebaseAuthService {
             localStorage.setItem('hershield_user_name', displayName || user.email.split('@')[0]);
 
             // Sync / create Firestore user document
-            await syncUserToFirestore({ ...user, displayName: displayName || user.displayName });
+            await syncUserToFirestore({ ...user, displayName: displayName || user.displayName }, consent);
 
             return { success: true, user };
         } catch (error) {

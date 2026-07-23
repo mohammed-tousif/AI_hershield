@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <script src="/config.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Identity — Her Shield</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        :root {
+            --gradient-start: #FF9A86;
+            --gradient-middle: #FFB399;
+            --gradient-end: #FFD6A6;
+            --text-dark: #2b2117;
+        }
+
+        body {
+            font-family: -apple-system, 'SF Pro Display', 'Poppins', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background: #FDF9F5;
+        }
+
+        .gradient-background {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -1;
+            background: radial-gradient(circle at 20% 80%, rgba(255,154,134,0.12) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(255,214,166,0.10) 0%, transparent 50%);
+        }
+
+        .verify-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .verify-card {
+            background: #FFFFFF;
+            border-radius: 28px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 520px;
+            box-shadow: 0 20px 60px rgba(255,154,134,0.18);
+            border: 1px solid rgba(255,154,134,0.12);
+        }
+
+        .verify-header {
+            text-align: center;
+            margin-bottom: 1.75rem;
+        }
+
+        .verify-header h2 {
+            font-weight: 800;
+            color: #1F1209;
+            margin-bottom: 0.5rem;
+            font-size: 1.7rem;
+            letter-spacing: -0.5px;
+        }
+
+        .verify-header p {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #7A5C4F;
+            margin-bottom: 0;
+        }
+
+        .step-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: rgba(255, 154, 134, 0.12);
+            color: #b3543f;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+            padding: 0.35rem 0.85rem;
+            border-radius: 99px;
+            margin-bottom: 1rem;
+        }
+
+        .rejection-notice {
+            background: rgba(220, 53, 69, 0.08);
+            border: 1px solid rgba(220, 53, 69, 0.2);
+            border-radius: 12px;
+            padding: 0.85rem 1rem;
+            font-size: 0.85rem;
+            color: #a52834;
+            margin-bottom: 1.25rem;
+        }
+
+        .camera-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .camera-frame {
+            width: 100%;
+            max-width: 340px;
+            border-radius: 16px;
+            overflow: hidden;
+            background: #1a1a1a;
+            aspect-ratio: 4 / 3;
+        }
+
+        .camera-frame video,
+        .camera-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .btn-modern {
+            background: linear-gradient(90deg, var(--gradient-start), var(--gradient-middle));
+            border: none;
+            color: white;
+            padding: 0.85rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255, 179, 153, 0.2);
+        }
+
+        .btn-modern:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .camera-actions {
+            display: flex;
+            gap: 0.75rem;
+            width: 100%;
+            max-width: 340px;
+        }
+
+        .camera-actions .btn {
+            flex: 1;
+        }
+
+        .escape-hatch {
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: 0.85rem;
+        }
+
+        .escape-hatch a {
+            color: #7A5C4F;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        #verifyError {
+            font-size: 0.85rem;
+            text-align: center;
+        }
+
+        .loading-state {
+            text-align: center;
+            padding: 2rem 0;
+            color: #7A5C4F;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="gradient-background"></div>
+
+    <div class="verify-container">
+        <div class="verify-card">
+            <div class="verify-header">
+                <div class="step-pill"><i class="fas fa-shield-alt"></i> Last step</div>
+                <h2>Verify it's really you</h2>
+                <p>HerShield is a women-only safety platform. Take a quick live photo so our team can verify your
+                    account before you continue — no gallery uploads, just a real photo of you right now.</p>
+            </div>
+
+            <div id="verifyLoading" class="loading-state">
+                <i class="fas fa-spinner fa-spin fa-2x"></i>
+                <p class="mt-3 mb-0">Checking your account…</p>
+            </div>
+
+            <div id="verifyContent" style="display:none;">
+                <div id="rejectionNotice" class="rejection-notice" style="display:none;"></div>
+                <div id="cameraArea" class="camera-area"></div>
+                <div id="verifyError" class="text-danger mt-3" style="display:none;"></div>
+            </div>
+
+            <div class="escape-hatch">
+                <a onclick="signOutAndRestart()">Not you? Sign out and start over</a>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import './firebase-config.js';
+        import './firebase-auth.js';
+
+        let cameraStream = null;
+        let capturedBlob = null;
+
+        function stopCamera() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(t => t.stop());
+                cameraStream = null;
+            }
+        }
+        window.addEventListener('pagehide', stopCamera);
+
+        function escHtml(s) {
+            return String(s || '')
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        async function getFirebaseUserWithRetry(maxAttempts = 6) {
+            for (let i = 0; i < maxAttempts; i++) {
+                const u = window.authService && window.authService.getCurrentUser && window.authService.getCurrentUser();
+                if (u) return u;
+                await new Promise(r => setTimeout(r, 500));
+            }
+            return null;
+        }
+
+        window.signOutAndRestart = async function signOutAndRestart() {
+            stopCamera();
+            await window.authService.logout(); // already redirects to auth.html
+        };
+
+        function showOpenCameraButton() {
+            document.getElementById('cameraArea').innerHTML = `
+                <button class="btn btn-modern" id="openCameraBtn" onclick="openCamera()">
+                    <i class="fas fa-camera me-2"></i>Open Camera
+                </button>`;
+        }
+
+        window.openCamera = async function openCamera() {
+            const area = document.getElementById('cameraArea');
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                document.getElementById('verifyError').textContent = 'Your browser does not support camera capture. Please try a different browser.';
+                document.getElementById('verifyError').style.display = 'block';
+                return;
+            }
+
+            area.innerHTML = `
+                <div class="camera-frame">
+                    <video id="verifyVideo" autoplay playsinline muted></video>
+                </div>
+                <div class="camera-actions">
+                    <button class="btn btn-modern" id="captureBtn" onclick="capturePhoto()">
+                        <i class="fas fa-circle me-1"></i>Capture
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="cancelCamera()">Cancel</button>
+                </div>`;
+
+            try {
+                cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+                document.getElementById('verifyVideo').srcObject = cameraStream;
+            } catch (err) {
+                document.getElementById('verifyError').textContent = 'Camera access denied: ' + err.message + '. Please allow camera access to continue.';
+                document.getElementById('verifyError').style.display = 'block';
+                showOpenCameraButton();
+            }
+        };
+
+        window.cancelCamera = function cancelCamera() {
+            stopCamera();
+            showOpenCameraButton();
+        };
+
+        window.capturePhoto = function capturePhoto() {
+            const video = document.getElementById('verifyVideo');
+            const area = document.getElementById('cameraArea');
+            if (!video || !area) return;
+
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth || 480;
+            canvas.height = video.videoHeight || 360;
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+            stopCamera();
+
+            canvas.toBlob((blob) => {
+                capturedBlob = blob;
+                const previewUrl = URL.createObjectURL(blob);
+                area.innerHTML = `
+                    <div class="camera-frame"><img src="${previewUrl}" alt="Captured selfie preview"></div>
+                    <div class="camera-actions">
+                        <button class="btn btn-modern" id="submitBtn" onclick="submitSelfie()">
+                            <i class="fas fa-upload me-1"></i>Submit
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="openCamera()">
+                            <i class="fas fa-redo me-1"></i>Retake
+                        </button>
+                    </div>`;
+            }, 'image/jpeg', 0.9);
+        };
+
+        window.submitSelfie = async function submitSelfie() {
+            const btn = document.getElementById('submitBtn');
+            const errorEl = document.getElementById('verifyError');
+            errorEl.style.display = 'none';
+
+            if (!capturedBlob) {
+                errorEl.textContent = 'Please capture a photo first.';
+                errorEl.style.display = 'block';
+                return;
+            }
+            const user = await getFirebaseUserWithRetry(1);
+            if (!user) {
+                errorEl.textContent = 'Your session expired. Please sign in again.';
+                errorEl.style.display = 'block';
+                setTimeout(() => window.location.replace('auth.html'), 1500);
+                return;
+            }
+
+            const original = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+            try {
+                const token = await user.getIdToken();
+                const formData = new FormData();
+                formData.append('selfie', capturedBlob, 'selfie.jpg');
+
+                const res = await fetch('/api/verification/submit', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    body: formData,
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.message || 'Submission failed. Please try again.');
+
+                // Mandatory step complete — on to the real dashboard.
+                window.location.replace('dashboard.html');
+            } catch (err) {
+                // Block-and-retry: the account stays gated here until this succeeds,
+                // rather than silently letting a failed upload through.
+                errorEl.textContent = err.message;
+                errorEl.style.display = 'block';
+                btn.disabled = false;
+                btn.innerHTML = original;
+            }
+        };
+
+        async function init() {
+            const user = await getFirebaseUserWithRetry();
+            if (!user) {
+                window.location.replace('auth.html');
+                return;
+            }
+
+            try {
+                const token = await user.getIdToken();
+                const res = await fetch('/api/verification/status', {
+                    headers: { 'Authorization': 'Bearer ' + token },
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.verificationStatus === 'pending' || data.verificationStatus === 'verified') {
+                        // Already done (e.g. someone navigated back here manually) — no need to redo it.
+                        window.location.replace('dashboard.html');
+                        return;
+                    }
+                    if (data.verificationStatus === 'rejected' && data.verificationRejectionReason) {
+                        const notice = document.getElementById('rejectionNotice');
+                        notice.innerHTML = '<i class="fas fa-times-circle me-1"></i>Your previous submission wasn\'t approved: '
+                            + escHtml(data.verificationRejectionReason) + '. Please try again.';
+                        notice.style.display = 'block';
+                    }
+                }
+            } catch (_) {
+                // If the status check itself fails, still show the capture UI —
+                // submission will surface any real problem on its own.
+            }
+
+            document.getElementById('verifyLoading').style.display = 'none';
+            document.getElementById('verifyContent').style.display = 'block';
+            showOpenCameraButton();
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

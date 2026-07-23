@@ -102,6 +102,10 @@ router.get('/status', requireAuth, async (req, res) => {
             success: true,
             verificationStatus: user.verificationStatus || 'unverified',
             verificationRejectionReason: user.verificationRejectionReason || null,
+            // Only true for accounts created after the mandatory-verification-at-signup
+            // rollout (routes/users.js POST /upsert) — existing accounts never get this
+            // field, so auth.html's post-login redirect leaves them ungated.
+            verificationGateRequired: !!user.verificationGateRequired,
         });
     } catch (err) {
         res.status(err.statusCode || 500).json({ success: false, message: err.message });

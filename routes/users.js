@@ -36,6 +36,8 @@ router.post(
         body('name').optional().trim(),
         body('phone').optional().trim(),
         body('photoURL').optional(),
+        body('agreedToTerms').optional().isBoolean(),
+        body('agreedToGenderDeclaration').optional().isBoolean(),
     ],
     async (req, res) => {
         try {
@@ -44,7 +46,7 @@ router.post(
                 return res.status(400).json({ errors: errors.array() });
             }
 
-            const { firebaseUid, email, name, phone, photoURL } = req.body;
+            const { firebaseUid, email, name, phone, photoURL, agreedToTerms, agreedToGenderDeclaration } = req.body;
             const now = new Date();
 
             // Try to load existing document (keyed by firebaseUid)
@@ -87,6 +89,15 @@ router.post(
                 verificationReviewedAt: null,
                 verificationReviewedBy: null,
                 verificationRejectionReason: null,
+                // Accounts created from this point on must complete selfie
+                // verification before reaching the dashboard (see auth.html /
+                // verify-identity.html). Existing accounts never get this field
+                // retroactively, so they're unaffected — see routes/verification.js
+                // GET /status, which is what the frontend actually gates on.
+                verificationGateRequired: true,
+                agreedToTerms: !!agreedToTerms,
+                agreedToGenderDeclaration: !!agreedToGenderDeclaration,
+                consentAcceptedAt: (agreedToTerms && agreedToGenderDeclaration) ? now : null,
                 createdAt: now,
                 updatedAt: now,
             };
@@ -216,6 +227,8 @@ router.put(
         body('bloodGroup').optional().trim(),
         body('allergies').optional().trim(),
         body('medications').optional().trim(),
+        body('agreedToTerms').optional().isBoolean(),
+        body('agreedToGenderDeclaration').optional().isBoolean(),
     ],
     async (req, res) => {
         try {
@@ -224,7 +237,7 @@ router.put(
                 return res.status(400).json({ errors: errors.array() });
             }
 
-            const { name, phone, profilePicture, safetyPreferences, age, homeAddress, bloodGroup, allergies, medications } = req.body;
+            const { name, phone, profilePicture, safetyPreferences, age, homeAddress, bloodGroup, allergies, medications, agreedToTerms, agreedToGenderDeclaration } = req.body;
 
             const user = await usersFindById(req.params.userId);
             if (!user) return res.status(404).json({ error: 'User not found' });
@@ -237,6 +250,9 @@ router.put(
             if (bloodGroup !== undefined) user.bloodGroup = bloodGroup;
             if (allergies !== undefined) user.allergies = allergies;
             if (medications !== undefined) user.medications = medications;
+            if (agreedToTerms !== undefined) user.agreedToTerms = !!agreedToTerms;
+            if (agreedToGenderDeclaration !== undefined) user.agreedToGenderDeclaration = !!agreedToGenderDeclaration;
+            if (agreedToTerms && agreedToGenderDeclaration && !user.consentAcceptedAt) user.consentAcceptedAt = new Date();
             if (safetyPreferences) user.safetyPreferences = { ...user.safetyPreferences, ...safetyPreferences };
             user.updatedAt = new Date();
             await usersSave(user);

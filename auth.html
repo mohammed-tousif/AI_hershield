@@ -600,6 +600,29 @@
             modal.show();
         }
 
+        // After any successful login (any provider), check whether this account
+        // was created under the mandatory-selfie-verification rule and hasn't
+        // completed it yet — if so, send them to verify-identity.html instead
+        // of straight into the dashboard. Fails open to the dashboard on any
+        // network error here — this is a UX nudge, not a hard security gate
+        // (nothing server-side actually blocks dashboard.html either way).
+        async function redirectAfterVerificationCheck(user) {
+            let target = 'dashboard.html';
+            try {
+                const token = await user.getIdToken();
+                const res = await fetch('/api/verification/status', {
+                    headers: { 'Authorization': 'Bearer ' + token },
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.verificationGateRequired && !['pending', 'verified'].includes(data.verificationStatus)) {
+                        target = 'verify-identity.html';
+                    }
+                }
+            } catch (_) { /* fail open — see comment above */ }
+            window.location.replace(target);
+        }
+
         // Form handlers with Firebase authentication - EXPOSE GLOBALLY
         window.handleLogin = async function handleLogin(event) {
             event.preventDefault();
@@ -622,7 +645,7 @@
                 if (result.success) {
                     // Wait for Firebase auth state to propagate before redirecting
                     setTimeout(() => {
-                        window.location.replace('dashboard.html');
+                        redirectAfterVerificationCheck(result.user);
                     }, 1000);
                 } else {
                     throw new Error(result.error);
@@ -649,17 +672,21 @@
             const name = document.getElementById('signupName').value;
             const email = document.getElementById('signupEmail').value;
             const password = document.getElementById('signupPassword').value;
+            const agreedToTerms = document.getElementById('termsCheck').checked;
+            const agreedToGenderDeclaration = document.getElementById('genderDeclarationCheck').checked;
 
             button.disabled = true;
             button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating account...';
 
             try {
-                const result = await window.authService.registerWithEmail(email, password, name);
+                const result = await window.authService.registerWithEmail(email, password, name, { agreedToTerms, agreedToGenderDeclaration });
                 if (result.success) {
-                    button.disabled = false;
-                    button.innerHTML = 'Create Account';
-                    showNotification('Success', 'Account created successfully! Please log in.', 'success');
-                    switchTab('login');
+                    // Firebase signs the user in immediately on account creation —
+                    // send them straight into the mandatory selfie step rather than
+                    // back to the Login tab (which just meant logging in again).
+                    setTimeout(() => {
+                        window.location.replace('verify-identity.html');
+                    }, 500);
                 } else {
                     throw new Error(result.error);
                 }
@@ -733,7 +760,7 @@
                     }
                     // Wait for Firebase auth state to propagate before redirecting
                     setTimeout(() => {
-                        window.location.replace('dashboard.html');
+                        redirectAfterVerificationCheck(result.user);
                     }, 1000);
                 } else {
                     throw new Error(result.error);
@@ -777,7 +804,11 @@
                     await fetch(`/api/users/profile/${encodeURIComponent(user.uid)}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ phone }),
+                        body: JSON.stringify({
+                            phone,
+                            agreedToTerms: document.getElementById('completeTermsCheck').checked,
+                            agreedToGenderDeclaration: document.getElementById('completeGenderDeclarationCheck').checked,
+                        }),
                     }).catch(() => {});
                 }
 
@@ -790,7 +821,8 @@
 
                 const modalEl = document.getElementById('completeAccountModal');
                 bootstrap.Modal.getInstance(modalEl)?.hide();
-                window.location.replace('dashboard.html');
+                // Same as manual signup — mandatory selfie step before the dashboard.
+                window.location.replace('verify-identity.html');
             } catch (error) {
                 btn.disabled = false;
                 btn.innerHTML = 'Continue';
