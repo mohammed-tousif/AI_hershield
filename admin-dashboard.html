@@ -184,6 +184,15 @@ tr:hover td{background:rgba(255,255,255,.02);}
 .btn-ghost{background:rgba(255,255,255,.06);color:var(--muted2);border:1px solid var(--border);}
 .btn-ghost:hover{color:#fff;background:rgba(255,255,255,.1);}
 .btn-sm{padding:.3rem .65rem;font-size:.75rem;}
+.btn-icon{padding:.4rem;width:30px;height:30px;justify-content:center;gap:0;flex-shrink:0;}
+.action-cell{display:flex;gap:.4rem;flex-wrap:nowrap;white-space:nowrap;}
+
+/* Activity Breakdown / Recent Admin Actions often have very different amounts
+   of content (5 fixed bars vs up to 6 log entries) — since the grid stretches
+   both cards to equal height, center each card's content vertically so the
+   shorter one doesn't just leave a big empty gap at the bottom. */
+.mini-chart-balanced{display:flex;flex-direction:column;}
+.mini-chart-balanced > div:last-child{flex:1;display:flex;flex-direction:column;justify-content:center;}
 
 /* ── Broadcast ── */
 .broadcast-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.5rem;}
@@ -410,11 +419,11 @@ tr:hover td{background:rgba(255,255,255,.02);}
       </div>
 
       <div class="chart-row">
-        <div class="mini-chart">
+        <div class="mini-chart mini-chart-balanced">
           <div class="chart-title"><i class="fas fa-chart-bar me-2" style="color:var(--purple-lt);"></i>Activity Breakdown</div>
           <div id="activityBars"><div class="empty"><i class="fas fa-spinner spin"></i></div></div>
         </div>
-        <div class="mini-chart">
+        <div class="mini-chart mini-chart-balanced">
           <div class="chart-title"><i class="fas fa-history me-2" style="color:var(--cyan);"></i>Recent Admin Actions</div>
           <div id="recentActivityList"><div class="empty"><i class="fas fa-spinner spin"></i></div></div>
         </div>
@@ -1248,12 +1257,12 @@ function renderUsersTable(users) {
             <td><span class="badge ${guardians>0?'badge-green':'badge-gray'}">${guardians} guardian${guardians!==1?'s':''}</span></td>
             <td style="white-space:nowrap;">${timeAgo(u.createdAt)}</td>
             <td>${sevBadge(u.verificationStatus || 'unverified')}</td>
-            <td style="display:flex;gap:.35rem;flex-wrap:wrap;">
-                <button class="btn btn-ghost btn-sm" onclick="viewUser('${id}')"><i class="fas fa-eye"></i> View</button>
-                <button class="btn btn-ghost btn-sm" onclick="toggleUserActive('${id}', ${isActive})">
-                    <i class="fas fa-${isActive ? 'user-slash' : 'user-check'}"></i> ${isActive ? 'Deactivate' : 'Reactivate'}
+            <td class="action-cell">
+                <button class="btn btn-ghost btn-sm btn-icon" onclick="viewUser('${id}')" title="View details"><i class="fas fa-eye"></i></button>
+                <button class="btn btn-ghost btn-sm btn-icon" onclick="toggleUserActive('${id}', ${isActive})" title="${isActive ? 'Deactivate' : 'Reactivate'}">
+                    <i class="fas fa-${isActive ? 'user-slash' : 'user-check'}"></i>
                 </button>
-                <button class="btn btn-danger btn-sm" onclick="deleteUserAccount('${id}', '${esc(u.email || '')}')"><i class="fas fa-trash"></i> Delete</button>
+                <button class="btn btn-danger btn-sm btn-icon" onclick="deleteUserAccount('${id}', '${esc(u.email || '')}')" title="Delete"><i class="fas fa-trash"></i></button>
             </td>
         </tr>`;
     }).join('');
