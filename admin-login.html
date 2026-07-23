@@ -6,6 +6,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HerShield — Admin Login</title>
     <meta name="robots" content="noindex, nofollow">
+    <script>
+    (function () {
+        // Same flash-free init as admin-dashboard.html, reading the same
+        // localStorage key so the theme choice carries over between the two.
+        try {
+            var saved = localStorage.getItem('hs_admin_theme');
+            var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', theme);
+        } catch (_) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    })();
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -14,13 +27,21 @@
             --bg:#0f0f1a;
             --card:#16162a;
             --border:#252540;
-            --purple:#8b5cf6;
-            --purple-lt:#a78bfa;
-            --accent:#ec4899;
-            --text:#e2e8f0;
-            --muted:#64748b;
-            --danger:#ef4444;
-            --success:#22c55e;
+            --text:#e2e8f0;--text-strong:#fff;--muted:#64748b;
+            --wash-rgb:255,255,255;
+
+            --accent:#67A2C5;--accent-rgb:103,162,197;--accent-ink:#8FC6E8;
+            --accent2:#FFB6A6;--accent2-rgb:255,182,166;
+
+            --danger:#ef4444;--danger-rgb:239,68,68;--danger-ink:#fca5a5;
+            --success:#22c55e;--success-rgb:34,197,94;--success-ink:#86efac;
+        }
+        :root[data-theme="light"]{
+            --bg:#FFEBD3;--card:#fff;--border:#f0ddc7;
+            --text:#2b2117;--text-strong:#1a130d;--muted:#8a7a6c;
+            --wash-rgb:43,33,23;
+            --accent-ink:#2f6d92;
+            --danger-ink:#b91c1c;--success-ink:#15803d;
         }
         body{
             font-family:'Inter',sans-serif;
@@ -36,22 +57,31 @@
         /* animated bg */
         body::before{
             content:'';position:absolute;inset:0;
-            background:radial-gradient(ellipse at 20% 50%,rgba(139,92,246,.15) 0%,transparent 60%),
-                        radial-gradient(ellipse at 80% 20%,rgba(236,72,153,.1) 0%,transparent 60%);
+            background:radial-gradient(ellipse at 20% 50%,rgba(var(--accent-rgb),.15) 0%,transparent 60%),
+                        radial-gradient(ellipse at 80% 20%,rgba(var(--accent2-rgb),.15) 0%,transparent 60%);
             pointer-events:none;
         }
         .orb{
             position:absolute;border-radius:50%;filter:blur(80px);pointer-events:none;
             animation:float 8s ease-in-out infinite;
         }
-        .orb-1{width:400px;height:400px;background:rgba(139,92,246,.12);top:-100px;left:-100px;}
-        .orb-2{width:300px;height:300px;background:rgba(236,72,153,.08);bottom:-80px;right:-80px;animation-delay:-4s;}
+        .orb-1{width:400px;height:400px;background:rgba(var(--accent-rgb),.12);top:-100px;left:-100px;}
+        .orb-2{width:300px;height:300px;background:rgba(var(--accent2-rgb),.12);bottom:-80px;right:-80px;animation-delay:-4s;}
         @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-20px)}}
+        .theme-toggle-btn{
+            position:absolute;top:1.1rem;right:1.1rem;z-index:2;
+            width:36px;height:36px;border-radius:10px;
+            background:rgba(var(--wash-rgb),.06);border:1px solid var(--border);
+            color:var(--muted);cursor:pointer;transition:all .15s;
+            display:flex;align-items:center;justify-content:center;font-size:.9rem;
+        }
+        .theme-toggle-btn:hover{background:rgba(var(--wash-rgb),.1);color:var(--text-strong);}
 
         .login-wrap{
             position:relative;z-index:1;width:100%;max-width:440px;padding:1rem;
         }
         .login-card{
+            position:relative;
             background:var(--card);
             border:1px solid var(--border);
             border-radius:24px;
@@ -62,16 +92,16 @@
         .logo-badge{
             display:inline-flex;align-items:center;justify-content:center;
             width:64px;height:64px;border-radius:18px;
-            background:linear-gradient(135deg,#8b5cf6,#ec4899);
+            background:linear-gradient(135deg,var(--accent2),var(--accent));
             font-size:1.8rem;margin-bottom:1rem;
-            box-shadow:0 8px 24px rgba(139,92,246,.4);
+            box-shadow:0 8px 24px rgba(var(--accent-rgb),.4);
         }
-        .logo-area h1{font-size:1.5rem;font-weight:700;color:#fff;margin-bottom:.25rem;}
+        .logo-area h1{font-size:1.5rem;font-weight:700;color:var(--text-strong);margin-bottom:.25rem;}
         .logo-area p{font-size:.85rem;color:var(--muted);}
         .admin-badge{
-            display:inline-block;background:rgba(139,92,246,.15);
-            border:1px solid rgba(139,92,246,.3);
-            color:var(--purple-lt);border-radius:50px;
+            display:inline-block;background:rgba(var(--accent-rgb),.15);
+            border:1px solid rgba(var(--accent-rgb),.3);
+            color:var(--accent-ink);border-radius:50px;
             font-size:.72rem;font-weight:600;padding:.2rem .75rem;
             margin-top:.5rem;letter-spacing:.5px;text-transform:uppercase;
         }
@@ -85,14 +115,14 @@
         }
         input{
             width:100%;padding:.85rem 1rem .85rem 2.8rem;
-            background:rgba(255,255,255,.05);
+            background:rgba(var(--wash-rgb),.05);
             border:1px solid var(--border);
-            border-radius:12px;color:#fff;font-family:inherit;font-size:.9rem;
+            border-radius:12px;color:var(--text-strong);font-family:inherit;font-size:.9rem;
             transition:border-color .2s,box-shadow .2s;outline:none;
         }
         input:focus{
-            border-color:var(--purple);
-            box-shadow:0 0 0 3px rgba(139,92,246,.15);
+            border-color:var(--accent);
+            box-shadow:0 0 0 3px rgba(var(--accent-rgb),.15);
         }
         .toggle-pass{
             position:absolute;right:1rem;top:50%;transform:translateY(-50%);
@@ -102,23 +132,23 @@
 
         .btn-login{
             width:100%;padding:.9rem;
-            background:linear-gradient(135deg,#8b5cf6,#ec4899);
+            background:linear-gradient(135deg,var(--accent2),var(--accent));
             border:none;border-radius:12px;
             color:#fff;font-family:inherit;font-size:.95rem;font-weight:600;
             cursor:pointer;margin-top:.5rem;
             transition:opacity .2s,transform .15s,box-shadow .2s;
-            box-shadow:0 4px 20px rgba(139,92,246,.35);
+            box-shadow:0 4px 20px rgba(var(--accent-rgb),.35);
         }
         .btn-login:hover:not(:disabled){
             opacity:.92;transform:translateY(-1px);
-            box-shadow:0 8px 28px rgba(139,92,246,.45);
+            box-shadow:0 8px 28px rgba(var(--accent-rgb),.45);
         }
         .btn-login:disabled{opacity:.5;cursor:not-allowed;}
 
         .error-msg{
-            background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);
+            background:rgba(var(--danger-rgb),.1);border:1px solid rgba(var(--danger-rgb),.2);
             border-radius:10px;padding:.75rem 1rem;
-            font-size:.83rem;color:#fca5a5;
+            font-size:.83rem;color:var(--danger-ink);
             display:none;margin-bottom:1rem;
         }
         .error-msg.show{display:flex;align-items:center;gap:.5rem;}
@@ -128,13 +158,13 @@
             display:block;text-align:center;color:var(--muted);
             font-size:.82rem;text-decoration:none;transition:color .2s;
         }
-        .back-link:hover{color:var(--purple-lt);}
+        .back-link:hover{color:var(--accent-ink);}
 
         .security-note{
             display:flex;align-items:center;gap:.5rem;
-            background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.15);
+            background:rgba(var(--success-rgb),.06);border:1px solid rgba(var(--success-rgb),.15);
             border-radius:10px;padding:.65rem .9rem;
-            font-size:.75rem;color:#86efac;margin-top:1.5rem;
+            font-size:.75rem;color:var(--success-ink);margin-top:1.5rem;
         }
     </style>
 </head>
@@ -144,6 +174,9 @@
 
     <div class="login-wrap">
         <div class="login-card">
+            <button type="button" class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Switch theme">
+                <i class="fas fa-moon" id="themeToggleIcon"></i>
+            </button>
             <div class="logo-area">
                 <div class="logo-badge">🛡️</div>
                 <h1>HerShield</h1>
@@ -196,6 +229,19 @@
         // If already logged in, redirect
         const existingToken = sessionStorage.getItem('hs_admin_token');
         if (existingToken) window.location.href = '/admin-dashboard.html';
+
+        function applyThemeIcon(theme) {
+            const icon = document.getElementById('themeToggleIcon');
+            if (icon) icon.className = theme === 'light' ? 'fas fa-sun' : 'fas fa-moon';
+        }
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme') || 'dark';
+            const next = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('hs_admin_theme', next);
+            applyThemeIcon(next);
+        }
+        applyThemeIcon(document.documentElement.getAttribute('data-theme') || 'dark');
 
         function togglePass() {
             const inp  = document.getElementById('adminPassword');
