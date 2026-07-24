@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const { usersFindById, usersFindByEmail, usersCreate, usersSave } = require('../services/firestoreRepository');
+const { sendWelcomeEmail } = require('../services/userNotifications');
 
 function defaultPreferences() {
     return {
@@ -103,6 +104,9 @@ router.post(
             };
 
             await usersCreate(newUser);
+
+            // Best-effort, non-blocking — never delay/fail signup over an email.
+            sendWelcomeEmail(newUser);
 
             return res.json({
                 success: true,

@@ -1,10 +1,9 @@
 /**
  * Community API routes — Her Shield
- * Handles posts, image uploads (local storage via multer), likes, and alerts.
- * Broadcasts new posts in real-time via Socket.IO.
+ * Handles posts, image uploads (Firebase Storage via multer memory storage),
+ * likes, and alerts. Broadcasts new posts in real-time via Socket.IO.
  */
 const path    = require('path');
-const fs      = require('fs');
 const express = require('express');
 const multer  = require('multer');
 const { body, validationResult } = require('express-validator');
@@ -18,6 +17,7 @@ const {
     isFirestoreConfigured,
 } = require('../services/firestoreRepository');
 const { stripHtml } = require('../services/sanitize');
+const { getStorageBucket } = require('../config/firestoreAdmin');
 
 const VALID_CATEGORIES = ['general', 'alert', 'tip', 'experience', 'event', 'question'];
 
@@ -52,21 +52,15 @@ const alertValidators = [
     body('userName').optional({ nullable: true }).isString().isLength({ max: 100 }),
 ];
 
-// ── Uploads directory ─────────────────────────────────────────────────────────
-const UPLOADS_DIR = path.join(__dirname, '..', 'public', 'uploads', 'community');
-if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-
-// ── Multer storage: disk, organised by date ───────────────────────────────────
-const storage = multer.diskStorage({
-    destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
-    filename:    (_req,  file, cb) => {
-        const ext  = path.extname(file.originalname).toLowerCase() || '.jpg';
-        const name = `post_${Date.now()}_${Math.floor(Math.random() * 9999)}${ext}`;
-        cb(null, name);
-    },
-});
+// ── Multer storage: memory, then uploaded to Firebase Storage below ──────────
+// Previously used disk storage under public/uploads/community — Render's
+// filesystem is ephemeral (each instance/restart can lose local files, the
+// same issue already fixed for verification selfies in routes/verification.js),
+// which is why uploaded post images would silently vanish shortly after
+// posting. Community images must be publicly viewable (unlike selfies), so
+// each upload is made public in Storage right after saving.
 const upload = multer({
-    storage,
+    storage: multer.memoryStorage(),
     limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
     fileFilter: (_req, file, cb) => {
         const allowed = /jpeg|jpg|png|gif|webp/;
@@ -134,10 +128,19 @@ router.post('/posts/upload', upload.single('image'), postValidators, checkValida
     try {
         const { content, userName, userEmail, location, category } = req.body;
 
-        // Build public URL for the uploaded file
-        const imageUrl = req.file
-            ? `/uploads/community/${req.file.filename}`
-            : (req.body.imageUrl || '');
+        let imageUrl = req.body.imageUrl || '';
+        if (req.file) {
+            const bucket = getStorageBucket();
+            if (!bucket) {
+                return res.status(503).json({ success: false, message: 'Photo storage is not configured on the server.' });
+            }
+            const ext = path.extname(req.file.originalname).toLowerCase() || '.jpg';
+            const storagePath = `community-posts/${Date.now()}_${Math.floor(Math.random() * 99999)}${ext}`;
+            const storageFile = bucket.file(storagePath);
+            await storageFile.save(req.file.buffer, { metadata: { contentType: req.file.mimetype } });
+            await storageFile.makePublic();
+            imageUrl = `https://storage.googleapis.com/${bucket.name}/${storagePath}`;
+        }
 
         const post = {
             _id:       `${Date.now()}_${Math.floor(Math.random() * 99999)}`,
@@ -161,8 +164,6 @@ router.post('/posts/upload', upload.single('image'), postValidators, checkValida
 
         res.status(201).json({ success: true, post });
     } catch (err) {
-        // Remove uploaded file on error
-        if (req.file) fs.unlink(req.file.path, () => {});
         res.status(err.statusCode || 500).json({ success: false, message: err.message });
     }
 });

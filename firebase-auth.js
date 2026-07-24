@@ -19,6 +19,21 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { auth } from "./firebase-config.js";
 
+// The cached avatar URL is tagged with the owning account (same pattern as
+// navigation.js's PROFILE_STORAGE_KEY / AVATAR_STORAGE_KEY) — without this,
+// a picture uploaded on one account kept showing for the next account signed
+// into (or signed up for) on the same browser, since "hershield_user_avatar"
+// used to be a single unscoped key with no ownership check at all.
+function getCachedAvatar(uid) {
+    if (!uid) return null;
+    if (localStorage.getItem('hershield_user_avatar_owner') !== uid) return null;
+    return localStorage.getItem('hershield_user_avatar');
+}
+function setCachedAvatar(uid, url) {
+    localStorage.setItem('hershield_user_avatar', url);
+    localStorage.setItem('hershield_user_avatar_owner', uid);
+}
+
 /**
  * Upsert a Firestore user document after every Firebase Auth sign-in.
  * Uses Firebase UID as the document key so the admin dashboard can
@@ -49,9 +64,9 @@ async function syncUserToFirestore(user, consent = {}) {
             localStorage.setItem('hershield_backend_user_id', user.uid);
             console.log('✅ User synced to Firestore:', user.uid);
 
-            // ── Restore profile picture from Firestore if not already in localStorage ──
+            // ── Restore profile picture from Firestore if not already cached for THIS account ──
             // This makes the avatar survive logout / browser clears / new devices.
-            const hasLocalAvatar = !!localStorage.getItem('hershield_user_avatar');
+            const hasLocalAvatar = !!getCachedAvatar(user.uid);
             if (!hasLocalAvatar) {
                 try {
                     const profileRes = await fetch(`/api/users/profile/${encodeURIComponent(user.uid)}`);
@@ -59,7 +74,7 @@ async function syncUserToFirestore(user, consent = {}) {
                         const profileData = await profileRes.json();
                         const storedPic = profileData?.user?.profilePicture;
                         if (storedPic && /^https?:\/\//i.test(storedPic)) {
-                            localStorage.setItem('hershield_user_avatar', storedPic);
+                            setCachedAvatar(user.uid, storedPic);
                             console.log('✅ Profile picture restored from Firestore:', storedPic);
                             // Refresh all avatar elements on the page
                             document.querySelectorAll('.user-avatar, .profile-avatar').forEach(img => {
@@ -106,9 +121,10 @@ class FirebaseAuthService {
                 }
 
                 // ── Restore profile picture on every page load ──────────────
-                // If localStorage has no avatar, or only a temporary base64
-                // (which won't survive clearing), fetch from Firestore.
-                const localAv = localStorage.getItem('hershield_user_avatar');
+                // If there's no avatar cached for THIS account, or only a
+                // temporary base64 (which won't survive clearing), fetch from
+                // Firestore.
+                const localAv = getCachedAvatar(user.uid);
                 const isBase64 = localAv && localAv.startsWith('data:');
                 if (!localAv || isBase64) {
                     try {
@@ -118,7 +134,7 @@ class FirebaseAuthService {
                             const profileData = await profileRes.json();
                             const storedPic = profileData?.user?.profilePicture;
                             if (storedPic && /^https?:\/\//i.test(storedPic)) {
-                                localStorage.setItem('hershield_user_avatar', storedPic);
+                                setCachedAvatar(uid, storedPic);
                                 console.log('✅ Profile picture restored on page load:', storedPic);
                             }
                         }
@@ -130,6 +146,7 @@ class FirebaseAuthService {
                 localStorage.removeItem('hershield_user_email');
                 localStorage.removeItem('hershield_user_name');
                 localStorage.removeItem('hershield_user_avatar');
+                localStorage.removeItem('hershield_user_avatar_owner');
                 localStorage.removeItem('hershield_user_profile');
                 localStorage.removeItem('hershield_backend_user_id');
             }
@@ -176,7 +193,7 @@ class FirebaseAuthService {
         const userEmails = document.querySelectorAll('.user-email');
 
         userAvatars.forEach((avatar) => {
-            const local = localStorage.getItem('hershield_user_avatar');
+            const local = getCachedAvatar(user.uid);
             if (local) {
                 avatar.src = local;
                 return;
@@ -485,6 +502,7 @@ class FirebaseAuthService {
             localStorage.removeItem('hershield_user_email');
             localStorage.removeItem('hershield_user_name');
             localStorage.removeItem('hershield_user_avatar');
+            localStorage.removeItem('hershield_user_avatar_owner');
             localStorage.removeItem('hershield_user_profile');
             localStorage.removeItem('hershield_backend_user_id');
 

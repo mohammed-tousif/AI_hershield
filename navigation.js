@@ -1,4 +1,31 @@
 // Navigation and Authentication Management - Unified Navigation System
+
+// Global (not class-scoped, since createNavigation() and initUnifiedNav() are
+// separate methods with separate local scopes but both need this) — the
+// cached avatar URL is tagged with the owning account, same pattern as
+// PROFILE_STORAGE_KEY's _ownerUserId further down. Without this, a picture
+// uploaded on one account kept showing for the next account signed into (or
+// signed up for) on the same browser, since it used to be a single unscoped
+// localStorage key.
+const AVATAR_STORAGE_KEY = 'hershield_user_avatar';
+const AVATAR_OWNER_KEY = 'hershield_user_avatar_owner';
+function loadScopedAvatar() {
+    const currentUserId = localStorage.getItem('hershield_backend_user_id') || '';
+    const owner = localStorage.getItem(AVATAR_OWNER_KEY);
+    if (!owner || owner !== currentUserId) return null;
+    return localStorage.getItem(AVATAR_STORAGE_KEY);
+}
+function saveScopedAvatar(url) {
+    const currentUserId = localStorage.getItem('hershield_backend_user_id') || '';
+    if (url) {
+        localStorage.setItem(AVATAR_STORAGE_KEY, url);
+        localStorage.setItem(AVATAR_OWNER_KEY, currentUserId);
+    } else {
+        localStorage.removeItem(AVATAR_STORAGE_KEY);
+        localStorage.removeItem(AVATAR_OWNER_KEY);
+    }
+}
+
 class NavigationManager {
     constructor(options = {}) {
         this.isLoggedIn = this.checkLoginStatus();
@@ -187,7 +214,7 @@ class NavigationManager {
                     </div>
                     
                     <button type="button" class="sidebar-profile sidebar-profile-btn" id="sidebarProfileBtn" title="Edit your profile">
-                        <img src="${localStorage.getItem('hershield_user_avatar') || 'https://i.pravatar.cc/150?img=32'}" alt="User Avatar" class="profile-avatar">
+                        <img src="${loadScopedAvatar() || 'https://i.pravatar.cc/150?img=32'}" alt="User Avatar" class="profile-avatar">
                         <div class="profile-info">
                             <h6 class="profile-name">${localStorage.getItem('hershield_user_name') || localStorage.getItem('hershield_user_email')?.split('@')[0] || 'Her Shield User'}</h6>
                             <small class="profile-role">Tap to edit profile</small>
@@ -1669,10 +1696,11 @@ class NavigationManager {
             localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify({ ...obj, _ownerUserId: currentUserId }));
         };
 
+
         window.refreshHershieldSidebarProfile = () => {
             const img = document.querySelector('.hershield-sidebar .profile-avatar');
             const nameEl = document.querySelector('.hershield-sidebar .profile-name');
-            const localAvatar = localStorage.getItem('hershield_user_avatar');
+            const localAvatar = loadScopedAvatar();
             const nm =
                 localStorage.getItem('hershield_user_name') ||
                 localStorage.getItem('hershield_user_email')?.split('@')[0] ||
@@ -1714,7 +1742,7 @@ class NavigationManager {
             pendingAvatarDataUrl = null;
             profilePhotoFile.value = '';
             const av =
-                localStorage.getItem('hershield_user_avatar') ||
+                loadScopedAvatar() ||
                 window.authService?.getCurrentUser?.()?.photoURL ||
                 `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=BDA6CE&color=fff`;
             profilePhotoPreview.src = av;
@@ -1895,16 +1923,15 @@ class NavigationManager {
                     resolvedAvatarUrl = photoUrlInput;
                 }
                 // Priority 3: keep existing avatar URL
-                else if (localStorage.getItem('hershield_user_avatar')) {
-                    resolvedAvatarUrl = localStorage.getItem('hershield_user_avatar');
+                else if (loadScopedAvatar()) {
+                    resolvedAvatarUrl = loadScopedAvatar();
                 }
                 else if (window.authService?.getCurrentUser?.()?.photoURL) {
                     resolvedAvatarUrl = window.authService.getCurrentUser().photoURL;
                 }
 
                 // Save to localStorage
-                if (resolvedAvatarUrl) localStorage.setItem('hershield_user_avatar', resolvedAvatarUrl);
-                else localStorage.removeItem('hershield_user_avatar');
+                saveScopedAvatar(resolvedAvatarUrl);
 
                 localStorage.setItem('hershield_user_name', displayName);
 

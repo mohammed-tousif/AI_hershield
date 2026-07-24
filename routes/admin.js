@@ -16,6 +16,11 @@ const { adminAuth, ADMIN_JWT_SECRET } = require('../middleware/adminAuth');
 const { getStorageBucket } = require('../config/firestoreAdmin');
 const { loginRateLimiter, loginBackoffGuard, recordLoginFailure, clearLoginFailures } = require('../middleware/loginThrottle');
 const { stripHtml } = require('../services/sanitize');
+const {
+    sendVerificationApprovedEmail,
+    sendVerificationRejectedEmail,
+    sendAccountDeactivatedEmail,
+} = require('../services/userNotifications');
 
 const {
     isFirestoreConfigured,
@@ -232,6 +237,7 @@ router.post('/users/:id/deactivate', async (req, res) => {
         }
 
         await log(req, active ? 'REACTIVATE_USER' : 'DEACTIVATE_USER', { userId: user._id, email: user.email, authUpdated });
+        if (!active) sendAccountDeactivatedEmail(user);
         res.json({
             success: true,
             message: active
@@ -344,6 +350,7 @@ router.post('/verifications/:userId/approve', async (req, res) => {
         await usersSave(user);
 
         await log(req, 'APPROVE_VERIFICATION', { userId: user._id, email: user.email });
+        sendVerificationApprovedEmail(user);
         res.json({ success: true, message: 'Verification approved.' });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });

@@ -72,14 +72,54 @@ if (process.env.NODE_ENV === 'development') {
 // `Unexpected token 'T', "Too many r"... is not valid JSON` — a real bug users
 // hit (every panel on the admin dashboard showing that exact parse error
 // whenever the limit tripped, instead of a readable rate-limit message).
+//
+// This general limiter used to sit in front of EVERY /api/* route, including
+// /api/admin (which also has its own adminLimiter below — so admin traffic
+// was being throttled by the STRICTER of the two, making the adminLimiter
+// tuning further down a no-op) and /api/emergency + /api/live-tracker, whose
+// own polling (an active SOS session's GPS updates, live-tracker's
+// navigator.geolocation.watchPosition with no debounce) can alone generate
+// 100+ requests within 15 minutes — meaning a real emergency session could
+// get silently throttled. Both were confirmed by tracing actual polling
+// intervals across dashboard.html/live-tracker.html/navigation.js. Passive
+// dashboard background polling alone (recent alerts every 15s, SOS/tracking
+// history every 30s) was already landing near the old 100/15min ceiling with
+// a single tab open, before counting any real interaction.
+//
+// Fix: raise the ceiling substantially, and exclude /api/admin (has its own
+// limiter), /api/emergency and /api/live-tracker (safety-critical — see
+// emergencyLimiter below for their dedicated, much higher-frequency-tolerant
+// limit instead of a blanket exemption).
 const limiter = rateLimit({
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
+    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 500,
     message: { success: false, message: 'Too many requests from this IP, please try again later.' },
     standardHeaders: true,
     legacyHeaders: false,
+    // req.path here is relative to this middleware's /api/ mount point (e.g.
+    // "/admin/stats", not "/api/admin/stats") — use req.originalUrl instead,
+    // which always reflects the full incoming path regardless of mounting.
+    skip: (req) => (
+        req.originalUrl.startsWith('/api/admin') ||
+        req.originalUrl.startsWith('/api/emergency') ||
+        req.originalUrl.startsWith('/api/live-tracker')
+    ),
 });
 app.use('/api/', limiter);
+
+// Safety-critical endpoints get their own generous, per-minute limiter instead
+// of the general one — an active SOS/live-tracking session can legitimately
+// send a location update every few seconds, and must never be silently
+// dropped by a request-count ceiling. This still bounds outright abuse/flooding
+// (300/min = 5/sec sustained, far above any real GPS reporting rate) without
+// risking a real emergency's location updates being throttled.
+const emergencyLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 300,
+    message: { success: false, message: 'Too many requests — please wait a moment and try again.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
 // Serve static files from the project root (always use __dirname, not '.')
 app.use(express.static(__dirname));
@@ -121,12 +161,12 @@ const adminLimiter = rateLimit({
 });
 
 // API Routes
-app.use('/api/emergency', emergencyRoutes);
+app.use('/api/emergency', emergencyLimiter, emergencyRoutes);
 app.use('/api/tracking', trackingRoutes);
 app.use('/api/safety', safetyRoutes);
 app.use('/api/safety', safetyLocationsRoutes);
 app.use('/api/users', usersRoutes);
-app.use('/api/live-tracker', require('./routes/liveTracker'));
+app.use('/api/live-tracker', emergencyLimiter, require('./routes/liveTracker'));
 app.use('/api/community', communityRoutes);
 app.use('/api/admin',    adminLimiter, adminRoutes);
 app.use('/api/legal',    require('./routes/legalChat'));   // 🛡️ LexaShield legal chatbot
