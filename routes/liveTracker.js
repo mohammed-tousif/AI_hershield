@@ -18,6 +18,7 @@ const {
 
 const smsService = require('../services/smsService');
 const emailService = require('../services/emailService');
+const { reverseGeocode } = require('../services/geocoding');
 const { getFrontendUrl, liveTrackerLink } = require('../config/appUrls');
 const { stripHtml } = require('../services/sanitize');
 
@@ -534,9 +535,17 @@ router.post('/dashboard-alert', dashboardAlertValidators, checkValidation, async
         if (userId) {
             try {
                 const now = new Date();
-                const loc = location
+                let loc = location
                     ? { latitude: location.lat, longitude: location.lng }
                     : null;
+                // Best-effort — the admin panel's SOS Events table reads
+                // location.address, which never existed before (only raw
+                // lat/lng), so it always showed blank there.
+                if (loc) {
+                    const address = await reverseGeocode(loc.latitude, loc.longitude);
+                    if (address) loc = { ...loc, address };
+                }
+                const notifiedContacts = (firestoreContacts && firestoreContacts.length) ? firestoreContacts : (contacts || []);
                 await sosCreate({
                     _id: `dashboard_alert_${alertId}`,
                     userId,
@@ -551,7 +560,11 @@ router.post('/dashboard-alert', dashboardAlertValidators, checkValidation, async
                     triggeredAt: now,
                     expiresAt: null,
                     resolvedAt: now,
-                    contactCount: firestoreContacts.length || (contacts ? contacts.length : 0),
+                    // Also missing before — the admin panel reads
+                    // emergencyContacts.length for a "guardians notified" count,
+                    // but only a separate contactCount number was ever stored.
+                    emergencyContacts: notifiedContacts,
+                    contactCount: notifiedContacts.length,
                     source: 'dashboard',
                 });
                 console.log(`📝 dashboard-alert: SOS history record written for userId=${userId}`);

@@ -672,6 +672,7 @@
             const name = document.getElementById('signupName').value;
             const email = document.getElementById('signupEmail').value;
             const password = document.getElementById('signupPassword').value;
+            const phone = document.getElementById('signupPhone').value.trim();
             const agreedToTerms = document.getElementById('termsCheck').checked;
             const agreedToGenderDeclaration = document.getElementById('genderDeclarationCheck').checked;
 
@@ -679,7 +680,7 @@
             button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating account...';
 
             try {
-                const result = await window.authService.registerWithEmail(email, password, name, { agreedToTerms, agreedToGenderDeclaration });
+                const result = await window.authService.registerWithEmail(email, password, name, { agreedToTerms, agreedToGenderDeclaration, phone });
                 if (result.success) {
                     // Firebase signs the user in immediately on account creation —
                     // send them straight into the mandatory selfie step rather than

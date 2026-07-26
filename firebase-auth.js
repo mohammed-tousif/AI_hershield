@@ -54,6 +54,11 @@ async function syncUserToFirestore(user, consent = {}) {
         // atomically at signup instead of a separate follow-up call.
         if (consent.agreedToTerms !== undefined) body.agreedToTerms = !!consent.agreedToTerms;
         if (consent.agreedToGenderDeclaration !== undefined) body.agreedToGenderDeclaration = !!consent.agreedToGenderDeclaration;
+        // Collected on the manual signup form but previously never sent anywhere —
+        // the field existed purely as UI friction, and every account's phone
+        // number stayed blank in Firestore (visible as an empty Phone column in
+        // the admin Users table).
+        if (consent.phone) body.phone = consent.phone;
         const res = await fetch('/api/users/upsert', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

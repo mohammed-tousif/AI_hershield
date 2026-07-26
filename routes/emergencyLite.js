@@ -14,6 +14,7 @@ const {
 const smsService = require('../services/smsService');
 const whatsappService = require('../services/whatsappService');
 const emailService = require('../services/emailService');
+const { reverseGeocode } = require('../services/geocoding');
 const { liveTrackerLink } = require('../config/appUrls');
 
 // ─── Email (Gmail REST API over HTTPS — see services/emailService.js for why) ─
@@ -219,13 +220,24 @@ router.post(
             const triggeredAt = new Date();
             const expiresAt = timerMinutes ? new Date(triggeredAt.getTime() + timerMinutes * 60000) : null;
 
+            // Best-effort — the admin panel's SOS Events table reads
+            // location.address, which never existed before (only raw
+            // lat/lng), so it always showed blank there.
+            const address = await reverseGeocode(location.latitude, location.longitude);
+            const locationWithAddress = address ? { ...location, address } : location;
+
             await sosCreate({
                 _id: sosId,
                 userId,
                 userName: user.name || 'HerShield User',
                 userEmail: user.email || '',
                 status: 'active',
-                location,
+                location: locationWithAddress,
+                // Also missing before — the admin panel reads this to show a
+                // "guardians notified" count, which was always 0 since this
+                // field was never stored on the SOS event itself (only on the
+                // paired live-tracking session above).
+                emergencyContacts: contacts,
                 trackingCode,
                 trackingLink,
                 pinHash: hashPin(pin),
