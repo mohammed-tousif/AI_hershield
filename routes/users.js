@@ -1,8 +1,29 @@
+const path = require('path');
 const express = require('express');
+const multer = require('multer');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const { usersFindById, usersFindByEmail, usersCreate, usersSave } = require('../services/firestoreRepository');
 const { sendWelcomeEmail } = require('../services/userNotifications');
+const { requireAuth } = require('../middleware/requireAuth');
+const cloudinaryService = require('../services/cloudinaryService');
+
+// ── Multer storage: memory, then uploaded to Cloudinary below ────────────────
+// Profile pictures used to be uploaded client-side straight to Firebase
+// Storage (see navigation.js); moved through the backend instead so the
+// Cloudinary API secret never reaches the browser — see POST /avatar below.
+const avatarUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB — matches navigation.js's client-side MAX_AVATAR_BYTES check
+    fileFilter: (_req, file, cb) => {
+        const allowed = /jpeg|jpg|png|webp|gif/;
+        if (allowed.test(path.extname(file.originalname).toLowerCase()) && allowed.test(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only image files are allowed (jpg, png, webp, gif)'));
+        }
+    },
+});
 
 function defaultPreferences() {
     return {
@@ -312,6 +333,34 @@ router.get('/email/:email', async (req, res) => {
         res.status(status).json({
             error: error.code === 'FIRESTORE_NOT_CONFIGURED' ? error.message : 'Failed to find user',
         });
+    }
+});
+
+/**
+ * @route   POST /api/users/avatar
+ * @desc    Upload a profile picture to Cloudinary and return its public URL.
+ *          Does NOT write to Firestore itself — the caller (navigation.js)
+ *          persists the returned URL via PUT /api/users/profile/:userId,
+ *          same as the manual-URL and existing-avatar code paths already do.
+ * @access  Private (Firebase ID token)
+ */
+router.post('/avatar', requireAuth, avatarUpload.single('avatar'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'An image file is required (field name "avatar").' });
+        }
+        if (!cloudinaryService.isConfigured()) {
+            return res.status(503).json({ success: false, message: 'Photo storage is not configured on the server.' });
+        }
+
+        const { uid } = req.authUser;
+        const publicId = `avatars/${uid}/${Date.now()}`;
+        const uploaded = await cloudinaryService.uploadImage(req.file.buffer, { publicId, type: 'upload' });
+
+        res.json({ success: true, url: uploaded.url });
+    } catch (err) {
+        console.error('[Users] Avatar upload error:', err.message);
+        res.status(502).json({ success: false, message: 'Avatar upload failed. Please try again.' });
     }
 });
 

@@ -1794,21 +1794,30 @@ class NavigationManager {
         };
 
         /**
-         * Upload a File object to Firebase Storage and return the public download URL.
-         * Path: avatars/{uid}/{timestamp}-{filename}
+         * Upload a File object via the backend (POST /api/users/avatar, which
+         * stores it in Cloudinary) and return the permanent public URL.
+         * Previously uploaded client-side straight to Firebase Storage — moved
+         * off it after its billing account went delinquent; routing through
+         * the backend also keeps the Cloudinary API secret out of the browser.
          */
         async function uploadAvatarToStorage(file) {
-            const uid = window.authService?.getCurrentUser?.()?.uid;
-            if (!uid) throw new Error('Not signed in');
-            const { storage } = await import('./firebase-config.js');
-            const { ref, uploadBytes, getDownloadURL } =
-                await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js');
-            const ext  = file.name.split('.').pop().toLowerCase() || 'jpg';
-            const path = `avatars/${uid}/${Date.now()}.${ext}`;
-            const storageRef = ref(storage, path);
-            const snapshot   = await uploadBytes(storageRef, file);
-            const url        = await getDownloadURL(snapshot.ref);
-            return url;
+            const user = window.authService?.getCurrentUser?.();
+            if (!user) throw new Error('Not signed in');
+            const token = await user.getIdToken();
+
+            const formData = new FormData();
+            formData.append('avatar', file);
+
+            const resp = await fetch('/api/users/avatar', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token },
+                body: formData,
+            });
+            const data = await resp.json().catch(() => ({}));
+            if (!resp.ok || !data.success) {
+                throw new Error(data.message || `Upload failed (${resp.status})`);
+            }
+            return data.url;
         }
 
         if (profilePhotoFile && profilePhotoPreview) {
@@ -1905,15 +1914,15 @@ class NavigationManager {
                 const photoUrlInput = document.getElementById('profilePhotoUrl').value.trim();
                 let resolvedAvatarUrl = null;  // will be a permanent https:// URL
 
-                // Priority 1: file upload → upload to Firebase Storage
+                // Priority 1: file upload → upload to Cloudinary via the backend
                 const selectedFile = profilePhotoFile && profilePhotoFile.files && profilePhotoFile.files[0];
                 if (selectedFile) {
                     try {
                         fb.textContent = 'Uploading photo to cloud…';
                         resolvedAvatarUrl = await uploadAvatarToStorage(selectedFile);
-                        console.log('✅ Avatar uploaded to Firebase Storage:', resolvedAvatarUrl);
+                        console.log('✅ Avatar uploaded to Cloudinary:', resolvedAvatarUrl);
                     } catch (uploadErr) {
-                        console.warn('Firebase Storage upload failed, falling back to base64:', uploadErr.message);
+                        console.warn('Avatar upload failed, falling back to base64:', uploadErr.message);
                         // Fallback: keep base64 in localStorage for this session
                         resolvedAvatarUrl = pendingAvatarDataUrl;
                     }
