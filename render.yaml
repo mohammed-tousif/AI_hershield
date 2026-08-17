@@ -76,6 +76,17 @@ services:
         value: developerclub63@gmail.com
       - key: EMAIL_PASS
         sync: false   # Gmail app password — set in dashboard
+      # GMAIL_OAUTH_CLIENT_ID / GMAIL_OAUTH_CLIENT_SECRET / GMAIL_OAUTH_REFRESH_TOKEN
+      # are also required (see .env.example) — set in dashboard, not listed here.
+
+      # ── Cloudinary (image storage — see .env.example and ─────────────────────
+      # services/cloudinaryService.js) — SECRET, set in dashboard
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
 
       # ── Twilio SMS (SECRET — set in dashboard) ───────────────────────────────
       - key: TWILIO_ACCOUNT_SID

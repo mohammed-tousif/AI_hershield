@@ -1,6 +1,6 @@
 /**
  * Community API routes — Her Shield
- * Handles posts, image uploads (Firebase Storage via multer memory storage),
+ * Handles posts, image uploads (Cloudinary via multer memory storage),
  * likes, and alerts. Broadcasts new posts in real-time via Socket.IO.
  */
 const path    = require('path');
@@ -17,7 +17,7 @@ const {
     isFirestoreConfigured,
 } = require('../services/firestoreRepository');
 const { stripHtml } = require('../services/sanitize');
-const { getStorageBucket } = require('../config/firestoreAdmin');
+const cloudinaryService = require('../services/cloudinaryService');
 
 const VALID_CATEGORIES = ['general', 'alert', 'tip', 'experience', 'event', 'question'];
 
@@ -52,13 +52,15 @@ const alertValidators = [
     body('userName').optional({ nullable: true }).isString().isLength({ max: 100 }),
 ];
 
-// ── Multer storage: memory, then uploaded to Firebase Storage below ──────────
+// ── Multer storage: memory, then uploaded to Cloudinary below ────────────────
 // Previously used disk storage under public/uploads/community — Render's
 // filesystem is ephemeral (each instance/restart can lose local files, the
 // same issue already fixed for verification selfies in routes/verification.js),
 // which is why uploaded post images would silently vanish shortly after
-// posting. Community images must be publicly viewable (unlike selfies), so
-// each upload is made public in Storage right after saving.
+// posting. Later moved to Firebase Storage, then off it entirely after its
+// billing account went delinquent (see services/cloudinaryService.js).
+// Community images must be publicly viewable (unlike selfies), so they're
+// uploaded with Cloudinary's default 'upload' (public) delivery type.
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
@@ -130,16 +132,17 @@ router.post('/posts/upload', upload.single('image'), postValidators, checkValida
 
         let imageUrl = req.body.imageUrl || '';
         if (req.file) {
-            const bucket = getStorageBucket();
-            if (!bucket) {
+            if (!cloudinaryService.isConfigured()) {
                 return res.status(503).json({ success: false, message: 'Photo storage is not configured on the server.' });
             }
-            const ext = path.extname(req.file.originalname).toLowerCase() || '.jpg';
-            const storagePath = `community-posts/${Date.now()}_${Math.floor(Math.random() * 99999)}${ext}`;
-            const storageFile = bucket.file(storagePath);
-            await storageFile.save(req.file.buffer, { metadata: { contentType: req.file.mimetype } });
-            await storageFile.makePublic();
-            imageUrl = `https://storage.googleapis.com/${bucket.name}/${storagePath}`;
+            const publicId = `community-posts/${Date.now()}_${Math.floor(Math.random() * 99999)}`;
+            try {
+                const uploaded = await cloudinaryService.uploadImage(req.file.buffer, { publicId, type: 'upload' });
+                imageUrl = uploaded.url;
+            } catch (uploadErr) {
+                console.error('[Community] Cloudinary upload failed:', uploadErr.message);
+                return res.status(502).json({ success: false, message: 'Photo upload failed. Please try again.' });
+            }
         }
 
         const post = {

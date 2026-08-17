@@ -5,13 +5,13 @@
  * Automatic cleanup for gender-verification selfies (routes/verification.js).
  *
  * Selfies are only needed for the admin review window (routes/admin.js).
- * 90 days after submission we delete the image from Firebase Storage and
- * clear the pointer on the user doc, regardless of outcome (verified/
- * rejected/pending) — this minimizes how long a sensitive biometric photo
- * sits on the server. verificationStatus itself is never touched by this
- * sweep: a user who was verified stays verified after their photo is purged.
+ * 90 days after submission we delete the image from Cloudinary and clear
+ * the pointer on the user doc, regardless of outcome (verified/rejected/
+ * pending) — this minimizes how long a sensitive biometric photo sits on
+ * the server. verificationStatus itself is never touched by this sweep: a
+ * user who was verified stays verified after their photo is purged.
  */
-const { getStorageBucket } = require('../config/firestoreAdmin');
+const cloudinaryService = require('./cloudinaryService');
 const { usersListAll, usersSave } = require('./firestoreRepository');
 
 const RETENTION_DAYS = 90;
@@ -33,20 +33,17 @@ async function purgeExpiredVerificationSelfies() {
     try {
         const users = await usersListAll(5000);
         const cutoffMs = Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000;
-        const bucket = getStorageBucket();
 
         for (const user of users) {
             if (!user.verificationSelfiePath) continue;
             const submittedAt = toDate(user.verificationSubmittedAt);
             if (!submittedAt || submittedAt.getTime() > cutoffMs) continue;
 
-            if (bucket) {
-                await bucket.file(user.verificationSelfiePath).delete().catch((err) => {
-                    if (err.code !== 404) {
-                        console.warn(`[VerificationRetention] Failed to delete ${user.verificationSelfiePath}:`, err.message);
-                    }
-                });
-            }
+            // deleteImage() already swallows errors (logs + resolves), and
+            // Cloudinary's destroy() resolves normally (not a throw) for an
+            // already-missing asset, so no separate 404-vs-other handling
+            // is needed here unlike the old GCS .delete() call.
+            await cloudinaryService.deleteImage(user.verificationSelfiePath, { type: 'authenticated' });
 
             user.verificationSelfiePath = null;
             user.updatedAt = new Date();

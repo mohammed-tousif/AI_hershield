@@ -14,9 +14,13 @@
  * verification status (verification here informs admin moderation, not
  * automatic access control — Emergency/SOS is never touched by this).
  *
- * Selfies are stored in Firebase Cloud Storage, NOT local disk — Render's
- * filesystem is ephemeral and wipes local files on every redeploy/restart,
- * which silently broke selfie viewing in an earlier version of this file.
+ * Selfies are stored in Cloudinary, NOT local disk — Render's filesystem is
+ * ephemeral and wipes local files on every redeploy/restart, which silently
+ * broke selfie viewing in an earlier version of this file. (Previously
+ * Firebase Cloud Storage; moved off it after its billing account went
+ * delinquent — see services/cloudinaryService.js.) Selfies are uploaded with
+ * Cloudinary's 'authenticated' delivery type — not reachable via a
+ * guessable public URL, only through the admin-authenticated route below.
  *
  * Routes:
  *   POST /api/verification/submit  — upload a selfie, sets status 'pending'
@@ -27,7 +31,7 @@ const express = require('express');
 const multer = require('multer');
 const router = express.Router();
 const { requireAuth } = require('../middleware/requireAuth');
-const { getStorageBucket } = require('../config/firestoreAdmin');
+const cloudinaryService = require('../services/cloudinaryService');
 const { usersFindById, usersSave } = require('../services/firestoreRepository');
 
 const upload = multer({
@@ -60,27 +64,32 @@ router.post('/submit', requireAuth, upload.single('selfie'), async (req, res) =>
             return res.status(400).json({ success: false, message: 'A selfie image is required (field name "selfie").' });
         }
 
-        const bucket = getStorageBucket();
-        if (!bucket) {
+        if (!cloudinaryService.isConfigured()) {
             return res.status(503).json({ success: false, message: 'Photo storage is not configured on the server.' });
         }
 
         // Clean up a previous rejected-attempt file, if any.
         if (user.verificationSelfiePath) {
-            await bucket.file(user.verificationSelfiePath).delete().catch(() => {});
+            await cloudinaryService.deleteImage(user.verificationSelfiePath, { type: 'authenticated' });
         }
 
-        const ext = path.extname(req.file.originalname).toLowerCase() || '.jpg';
         // Keyed by the *verified* Firebase uid (from requireAuth), not anything
-        // client-supplied. Not under a publicly-served prefix — only reachable
-        // via the admin-authenticated streaming route in routes/admin.js.
-        const storagePath = `verification-selfies/${uid}_${Date.now()}${ext}`;
-        await bucket.file(storagePath).save(req.file.buffer, {
-            metadata: { contentType: req.file.mimetype },
-        });
+        // client-supplied. 'authenticated' delivery type — not reachable via a
+        // guessable public URL, only through the admin-authenticated streaming
+        // route in routes/admin.js.
+        const publicId = `verification-selfies/${uid}_${Date.now()}`;
+        let uploaded;
+        try {
+            uploaded = await cloudinaryService.uploadImage(req.file.buffer, { publicId, type: 'authenticated' });
+        } catch (uploadErr) {
+            console.error('[Verification] Cloudinary upload failed:', uploadErr.message);
+            return res.status(502).json({ success: false, message: 'Selfie upload failed. Please try again.' });
+        }
 
         user.verificationStatus = 'pending';
-        user.verificationSelfiePath = storagePath;
+        // Cloudinary public_id now, not a Firebase Storage path — the field
+        // name is kept as-is to avoid a wider schema/migration change.
+        user.verificationSelfiePath = uploaded.publicId;
         user.verificationSubmittedAt = new Date();
         user.verificationRejectionReason = null;
         user.updatedAt = new Date();
