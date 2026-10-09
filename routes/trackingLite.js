@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
+const { newShareCode, shareExpiresAt, endViewers } = require('../services/trackingSecurity');
 const { liveTrackerLink } = require('../config/appUrls');
 const {
     trackingCodeExists,
@@ -14,7 +15,7 @@ const {
 } = require('../services/firestoreRepository');
 
 function genCode() {
-    return Math.random().toString(36).substring(2, 8).toUpperCase();
+    return newShareCode();
 }
 
 async function uniqueCode() {
@@ -40,6 +41,7 @@ router.post(
                 _id: `${Date.now()}_${Math.floor(Math.random() * 10000)}`,
                 userId,
                 trackingCode,
+                shareExpiresAt: shareExpiresAt(),
                 name,
                 phone,
                 travelMode: travelMode || 'walking',
@@ -179,7 +181,9 @@ router.post('/end', [body('sessionId').notEmpty()], async (req, res) => {
         const session = await trackingFindById(sessionId);
         if (!session) return res.status(404).json({ error: 'Session not found' });
 
+        if (session.status !== 'active') return res.status(409).json({ error: 'Session already ended' });
         session.status = 'completed';
+        endViewers(req.app.get('io'), sessionId);
         session.endTime = new Date();
         session.duration = Math.max(
             0,

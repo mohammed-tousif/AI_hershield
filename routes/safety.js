@@ -1,3 +1,4 @@
+const { stripHtml } = require('../services/sanitize');
 const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
@@ -55,7 +56,9 @@ router.get('/heatmap', async (req, res) => {
 router.post(
     '/route',
     [
-        body('routePoints').isArray().withMessage('Route points must be an array'),
+        body('routePoints').isArray({ min: 2, max: 1000 }).withMessage('Provide between 2 and 1000 route points'),
+        body('routePoints.*.lat').isFloat({ min: -90, max: 90 }),
+        body('routePoints.*.lng').isFloat({ min: -180, max: 180 }),
         body('timeOfDay').optional().isInt({ min: 0, max: 23 }),
     ],
     async (req, res) => {
@@ -159,14 +162,14 @@ router.post('/report', async (req, res) => {
     try {
         const { type, severity, location, description, reporter, timestamp } = req.body;
 
-        const desc = String(description || '').trim();
+        const desc = stripHtml(String(description || '')).trim().slice(0, 4000);
         const locObj =
             typeof location === 'string'
                 ? { address: location, coordinates: null }
                 : location && typeof location === 'object'
                   ? location
                   : {};
-        const addr = String(locObj.address || '').trim();
+        const addr = stripHtml(String(locObj.address || '')).trim().slice(0, 300);
         const coords = locObj.coordinates || {};
         const lat = coords.latitude ?? coords.lat;
         const lng = coords.longitude ?? coords.lng;
@@ -189,7 +192,7 @@ router.post('/report', async (req, res) => {
         const severityNorm = String(severity || 'medium').toLowerCase();
         const incidentData = {
             _id: `${Date.now()}_${Math.floor(Math.random() * 10000)}`,
-            incidentType: String(type).toLowerCase().replace(/ /g, '_'),
+            incidentType: stripHtml(String(type)).slice(0, 80).toLowerCase().replace(/ /g, '_'),
             severity: severityNorm,
             location: {
                 address: addr || (typeof location === 'string' ? location : ''),
@@ -417,6 +420,8 @@ router.post(
     [body('userId').notEmpty(), body('voteType').isIn(['up', 'down'])],
     async (req, res) => {
         try {
+            const validation = validationResult(req);
+            if (!validation.isEmpty()) return res.status(400).json({ success: false, errors: validation.array() });
             const { userId, voteType } = req.body;
             const report = await incidentsGetById(req.params.id);
             if (!report) {
@@ -475,6 +480,8 @@ router.post(
     [body('userId').notEmpty(), body('userName').notEmpty(), body('comment').notEmpty().trim()],
     async (req, res) => {
         try {
+            const validation = validationResult(req);
+            if (!validation.isEmpty()) return res.status(400).json({ success: false, errors: validation.array() });
             const { userId, userName, comment } = req.body;
 
             const report = await incidentsGetById(req.params.id);

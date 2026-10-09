@@ -143,21 +143,5 @@ document.addEventListener('DOMContentLoaded', () => {
         return loading;
     };
 
-    // Add loading animation to buttons when clicked
-    document.querySelectorAll('.btn-modern').forEach(button => {
-        button.addEventListener('click', function() {
-            if (!this.classList.contains('loading')) {
-                const originalText = this.innerHTML;
-                const loading = createLoadingAnimation();
-                this.classList.add('loading');
-                this.innerHTML = '';
-                this.appendChild(loading);
-
-                setTimeout(() => {
-                    this.classList.remove('loading');
-                    this.innerHTML = originalText;
-                }, 2000);
-            }
-        });
-    });
-}); 
+    // Request handlers own loading states; decorative animations never delay actions.
+});

@@ -1,0 +1,29 @@
+.hs-email-banner { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin:0 0 24px; padding:16px 20px; background:#fff1e5; border:1px solid #e7c2a8; border-radius:16px; color:#47312b; font-size:14px; }
+.hs-email-banner span { flex:1 1 180px; }
+.hs-email-banner a, .hs-email-banner button { color:#733a2e; font:inherit; font-weight:700; background:transparent; border:0; text-decoration:underline; min-height:44px; display:inline-flex; align-items:center; cursor:pointer; }
+.hs-email-banner[data-verified="true"] { background:#eef6ed; border-color:#a6c8a2; color:#29462e; }
+.hs-email-page { margin:0; min-height:100dvh; background:radial-gradient(ellipse at 15% 10%,#f9ded0,transparent 55%),radial-gradient(ellipse at 90% 90%,#eee9d7,transparent 50%),#fcf8f3; color:#352c29; font-family:system-ui,-apple-system,"Segoe UI",sans-serif; }
+.hs-email-page * { box-sizing:border-box; }
+.hs-email-page [hidden] { display:none !important; }
+.hs-email-header { max-width:1100px; margin:auto; padding:28px 32px; display:flex; align-items:center; justify-content:space-between; gap:20px; }
+.hs-email-header a { color:#633a30; text-decoration:none; font-size:24px; font-weight:750; }
+.hs-email-header span { display:block; font-size:9px; letter-spacing:2px; margin-top:6px; }
+.hs-email-header .hs-email-back { font-size:14px; text-decoration:underline; min-height:44px; display:flex; align-items:center; }
+.hs-email-card { width:calc(100% - 32px); max-width:480px; margin:24px auto 48px; padding:36px; background:#fffdf9; border:1px solid #ead9cb; border-radius:28px; box-shadow:0 20px 70px #6a3e2510; }
+.hs-email-eyebrow { font-size:10px; letter-spacing:1.6px; font-weight:750; color:#8a5242; }
+.hs-email-symbol { width:60px; height:60px; background:#f8e3d6; color:#804938; border-radius:20px; display:grid; place-items:center; font-size:32px; margin-top:24px; }
+.hs-email-card h1 { font-family:Georgia,serif; font-weight:500; font-size:40px; letter-spacing:-1.4px; margin:18px 0 12px; line-height:1.1; }
+.hs-email-card p { font-size:14px; line-height:1.65; color:#675750; }
+.hs-email-address { font-weight:700; overflow-wrap:anywhere; }
+#emailStatus { padding:12px 14px; background:#f7eee5; border-radius:12px; color:#543d32; }
+#emailStatus[data-error="true"] { background:#fcece8; color:#8a3027; }
+.hs-email-primary, .hs-email-secondary { display:block; width:100%; padding:14px 18px; min-height:48px; border-radius:12px; font:inherit; font-size:14px; font-weight:700; text-align:center; text-decoration:none; cursor:pointer; }
+.hs-email-primary { color:#fffdf9; background:#784334; border:1px solid #784334; }
+.hs-email-secondary { color:#704131; background:#fffaf4; border:1px solid #c7a08d; }
+.hs-email-page button:disabled { opacity:.65; cursor:wait; }
+.hs-email-page :focus-visible { outline:3px solid #a05438; outline-offset:4px; }
+#emailCodeForm { margin-top:28px; }
+#emailCodeForm label { display:block; font-size:14px; font-weight:700; margin-bottom:10px; }
+#emailCode { width:100%; border:1px solid #c7a08d; border-radius:12px; background:#fff; min-height:62px; padding:12px; font-family:monospace; font-size:28px; letter-spacing:8px; text-align:center; color:#352c29; }
+#emailCodeHelp, .hs-email-card .hs-email-footnote { font-size:12px; }
+@media(max-width:420px) { .hs-email-header { padding:20px 18px; } .hs-email-header .hs-email-back { font-size:12px; max-width:95px; } .hs-email-card { padding:26px 22px; margin-top:12px; border-radius:22px; } .hs-email-card h1 { font-size:34px; } }

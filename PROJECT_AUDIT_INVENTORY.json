@@ -1,0 +1,5259 @@
+{
+  "auditDate": "2026-10-07",
+  "scope": "Authored files; dependencies, Git internals, caches, secret values and personal data excluded",
+  "counts": {
+    "files": 128,
+    "sourceFiles": 71,
+    "sourceLines": 26390,
+    "apiRoutes": 85,
+    "mediaQueries": 26,
+    "indexedFunctionReferences": 475,
+    "indexedResourceReferences": 84
+  },
+  "files": [
+    {
+      "path": "admin-dashboard.html",
+      "bytes": 109489,
+      "lines": 1998,
+      "functions": [
+        {
+          "name": "skeletonRows",
+          "line": 973
+        },
+        {
+          "name": "getPath",
+          "line": 983
+        },
+        {
+          "name": "sortValueFor",
+          "line": 996
+        },
+        {
+          "name": "applyTableToolbar",
+          "line": 1004
+        },
+        {
+          "name": "exportSelected",
+          "line": 1039
+        },
+        {
+          "name": "bucketByDay",
+          "line": 1051
+        },
+        {
+          "name": "smoothPath",
+          "line": 1073
+        },
+        {
+          "name": "renderTrendChart",
+          "line": 1091
+        },
+        {
+          "name": "toast",
+          "line": 1140
+        },
+        {
+          "name": "adminLogout",
+          "line": 1150
+        },
+        {
+          "name": "applyThemeIcon",
+          "line": 1161
+        },
+        {
+          "name": "toggleTheme",
+          "line": 1165
+        },
+        {
+          "name": "showSection",
+          "line": 1190
+        },
+        {
+          "name": "refreshCurrent",
+          "line": 1200
+        },
+        {
+          "name": "loadSection",
+          "line": 1202
+        },
+        {
+          "name": "loadOverview",
+          "line": 1215
+        },
+        {
+          "name": "loadUsers",
+          "line": 1301
+        },
+        {
+          "name": "renderUsersTable",
+          "line": 1312
+        },
+        {
+          "name": "toggleUserActive",
+          "line": 1339
+        },
+        {
+          "name": "deleteUserAccount",
+          "line": 1352
+        },
+        {
+          "name": "filterUsers",
+          "line": 1363
+        },
+        {
+          "name": "loadVerifications",
+          "line": 1372
+        },
+        {
+          "name": "filterVerifications",
+          "line": 1386
+        },
+        {
+          "name": "renderVerificationsTable",
+          "line": 1394
+        },
+        {
+          "name": "openSelfieLightbox",
+          "line": 1436
+        },
+        {
+          "name": "approveVerification",
+          "line": 1441
+        },
+        {
+          "name": "openRejectModal",
+          "line": 1451
+        },
+        {
+          "name": "submitRejectVerification",
+          "line": 1458
+        },
+        {
+          "name": "viewUser",
+          "line": 1476
+        },
+        {
+          "name": "exportUsers",
+          "line": 1503
+        },
+        {
+          "name": "loadPosts",
+          "line": 1510
+        },
+        {
+          "name": "renderPostsTable",
+          "line": 1521
+        },
+        {
+          "name": "filterPosts",
+          "line": 1537
+        },
+        {
+          "name": "deletePost",
+          "line": 1539
+        },
+        {
+          "name": "openNewPostModal",
+          "line": 1548
+        },
+        {
+          "name": "submitNewPost",
+          "line": 1550
+        },
+        {
+          "name": "loadAlerts",
+          "line": 1569
+        },
+        {
+          "name": "renderAlertsTable",
+          "line": 1578
+        },
+        {
+          "name": "filterAlerts",
+          "line": 1595
+        },
+        {
+          "name": "deleteAlert",
+          "line": 1597
+        },
+        {
+          "name": "loadSos",
+          "line": 1608
+        },
+        {
+          "name": "renderSosTable",
+          "line": 1617
+        },
+        {
+          "name": "filterSos",
+          "line": 1634
+        },
+        {
+          "name": "loadIncidents",
+          "line": 1641
+        },
+        {
+          "name": "renderIncidentsTable",
+          "line": 1650
+        },
+        {
+          "name": "filterIncidents",
+          "line": 1667
+        },
+        {
+          "name": "deleteIncident",
+          "line": 1669
+        },
+        {
+          "name": "exportIncidents",
+          "line": 1678
+        },
+        {
+          "name": "loadTracking",
+          "line": 1685
+        },
+        {
+          "name": "renderTrackingTable",
+          "line": 1694
+        },
+        {
+          "name": "filterTracking",
+          "line": 1707
+        },
+        {
+          "name": "sendBroadcast",
+          "line": 1713
+        },
+        {
+          "name": "clearBroadcast",
+          "line": 1738
+        },
+        {
+          "name": "loadLogs",
+          "line": 1749
+        },
+        {
+          "name": "renderLogsTable",
+          "line": 1758
+        },
+        {
+          "name": "filterLogs",
+          "line": 1770
+        },
+        {
+          "name": "closeModal",
+          "line": 1776
+        },
+        {
+          "name": "downloadCSV",
+          "line": 1778
+        },
+        {
+          "name": "loadSafetyDataStats",
+          "line": 1805
+        },
+        {
+          "name": "onCsvFileSelected",
+          "line": 1815
+        },
+        {
+          "name": "handleCsvDrop",
+          "line": 1820
+        },
+        {
+          "name": "setCsvFile",
+          "line": 1832
+        },
+        {
+          "name": "clearCsvSelection",
+          "line": 1843
+        },
+        {
+          "name": "uploadCsvFile",
+          "line": 1853
+        },
+        {
+          "name": "wipeAllSafetyData",
+          "line": 1908
+        },
+        {
+          "name": "loadSmsStatus",
+          "line": 1926
+        },
+        {
+          "name": "runSmsTest",
+          "line": 1941
+        }
+      ],
+      "resources": [
+        {
+          "target": "/config.js",
+          "line": 4,
+          "local": true,
+          "exists": true
+        },
+        {
+          "target": "https://fonts.googleapis.com/css2",
+          "line": 23,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css",
+          "line": 24,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "/socket.io/socket.io.js",
+          "line": 918,
+          "local": true,
+          "exists": null
+        }
+      ]
+    },
+    {
+      "path": "admin-login.html",
+      "bytes": 13130,
+      "lines": 297,
+      "functions": [
+        {
+          "name": "applyThemeIcon",
+          "line": 231
+        },
+        {
+          "name": "toggleTheme",
+          "line": 236
+        },
+        {
+          "name": "togglePass",
+          "line": 244
+        },
+        {
+          "name": "showError",
+          "line": 256
+        }
+      ],
+      "resources": [
+        {
+          "target": "/config.js",
+          "line": 4,
+          "local": true,
+          "exists": true
+        },
+        {
+          "target": "https://fonts.googleapis.com/css2",
+          "line": 22,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css",
+          "line": 23,
+          "local": false,
+          "exists": null
+        }
+      ]
+    },
+    {
+      "path": "animations.js",
+      "bytes": 5501,
+      "lines": 163,
+      "functions": [],
+      "resources": []
+    },
+    {
+      "path": "auth.html",
+      "bytes": 36236,
+      "lines": 850,
+      "functions": [
+        {
+          "name": "redirectAfterVerificationCheck",
+          "line": 608
+        }
+      ],
+      "resources": [
+        {
+          "target": "/config.js",
+          "line": 5,
+          "local": true,
+          "exists": true
+        },
+        {
+          "target": "https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css",
+          "line": 9,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css",
+          "line": 10,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://fonts.googleapis.com/css2",
+          "line": 11,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "styles.css",
+          "line": 13,
+          "local": true,
+          "exists": true
+        },
+        {
+          "target": "https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js",
+          "line": 533,
+          "local": false,
+          "exists": null
+        }
+      ]
+    },
+    {
+      "path": "community.html",
+      "bytes": 47563,
+      "lines": 911,
+      "functions": [
+        {
+          "name": "openComposer",
+          "line": 462
+        },
+        {
+          "name": "closeComposer",
+          "line": 476
+        },
+        {
+          "name": "triggerFileUpload",
+          "line": 489
+        },
+        {
+          "name": "handleFileSelect",
+          "line": 492
+        },
+        {
+          "name": "removeImage",
+          "line": 509
+        },
+        {
+          "name": "toggleLocation",
+          "line": 519
+        },
+        {
+          "name": "showLocationChip",
+          "line": 549
+        },
+        {
+          "name": "clearLocation",
+          "line": 556
+        },
+        {
+          "name": "focusCategory",
+          "line": 573
+        },
+        {
+          "name": "insertEmoji",
+          "line": 578
+        },
+        {
+          "name": "submitPost",
+          "line": 609
+        },
+        {
+          "name": "buildPostHtml",
+          "line": 667
+        },
+        {
+          "name": "prependPost",
+          "line": 715
+        },
+        {
+          "name": "loadPosts",
+          "line": 728
+        },
+        {
+          "name": "toggleLike",
+          "line": 763
+        },
+        {
+          "name": "updateLikeBtn",
+          "line": 779
+        },
+        {
+          "name": "sharePost",
+          "line": 791
+        },
+        {
+          "name": "copyToClipboard",
+          "line": 800
+        },
+        {
+          "name": "loadAlerts",
+          "line": 809
+        },
+        {
+          "name": "openLightbox",
+          "line": 843
+        },
+        {
+          "name": "closeLightbox",
+          "line": 848
+        },
+        {
+          "name": "showToast",
+          "line": 857
+        }
+      ],
+      "resources": [
+        {
+          "target": "/config.js",
+          "line": 4,
+          "local": true,
+          "exists": true
+        },
+        {
+          "target": "https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css",
+          "line": 17,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css",
+          "line": 18,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://fonts.googleapis.com/css2",
+          "line": 19,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://ui-avatars.com/api/",
+          "line": 253,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://ui-avatars.com/api/",
+          "line": 276,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js",
+          "line": 415,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "/socket.io/socket.io.js",
+          "line": 417,
+          "local": true,
+          "exists": null
+        },
+        {
+          "target": "https://ui-avatars.com/api/",
+          "line": 687,
+          "local": false,
+          "exists": null
+        }
+      ]
+    },
+    {
+      "path": "config/appUrls.js",
+      "bytes": 987,
+      "lines": 33,
+      "functions": [
+        {
+          "name": "stripTrailingSlash",
+          "line": 5
+        },
+        {
+          "name": "getFrontendUrl",
+          "line": 8
+        },
+        {
+          "name": "getBackendUrl",
+          "line": 16
+        },
+        {
+          "name": "liveTrackerLink",
+          "line": 24
+        }
+      ],
+      "resources": []
+    },
+    {
+      "path": "config/database.js",
+      "bytes": 753,
+      "lines": 26,
+      "functions": [],
+      "resources": []
+    },
+    {
+      "path": "config/firestoreAdmin.js",
+      "bytes": 3457,
+      "lines": 95,
+      "functions": [
+        {
+          "name": "readJsonFileSafe",
+          "line": 13
+        },
+        {
+          "name": "getFirestoreAdmin",
+          "line": 42
+        }
+      ],
+      "resources": []
+    },
+    {
+      "path": "config/listenWithFallback.js",
+      "bytes": 2737,
+      "lines": 74,
+      "functions": [
+        {
+          "name": "listenWithFallback",
+          "line": 10
+        },
+        {
+          "name": "tryPort",
+          "line": 17
+        }
+      ],
+      "resources": []
+    },
+    {
+      "path": "config.js",
+      "bytes": 3103,
+      "lines": 67,
+      "functions": [],
+      "resources": []
+    },
+    {
+      "path": "dashboard.html",
+      "bytes": 133003,
+      "lines": 2691,
+      "functions": [
+        {
+          "name": "getGeoOptions",
+          "line": 691
+        },
+        {
+          "name": "loadSafetyData",
+          "line": 699
+        },
+        {
+          "name": "initMap",
+          "line": 733
+        },
+        {
+          "name": "centerMapToCurrentLocation",
+          "line": 748
+        },
+        {
+          "name": "severityClass",
+          "line": 804
+        },
+        {
+          "name": "toggleMoreAlerts",
+          "line": 815
+        },
+        {
+          "name": "loadRecentAlerts",
+          "line": 831
+        },
+        {
+          "name": "setStatValues",
+          "line": 909
+        },
+        {
+          "name": "animateTo",
+          "line": 911
+        },
+        {
+          "name": "clearStatSpinners",
+          "line": 928
+        },
+        {
+          "name": "loadDashboardStats",
+          "line": 935
+        },
+        {
+          "name": "initializeMapLayers",
+          "line": 961
+        },
+        {
+          "name": "reloadSafetyData",
+          "line": 968
+        },
+        {
+          "name": "_metersPerPixel",
+          "line": 1027
+        },
+        {
+          "name": "_redraw",
+          "line": 1030
+        },
+        {
+          "name": "setMap",
+          "line": 1074
+        },
+        {
+          "name": "getData",
+          "line": 1076
+        },
+        {
+          "name": "setData",
+          "line": 1077
+        },
+        {
+          "name": "destroy",
+          "line": 1078
+        },
+        {
+          "name": "createHeatmap",
+          "line": 1084
+        },
+        {
+          "name": "createMarkersWithCircles",
+          "line": 1102
+        },
+        {
+          "name": "addIncidentMarkerDashboard",
+          "line": 1144
+        },
+        {
+          "name": "getColor",
+          "line": 1189
+        },
+        {
+          "name": "getRadius",
+          "line": 1198
+        },
+        {
+          "name": "getRiskLabel",
+          "line": 1207
+        },
+        {
+          "name": "toggleHeatmap",
+          "line": 1216
+        },
+        {
+          "name": "toggleMarkers",
+          "line": 1229
+        },
+        {
+          "name": "setMapStyle",
+          "line": 1242
+        },
+        {
+          "name": "animateCounter",
+          "line": 1285
+        },
+        {
+          "name": "toggleTipContent",
+          "line": 1319
+        },
+        {
+          "name": "showSpinner",
+          "line": 1469
+        },
+        {
+          "name": "clearSuggestions",
+          "line": 1471
+        },
+        {
+          "name": "iconForType",
+          "line": 1478
+        },
+        {
+          "name": "buildItem",
+          "line": 1489
+        },
+        {
+          "name": "renderSuggestions",
+          "line": 1511
+        },
+        {
+          "name": "selectSuggestion",
+          "line": 1527
+        },
+        {
+          "name": "fetchSuggestions",
+          "line": 1539
+        },
+        {
+          "name": "highlightItem",
+          "line": 1591
+        },
+        {
+          "name": "positionList",
+          "line": 1598
+        },
+        {
+          "name": "showNotification",
+          "line": 1751
+        },
+        {
+          "name": "escVerificationHtml",
+          "line": 1921
+        },
+        {
+          "name": "getFirebaseUserWithRetry",
+          "line": 1926
+        },
+        {
+          "name": "stopVerificationCamera",
+          "line": 1940
+        },
+        {
+          "name": "renderVerificationBanner",
+          "line": 1947
+        },
+        {
+          "name": "openVerificationCamera",
+          "line": 1994
+        },
+        {
+          "name": "cancelVerificationCamera",
+          "line": 2025
+        },
+        {
+          "name": "captureVerificationPhoto",
+          "line": 2035
+        },
+        {
+          "name": "loadVerificationStatus",
+          "line": 2065
+        },
+        {
+          "name": "submitVerificationSelfie",
+          "line": 2084
+        },
+        {
+          "name": "getCurrentUserInfo",
+          "line": 2131
+        },
+        {
+          "name": "toggleSosHistory",
+          "line": 2146
+        },
+        {
+          "name": "loadSosHistory",
+          "line": 2157
+        },
+        {
+          "name": "getCachedPositionQuick",
+          "line": 2437
+        },
+        {
+          "name": "openPanel",
+          "line": 2460
+        },
+        {
+          "name": "closePanel",
+          "line": 2468
+        },
+        {
+          "name": "showWelcome",
+          "line": 2482
+        },
+        {
+          "name": "loadTopics",
+          "line": 2496
+        },
+        {
+          "name": "esc",
+          "line": 2519
+        },
+        {
+          "name": "fmt",
+          "line": 2526
+        },
+        {
+          "name": "appendUserMessage",
+          "line": 2545
+        },
+        {
+          "name": "appendBotMessage",
+          "line": 2554
+        },
+        {
+          "name": "showTyping",
+          "line": 2593
+        },
+        {
+          "name": "hideTyping",
+          "line": 2600
+        },
+        {
+          "name": "appendError",
+          "line": 2603
+        },
+        {
+          "name": "sendMessage",
+          "line": 2612
+        },
+        {
+          "name": "autoResize",
+          "line": 2674
+        }
+      ],
+      "resources": [
+        {
+          "target": "https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css",
+          "line": 8,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css",
+          "line": 9,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://fonts.googleapis.com/css2",
+          "line": 10,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "styles.css",
+          "line": 12,
+          "local": true,
+          "exists": true
+        },
+        {
+          "target": "https://maps.googleapis.com/maps/api/js",
+          "line": 13,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "/config.js",
+          "line": 14,
+          "local": true,
+          "exists": true
+        },
+        {
+          "target": "https://cdn.socket.io/4.7.5/socket.io.min.js",
+          "line": 669,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js",
+          "line": 670,
+          "local": false,
+          "exists": null
+        }
+      ]
+    },
+    {
+      "path": "firebase-auth.js",
+      "bytes": 23772,
+      "lines": 572,
+      "functions": [
+        {
+          "name": "getCachedAvatar",
+          "line": 26
+        },
+        {
+          "name": "setCachedAvatar",
+          "line": 31
+        },
+        {
+          "name": "syncUserToFirestore",
+          "line": 41
+        },
+        {
+          "name": "initAuthStateListener",
+          "line": 111
+        },
+        {
+          "name": "addAuthStateListener",
+          "line": 162
+        },
+        {
+          "name": "removeAuthStateListener",
+          "line": 166
+        },
+        {
+          "name": "notifyAuthStateListeners",
+          "line": 170
+        },
+        {
+          "name": "updateUI",
+          "line": 174
+        },
+        {
+          "name": "updateUserInfo",
+          "line": 192
+        },
+        {
+          "name": "loginWithEmail",
+          "line": 221
+        },
+        {
+          "name": "registerWithEmail",
+          "line": 239
+        },
+        {
+          "name": "loginWithGoogle",
+          "line": 276
+        },
+        {
+          "name": "linkPassword",
+          "line": 331
+        },
+        {
+          "name": "loginWithFacebook",
+          "line": 342
+        },
+        {
+          "name": "loginWithApple",
+          "line": 377
+        },
+        {
+          "name": "resetPassword",
+          "line": 410
+        },
+        {
+          "name": "setupRecaptcha",
+          "line": 421
+        },
+        {
+          "name": "sendOTP",
+          "line": 440
+        },
+        {
+          "name": "verifyOTP",
+          "line": 468
+        },
+        {
+          "name": "logout",
+          "line": 499
+        },
+        {
+          "name": "getCurrentUser",
+          "line": 521
+        },
+        {
+          "name": "isLoggedIn",
+          "line": 525
+        },
+        {
+          "name": "getUserEmail",
+          "line": 529
+        },
+        {
+          "name": "getUserDisplayName",
+          "line": 533
+        },
+        {
+          "name": "updateFirebaseProfile",
+          "line": 542
+        }
+      ],
+      "resources": []
+    },
+    {
+      "path": "firebase-config.js",
+      "bytes": 1127,
+      "lines": 30,
+      "functions": [],
+      "resources": []
+    },
+    {
+      "path": "firestore.rules",
+      "bytes": 410,
+      "lines": 13,
+      "functions": [],
+      "resources": []
+    },
+    {
+      "path": "fly.toml",
+      "bytes": 970,
+      "lines": 42,
+      "functions": [],
+      "resources": []
+    },
+    {
+      "path": "index.html",
+      "bytes": 65556,
+      "lines": 1398,
+      "functions": [
+        {
+          "name": "hide",
+          "line": 1248
+        },
+        {
+          "name": "spin",
+          "line": 1250
+        },
+        {
+          "name": "buildLi",
+          "line": 1251
+        },
+        {
+          "name": "pick",
+          "line": 1264
+        },
+        {
+          "name": "search",
+          "line": 1273
+        },
+        {
+          "name": "guardedNav",
+          "line": 1351
+        },
+        {
+          "name": "showAuthToast",
+          "line": 1359
+        }
+      ],
+      "resources": [
+        {
+          "target": "https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css",
+          "line": 8,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css",
+          "line": 9,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://unpkg.com/aos@2.3.1/dist/aos.css",
+          "line": 10,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://fonts.googleapis.com/css2",
+          "line": 11,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js",
+          "line": 13,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js",
+          "line": 14,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js",
+          "line": 15,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollToPlugin.min.js",
+          "line": 16,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://unpkg.com/aos@2.3.1/dist/aos.js",
+          "line": 17,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "download (1).jpg",
+          "line": 640,
+          "local": true,
+          "exists": true
+        },
+        {
+          "target": "https://images.unsplash.com/photo-1573164574511-73c773193279",
+          "line": 817,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://images.unsplash.com/photo-1536599018102-9f803c140fc1",
+          "line": 851,
+          "local": false,
+          "exists": null
+        }
+      ]
+    },
+    {
+      "path": "live-tracker-viewer.js",
+      "bytes": 8785,
+      "lines": 167,
+      "functions": [
+        {
+          "name": "socketOrigin",
+          "line": 12
+        },
+        {
+          "name": "buildViewerShell",
+          "line": 16
+        },
+        {
+          "name": "hideTrackerUI",
+          "line": 56
+        },
+        {
+          "name": "setStatus",
+          "line": 64
+        },
+        {
+          "name": "resolveSessionId",
+          "line": 74
+        },
+        {
+          "name": "initViewerMode",
+          "line": 82
+        },
+        {
+          "name": "applyLocation",
+          "line": 87
+        },
+        {
+          "name": "pollLocation",
+          "line": 117
+        }
+      ],
+      "resources": []
+    },
+    {
+      "path": "live-tracker.html",
+      "bytes": 56209,
+      "lines": 1418,
+      "functions": [
+        {
+          "name": "isMobileView",
+          "line": 1358
+        }
+      ],
+      "resources": [
+        {
+          "target": "/config.js",
+          "line": 5,
+          "local": true,
+          "exists": true
+        },
+        {
+          "target": "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css",
+          "line": 19,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css",
+          "line": 20,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://fonts.googleapis.com/css2",
+          "line": 21,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://cdn.socket.io/4.7.5/socket.io.min.js",
+          "line": 23,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "styles.css",
+          "line": 24,
+          "local": true,
+          "exists": true
+        },
+        {
+          "target": "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js",
+          "line": 1347,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "live-tracker-viewer.js",
+          "line": 1348,
+          "local": true,
+          "exists": true
+        },
+        {
+          "target": "live-tracker.js",
+          "line": 1349,
+          "local": true,
+          "exists": true
+        },
+        {
+          "target": "https://maps.googleapis.com/maps/api/js",
+          "line": 1351,
+          "local": false,
+          "exists": null
+        }
+      ]
+    },
+    {
+      "path": "live-tracker.js",
+      "bytes": 42236,
+      "lines": 880,
+      "functions": [
+        {
+          "name": "readJsonResponse",
+          "line": 7
+        },
+        {
+          "name": "haversineDistanceKm",
+          "line": 20
+        },
+        {
+          "name": "initGoogle",
+          "line": 59
+        },
+        {
+          "name": "_bindEvents",
+          "line": 65
+        },
+        {
+          "name": "_search",
+          "line": 113
+        },
+        {
+          "name": "_renderPredictions",
+          "line": 126
+        },
+        {
+          "name": "_selectPlace",
+          "line": 155
+        },
+        {
+          "name": "_highlight",
+          "line": 172
+        },
+        {
+          "name": "_close",
+          "line": 177
+        },
+        {
+          "name": "_useGPS",
+          "line": 184
+        },
+        {
+          "name": "_resetGpsBtn",
+          "line": 223
+        },
+        {
+          "name": "_bindEvents",
+          "line": 268
+        },
+        {
+          "name": "initMap",
+          "line": 316
+        },
+        {
+          "name": "_placeMarker",
+          "line": 361
+        },
+        {
+          "name": "handleStartTracking",
+          "line": 387
+        },
+        {
+          "name": "_showTrackingLink",
+          "line": 489
+        },
+        {
+          "name": "saveSession",
+          "line": 499
+        },
+        {
+          "name": "restoreSession",
+          "line": 500
+        },
+        {
+          "name": "clearSession",
+          "line": 517
+        },
+        {
+          "name": "startTrackingSession",
+          "line": 521
+        },
+        {
+          "name": "handleLocationUpdate",
+          "line": 554
+        },
+        {
+          "name": "_updateAccuracyStatus",
+          "line": 640
+        },
+        {
+          "name": "handleGeoError",
+          "line": 654
+        },
+        {
+          "name": "resetVerificationTimer",
+          "line": 669
+        },
+        {
+          "name": "showPinModal",
+          "line": 685
+        },
+        {
+          "name": "handleVerifyPin",
+          "line": 700
+        },
+        {
+          "name": "triggerEmergency",
+          "line": 732
+        },
+        {
+          "name": "handleStopTracking",
+          "line": 761
+        },
+        {
+          "name": "showNotification",
+          "line": 797
+        },
+        {
+          "name": "showToast",
+          "line": 819
+        },
+        {
+          "name": "initMap",
+          "line": 834
+        },
+        {
+          "name": "bootSafetyTracker",
+          "line": 847
+        }
+      ],
+      "resources": []
+    },
+    {
+      "path": "middleware/adminAuth.js",
+      "bytes": 1117,
+      "lines": 33,
+      "functions": [
+        {
+          "name": "adminAuth",
+          "line": 9
+        }
+      ],
+      "resources": []
+    },
+    {
+      "path": "middleware/loginThrottle.js",
+      "bytes": 2941,
+      "lines": 79,
+      "functions": [
+        {
+          "name": "backoffDelayMs",
+          "line": 36
+        },
+        {
+          "name": "loginBackoffGuard",
+          "line": 41
+        },
+        {
+          "name": "recordLoginFailure",
+          "line": 57
+        },
+        {
+          "name": "clearLoginFailures",
+          "line": 64
+        }
+      ],
+      "resources": []
+    },
+    {
+      "path": "middleware/requireAuth.js",
+      "bytes": 1591,
+      "lines": 39,
+      "functions": [
+        {
+          "name": "requireAuth",
+          "line": 13
+        }
+      ],
+      "resources": []
+    },
+    {
+      "path": "navigation.js",
+      "bytes": 106067,
+      "lines": 2106,
+      "functions": [
+        {
+          "name": "loadScopedAvatar",
+          "line": 11
+        },
+        {
+          "name": "saveScopedAvatar",
+          "line": 17
+        },
+        {
+          "name": "init",
+          "line": 36
+        },
+        {
+          "name": "ensureFontAwesome",
+          "line": 44
+        },
+        {
+          "name": "checkLoginStatus",
+          "line": 56
+        },
+        {
+          "name": "setLoginStatus",
+          "line": 61
+        },
+        {
+          "name": "getCurrentPage",
+          "line": 66
+        },
+        {
+          "name": "handleAuthenticationRedirect",
+          "line": 81
+        },
+        {
+          "name": "performRedirectCheck",
+          "line": 101
+        },
+        {
+          "name": "setupBrowserNavigationHandlers",
+          "line": 130
+        },
+        {
+          "name": "handleBrowserNavigation",
+          "line": 145
+        },
+        {
+          "name": "login",
+          "line": 166
+        },
+        {
+          "name": "logout",
+          "line": 177
+        },
+        {
+          "name": "createNavigation",
+          "line": 188
+        },
+        {
+          "name": "addUnifiedNavStyles",
+          "line": 557
+        },
+        {
+          "name": "initUnifiedNav",
+          "line": 1050
+        },
+        {
+          "name": "setSosActiveUI",
+          "line": 1368
+        },
+        {
+          "name": "resetSosUI",
+          "line": 1381
+        },
+        {
+          "name": "showSosFeedback",
+          "line": 1403
+        },
+        {
+          "name": "updateTimerDisplay",
+          "line": 1410
+        },
+        {
+          "name": "getCurrentLocation",
+          "line": 1431
+        },
+        {
+          "name": "pushLocationUpdate",
+          "line": 1443
+        },
+        {
+          "name": "startGpsPoll",
+          "line": 1457
+        },
+        {
+          "name": "openSosModal",
+          "line": 1464
+        },
+        {
+          "name": "uploadAvatarToStorage",
+          "line": 1802
+        },
+        {
+          "name": "setupMobileMenu",
+          "line": 1991
+        },
+        {
+          "name": "toggleMobileMenu",
+          "line": 2057
+        },
+        {
+          "name": "closeMobileMenu",
+          "line": 2065
+        },
+        {
+          "name": "toggleUserDropdown",
+          "line": 2073
+        },
+        {
+          "name": "closeUserDropdown",
+          "line": 2080
+        },
+        {
+          "name": "updateNavState",
+          "line": 2087
+        }
+      ],
+      "resources": []
+    },
+    {
+      "path": "render.yaml",
+      "bytes": 5869,
+      "lines": 126,
+      "functions": [],
+      "resources": []
+    },
+    {
+      "path": "report_button.html",
+      "bytes": 5016,
+      "lines": 181,
+      "functions": [],
+      "resources": []
+    },
+    {
+      "path": "routes/admin.js",
+      "bytes": 37563,
+      "lines": 828,
+      "functions": [
+        {
+          "name": "fileFilter",
+          "line": 52
+        },
+        {
+          "name": "getIo",
+          "line": 62
+        },
+        {
+          "name": "log",
+          "line": 63
+        },
+        {
+          "name": "checkValidation",
+          "line": 76
+        }
+      ],
+      "resources": []
+    },
+    {
+      "path": "routes/community.js",
+      "bytes": 15893,
+      "lines": 328,
+      "functions": [
+        {
+          "name": "checkValidation",
+          "line": 22
+        },
+        {
+          "name": "getIo",
+          "line": 78
+        }
+      ],
+      "resources": []
+    },
+    {
+      "path": "routes/emergencyLite.js",
+      "bytes": 30666,
+      "lines": 611,
+      "functions": [
+        {
+          "name": "hasEmailConfig",
+          "line": 20
+        },
+        {
+          "name": "sendSosEmail",
+          "line": 28
+        },
+        {
+          "name": "sendBulkSosEmails",
+          "line": 83
+        },
+        {
+          "name": "hashPin",
+          "line": 102
+        },
+        {
+          "name": "generateTrackingCode",
+          "line": 106
+        },
+        {
+          "name": "ensureUniqueCode",
+          "line": 113
+        },
+        {
+          "name": "autoExpireSos",
+          "line": 123
+        },
+        {
+          "name": "scheduleSosTimer",
+          "line": 136
+        }
+      ],
+      "resources": []
+    },
+    {
+      "path": "routes/legalChat.js",
+      "bytes": 8634,
+      "lines": 205,
+      "functions": [
+        {
+          "name": "haversineDistanceKm",
+          "line": 28
+        },
+        {
+          "name": "findNearbySafeLocations",
+          "line": 40
+        }
+      ],
+      "resources": []
+    },
+    {
+      "path": "routes/liveTracker.js",
+      "bytes": 33330,
+      "lines": 650,
+      "functions": [
+        {
+          "name": "checkValidation",
+          "line": 23
+        },
+        {
+          "name": "hasEmailConfig",
+          "line": 75
+        }
+      ],
+      "resources": []
+    },
+    {
+      "path": "routes/safety.js",
+      "bytes": 20181,
+      "lines": 554,
+      "functions": [],
+      "resources": []
+    },
+    {
+      "path": "routes/safetyLocations.js",
+      "bytes": 4483,
+      "lines": 128,
+      "functions": [
+        {
+          "name": "checkValidation",
+          "line": 10
+        }
+      ],
+      "resources": []
+    },
+    {
+      "path": "routes/trackingLite.js",
+      "bytes": 8827,
+      "lines": 233,
+      "functions": [
+        {
+          "name": "genCode",
+          "line": 14
+        },
+        {
+          "name": "uniqueCode",
+          "line": 18
+        }
+      ],
+      "resources": []
+    },
+    {
+      "path": "routes/users.js",
+      "bytes": 15688,
+      "lines": 368,
+      "functions": [
+        {
+          "name": "defaultPreferences",
+          "line": 26
+        },
+        {
+          "name": "defaultStats",
+          "line": 35
+        }
+      ],
+      "resources": []
+    },
+    {
+      "path": "routes/verification.js",
+      "bytes": 6350,
+      "lines": 125,
+      "functions": [],
+      "resources": []
+    },
+    {
+      "path": "Safety Map/Components/HotspotsMap.js",
+      "bytes": 1388,
+      "lines": 43,
+      "functions": [],
+      "resources": []
+    },
+    {
+      "path": "Safety Map/heatmap.py",
+      "bytes": 820,
+      "lines": 25,
+      "functions": [],
+      "resources": []
+    },
+    {
+      "path": "Safety Map/safety-map.html",
+      "bytes": 5036,
+      "lines": 140,
+      "functions": [
+        {
+          "name": "initMap",
+          "line": 47
+        },
+        {
+          "name": "calculateRoute",
+          "line": 102
+        }
+      ],
+      "resources": [
+        {
+          "target": "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css",
+          "line": 7,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://maps.googleapis.com/maps/api/js",
+          "line": 8,
+          "local": false,
+          "exists": null
+        }
+      ]
+    },
+    {
+      "path": "Safety Map/safety_navigator.py",
+      "bytes": 8328,
+      "lines": 214,
+      "functions": [],
+      "resources": []
+    },
+    {
+      "path": "Safety Map/safety_route_map.html",
+      "bytes": 64948,
+      "lines": 1248,
+      "functions": [],
+      "resources": [
+        {
+          "target": "https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js",
+          "line": 14,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://code.jquery.com/jquery-1.12.4.min.js",
+          "line": 15,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js",
+          "line": 16,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js",
+          "line": 17,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css",
+          "line": 18,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css",
+          "line": 19,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css",
+          "line": 20,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css",
+          "line": 21,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css",
+          "line": 22,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css",
+          "line": 23,
+          "local": false,
+          "exists": null
+        }
+      ]
+    },
+    {
+      "path": "Safety Map/server.js",
+      "bytes": 2149,
+      "lines": 70,
+      "functions": [],
+      "resources": []
+    },
+    {
+      "path": "Safety Map/women-safety-map/public/index.html",
+      "bytes": 1721,
+      "lines": 44,
+      "functions": [],
+      "resources": []
+    },
+    {
+      "path": "Safety Map/women-safety-map/src/App.css",
+      "bytes": 564,
+      "lines": 39,
+      "functions": [],
+      "resources": []
+    },
+    {
+      "path": "Safety Map/women-safety-map/src/App.js",
+      "bytes": 248,
+      "lines": 14,
+      "functions": [
+        {
+          "name": "App",
+          "line": 2
+        }
+      ],
+      "resources": []
+    },
+    {
+      "path": "Safety Map/women-safety-map/src/App.test.js",
+      "bytes": 246,
+      "lines": 9,
+      "functions": [],
+      "resources": []
+    },
+    {
+      "path": "Safety Map/women-safety-map/src/index.css",
+      "bytes": 366,
+      "lines": 14,
+      "functions": [],
+      "resources": []
+    },
+    {
+      "path": "Safety Map/women-safety-map/src/index.js",
+      "bytes": 535,
+      "lines": 18,
+      "functions": [],
+      "resources": []
+    },
+    {
+      "path": "Safety Map/women-safety-map/src/reportWebVitals.js",
+      "bytes": 362,
+      "lines": 14,
+      "functions": [],
+      "resources": []
+    },
+    {
+      "path": "Safety Map/women-safety-map/src/setupTests.js",
+      "bytes": 241,
+      "lines": 6,
+      "functions": [],
+      "resources": []
+    },
+    {
+      "path": "safety-map.html",
+      "bytes": 71696,
+      "lines": 1551,
+      "functions": [
+        {
+          "name": "initMap",
+          "line": 25
+        },
+        {
+          "name": "connect",
+          "line": 637
+        },
+        {
+          "name": "showIncidentToast",
+          "line": 654
+        },
+        {
+          "name": "mergedData",
+          "line": 688
+        },
+        {
+          "name": "loadSafetyData",
+          "line": 691
+        },
+        {
+          "name": "addIncidentPointLive",
+          "line": 733
+        },
+        {
+          "name": "loadGoogleMapsAPI",
+          "line": 756
+        },
+        {
+          "name": "initMap",
+          "line": 777
+        },
+        {
+          "name": "getRiskColor",
+          "line": 886
+        },
+        {
+          "name": "createMarkers",
+          "line": 893
+        },
+        {
+          "name": "addIncidentMarker",
+          "line": 924
+        },
+        {
+          "name": "_metersPerPixel",
+          "line": 984
+        },
+        {
+          "name": "_redraw",
+          "line": 987
+        },
+        {
+          "name": "setMap",
+          "line": 1027
+        },
+        {
+          "name": "getData",
+          "line": 1028
+        },
+        {
+          "name": "setData",
+          "line": 1029
+        },
+        {
+          "name": "destroy",
+          "line": 1030
+        },
+        {
+          "name": "createHeatmap",
+          "line": 1038
+        },
+        {
+          "name": "getTimeBasedRiskLevel",
+          "line": 1066
+        },
+        {
+          "name": "updateStatistics",
+          "line": 1075
+        },
+        {
+          "name": "populateLocationFilter",
+          "line": 1092
+        },
+        {
+          "name": "geocodeLocation",
+          "line": 1191
+        },
+        {
+          "name": "showMapToast",
+          "line": 1258
+        },
+        {
+          "name": "geoErrorMessage",
+          "line": 1277
+        },
+        {
+          "name": "showRouteResult",
+          "line": 1287
+        },
+        {
+          "name": "calculateSafeRoute",
+          "line": 1309
+        },
+        {
+          "name": "isNearHighRiskAreas",
+          "line": 1435
+        },
+        {
+          "name": "connect",
+          "line": 1444
+        }
+      ],
+      "resources": [
+        {
+          "target": "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css",
+          "line": 16,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css",
+          "line": 17,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://fonts.googleapis.com/css2",
+          "line": 18,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css",
+          "line": 20,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "styles.css",
+          "line": 22,
+          "local": true,
+          "exists": true
+        },
+        {
+          "target": "/config.js",
+          "line": 23,
+          "local": true,
+          "exists": true
+        },
+        {
+          "target": "https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js",
+          "line": 24,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js",
+          "line": 627,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "/safety-stats.js",
+          "line": 628,
+          "local": true,
+          "exists": false
+        },
+        {
+          "target": "/route-planning-fix.js",
+          "line": 629,
+          "local": true,
+          "exists": false
+        },
+        {
+          "target": "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js",
+          "line": 630,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://cdn.socket.io/4.7.5/socket.io.min.js",
+          "line": 634,
+          "local": false,
+          "exists": null
+        }
+      ]
+    },
+    {
+      "path": "safetymap.html",
+      "bytes": 4030,
+      "lines": 115,
+      "functions": [
+        {
+          "name": "initMap",
+          "line": 47
+        },
+        {
+          "name": "calculateRoute",
+          "line": 77
+        }
+      ],
+      "resources": [
+        {
+          "target": "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css",
+          "line": 7,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://maps.googleapis.com/maps/api/js",
+          "line": 8,
+          "local": false,
+          "exists": null
+        }
+      ]
+    },
+    {
+      "path": "scripts/smoke-api.js",
+      "bytes": 4045,
+      "lines": 99,
+      "functions": [
+        {
+          "name": "req",
+          "line": 8
+        },
+        {
+          "name": "fail",
+          "line": 26
+        },
+        {
+          "name": "main",
+          "line": 31
+        }
+      ],
+      "resources": []
+    },
+    {
+      "path": "server.js",
+      "bytes": 19406,
+      "lines": 453,
+      "functions": [],
+      "resources": []
+    },
+    {
+      "path": "services/cloudinaryService.js",
+      "bytes": 5319,
+      "lines": 139,
+      "functions": [
+        {
+          "name": "isConfigured",
+          "line": 30
+        },
+        {
+          "name": "ensureConfigured",
+          "line": 38
+        },
+        {
+          "name": "notConfiguredError",
+          "line": 49
+        },
+        {
+          "name": "uploadImage",
+          "line": 68
+        },
+        {
+          "name": "deleteImage",
+          "line": 91
+        },
+        {
+          "name": "downloadAuthenticated",
+          "line": 109
+        }
+      ],
+      "resources": []
+    },
+    {
+      "path": "services/emailService.js",
+      "bytes": 3488,
+      "lines": 102,
+      "functions": [
+        {
+          "name": "isConfigured",
+          "line": 24
+        },
+        {
+          "name": "getClient",
+          "line": 33
+        },
+        {
+          "name": "encodeHeader",
+          "line": 49
+        },
+        {
+          "name": "toRecipientHeader",
+          "line": 52
+        },
+        {
+          "name": "buildRawMessage",
+          "line": 59
+        },
+        {
+          "name": "sendMail",
+          "line": 82
+        }
+      ],
+      "resources": []
+    },
+    {
+      "path": "services/firestoreRepository.js",
+      "bytes": 27326,
+      "lines": 776,
+      "functions": [
+        {
+          "name": "firestoreOrThrow",
+          "line": 24
+        },
+        {
+          "name": "toTimestamp",
+          "line": 37
+        },
+        {
+          "name": "serializeValue",
+          "line": 45
+        },
+        {
+          "name": "serializeDoc",
+          "line": 59
+        },
+        {
+          "name": "writeUser",
+          "line": 67
+        },
+        {
+          "name": "writeTrackingSession",
+          "line": 73
+        },
+        {
+          "name": "writeIncident",
+          "line": 98
+        },
+        {
+          "name": "stripUndefinedDeep",
+          "line": 119
+        },
+        {
+          "name": "sanitizeIncidentPayloadForFirestore",
+          "line": 144
+        },
+        {
+          "name": "writeCommunity",
+          "line": 168
+        },
+        {
+          "name": "usersFindById",
+          "line": 181
+        },
+        {
+          "name": "usersFindByEmail",
+          "line": 187
+        },
+        {
+          "name": "usersCreate",
+          "line": 194
+        },
+        {
+          "name": "usersSave",
+          "line": 201
+        },
+        {
+          "name": "usersDelete",
+          "line": 207
+        },
+        {
+          "name": "trackingCodeExists",
+          "line": 212
+        },
+        {
+          "name": "trackingCreate",
+          "line": 218
+        },
+        {
+          "name": "trackingFindById",
+          "line": 224
+        },
+        {
+          "name": "trackingFindByCode",
+          "line": 230
+        },
+        {
+          "name": "trackingUpdate",
+          "line": 238
+        },
+        {
+          "name": "trackingFindByUserId",
+          "line": 244
+        },
+        {
+          "name": "incidentsFetchAll",
+          "line": 254
+        },
+        {
+          "name": "incidentsGetById",
+          "line": 260
+        },
+        {
+          "name": "incidentsCreate",
+          "line": 266
+        },
+        {
+          "name": "incidentsSave",
+          "line": 274
+        },
+        {
+          "name": "communityInsert",
+          "line": 280
+        },
+        {
+          "name": "communityFindByKind",
+          "line": 288
+        },
+        {
+          "name": "communityLikePost",
+          "line": 301
+        },
+        {
+          "name": "communityUpdateImageUrl",
+          "line": 325
+        },
+        {
+          "name": "liveSessionCreate",
+          "line": 330
+        },
+        {
+          "name": "liveSessionGetByUserId",
+          "line": 350
+        },
+        {
+          "name": "liveSessionFindByCode",
+          "line": 356
+        },
+        {
+          "name": "liveSessionSetVerified",
+          "line": 364
+        },
+        {
+          "name": "liveSessionPushLocation",
+          "line": 372
+        },
+        {
+          "name": "liveSessionStop",
+          "line": 390
+        },
+        {
+          "name": "safetyLocationsList",
+          "line": 395
+        },
+        {
+          "name": "safetyLocationsBulkImport",
+          "line": 418
+        },
+        {
+          "name": "safetyLocationsDeleteAll",
+          "line": 463
+        },
+        {
+          "name": "safetyLocationsAdd",
+          "line": 477
+        },
+        {
+          "name": "safetyLocationsSeedFromCsvIfEmpty",
+          "line": 494
+        },
+        {
+          "name": "isFirestoreConfigured",
+          "line": 557
+        },
+        {
+          "name": "sosCreate",
+          "line": 563
+        },
+        {
+          "name": "sosFindActive",
+          "line": 574
+        },
+        {
+          "name": "sosMarkSafe",
+          "line": 586
+        },
+        {
+          "name": "sosMarkExpired",
+          "line": 594
+        },
+        {
+          "name": "sosFindByUserId",
+          "line": 602
+        },
+        {
+          "name": "liveSessionsByEmail",
+          "line": 619
+        },
+        {
+          "name": "usersListAll",
+          "line": 632
+        },
+        {
+          "name": "incidentsDelete",
+          "line": 640
+        },
+        {
+          "name": "communityDeletePost",
+          "line": 645
+        },
+        {
+          "name": "communityDeleteAlert",
+          "line": 650
+        },
+        {
+          "name": "sosListAll",
+          "line": 655
+        },
+        {
+          "name": "liveSessionsListAll",
+          "line": 663
+        },
+        {
+          "name": "adminLogCreate",
+          "line": 671
+        },
+        {
+          "name": "adminLogsList",
+          "line": 682
+        },
+        {
+          "name": "getDashboardStats",
+          "line": 690
+        },
+        {
+          "name": "countCollection",
+          "line": 697
+        }
+      ],
+      "resources": []
+    },
+    {
+      "path": "services/geocoding.js",
+      "bytes": 1359,
+      "lines": 34,
+      "functions": [
+        {
+          "name": "isConfigured",
+          "line": 12
+        },
+        {
+          "name": "reverseGeocode",
+          "line": 16
+        }
+      ],
+      "resources": []
+    },
+    {
+      "path": "services/legalChatService.js",
+      "bytes": 23393,
+      "lines": 365,
+      "functions": [
+        {
+          "name": "getClient",
+          "line": 19
+        },
+        {
+          "name": "isLegalQuery",
+          "line": 37
+        },
+        {
+          "name": "sanitizeInput",
+          "line": 246
+        },
+        {
+          "name": "formatNearbyLocationsContext",
+          "line": 261
+        },
+        {
+          "name": "buildMessages",
+          "line": 277
+        },
+        {
+          "name": "chat",
+          "line": 318
+        },
+        {
+          "name": "getTopics",
+          "line": 351
+        },
+        {
+          "name": "healthCheck",
+          "line": 358
+        }
+      ],
+      "resources": []
+    },
+    {
+      "path": "services/safetyAnalytics.js",
+      "bytes": 7110,
+      "lines": 210,
+      "functions": [
+        {
+          "name": "loadActiveIncidents",
+          "line": 3
+        },
+        {
+          "name": "calculateRouteSafety",
+          "line": 22
+        },
+        {
+          "name": "findNearbyIncidents",
+          "line": 74
+        },
+        {
+          "name": "calculateSegmentRisk",
+          "line": 84
+        },
+        {
+          "name": "applyTimeAdjustment",
+          "line": 109
+        },
+        {
+          "name": "getRiskLevel",
+          "line": 122
+        },
+        {
+          "name": "getRecommendation",
+          "line": 129
+        },
+        {
+          "name": "isNightTime",
+          "line": 146
+        },
+        {
+          "name": "calculateDistance",
+          "line": 150
+        },
+        {
+          "name": "toRad",
+          "line": 163
+        },
+        {
+          "name": "generateHeatmapData",
+          "line": 167
+        },
+        {
+          "name": "getIncidentWeight",
+          "line": 196
+        }
+      ],
+      "resources": []
+    },
+    {
+      "path": "services/sanitize.js",
+      "bytes": 1350,
+      "lines": 33,
+      "functions": [
+        {
+          "name": "stripHtml",
+          "line": 17
+        },
+        {
+          "name": "stripFields",
+          "line": 23
+        }
+      ],
+      "resources": []
+    },
+    {
+      "path": "services/smsService.js",
+      "bytes": 12960,
+      "lines": 306,
+      "functions": [
+        {
+          "name": "formatE164",
+          "line": 48
+        },
+        {
+          "name": "isValidE164",
+          "line": 60
+        },
+        {
+          "name": "categoriseError",
+          "line": 65
+        },
+        {
+          "name": "_sendOne",
+          "line": 81
+        },
+        {
+          "name": "buildEmergencyMsg",
+          "line": 111
+        },
+        {
+          "name": "buildSafeMsg",
+          "line": 123
+        },
+        {
+          "name": "buildLocationMsg",
+          "line": 128
+        },
+        {
+          "name": "buildCheckInMsg",
+          "line": 134
+        },
+        {
+          "name": "buildUserSosConfirmMsg",
+          "line": 140
+        },
+        {
+          "name": "validate",
+          "line": 156
+        },
+        {
+          "name": "validatePhoneNumber",
+          "line": 162
+        },
+        {
+          "name": "formatPhoneNumber",
+          "line": 163
+        },
+        {
+          "name": "sendEmergencyAlert",
+          "line": 166
+        },
+        {
+          "name": "sendSafeConfirmation",
+          "line": 180
+        },
+        {
+          "name": "sendSosConfirmationToUser",
+          "line": 193
+        },
+        {
+          "name": "sendLocationUpdate",
+          "line": 206
+        },
+        {
+          "name": "sendCheckInNotification",
+          "line": 219
+        },
+        {
+          "name": "sendBulkEmergencyAlerts",
+          "line": 239
+        },
+        {
+          "name": "sendBulkSafeConfirmations",
+          "line": 262
+        },
+        {
+          "name": "testSend",
+          "line": 280
+        },
+        {
+          "name": "status",
+          "line": 294
+        }
+      ],
+      "resources": []
+    },
+    {
+      "path": "services/userNotifications.js",
+      "bytes": 4751,
+      "lines": 103,
+      "functions": [
+        {
+          "name": "wrap",
+          "line": 10
+        },
+        {
+          "name": "button",
+          "line": 25
+        },
+        {
+          "name": "send",
+          "line": 32
+        },
+        {
+          "name": "sendWelcomeEmail",
+          "line": 46
+        },
+        {
+          "name": "sendVerificationApprovedEmail",
+          "line": 58
+        },
+        {
+          "name": "sendVerificationRejectedEmail",
+          "line": 68
+        },
+        {
+          "name": "sendAccountDeactivatedEmail",
+          "line": 85
+        }
+      ],
+      "resources": []
+    },
+    {
+      "path": "services/verificationRetention.js",
+      "bytes": 2640,
+      "lines": 64,
+      "functions": [
+        {
+          "name": "toDate",
+          "line": 17
+        },
+        {
+          "name": "purgeExpiredVerificationSelfies",
+          "line": 30
+        }
+      ],
+      "resources": []
+    },
+    {
+      "path": "services/whatsappService.js",
+      "bytes": 4957,
+      "lines": 137,
+      "functions": [
+        {
+          "name": "sendEmergencyAlert",
+          "line": 26
+        },
+        {
+          "name": "sendLocationUpdate",
+          "line": 57
+        },
+        {
+          "name": "formatEmergencyMessage",
+          "line": 82
+        },
+        {
+          "name": "sendBulkEmergencyAlerts",
+          "line": 91
+        },
+        {
+          "name": "sendCheckInNotification",
+          "line": 118
+        }
+      ],
+      "resources": []
+    },
+    {
+      "path": "Sheherhackathon/index.html",
+      "bytes": 19806,
+      "lines": 570,
+      "functions": [
+        {
+          "name": "initMap",
+          "line": 313
+        },
+        {
+          "name": "showMarker",
+          "line": 326
+        },
+        {
+          "name": "calculateAndDisplayRoute",
+          "line": 347
+        },
+        {
+          "name": "showAlert",
+          "line": 499
+        },
+        {
+          "name": "updateLocationInput",
+          "line": 531
+        }
+      ],
+      "resources": [
+        {
+          "target": "https://maps.googleapis.com/maps/api/js",
+          "line": 568,
+          "local": false,
+          "exists": null
+        }
+      ]
+    },
+    {
+      "path": "storage.rules",
+      "bytes": 927,
+      "lines": 21,
+      "functions": [],
+      "resources": []
+    },
+    {
+      "path": "styles.css",
+      "bytes": 8261,
+      "lines": 199,
+      "functions": [],
+      "resources": []
+    },
+    {
+      "path": "VDIT3/app.py",
+      "bytes": 11354,
+      "lines": 297,
+      "functions": [],
+      "resources": []
+    },
+    {
+      "path": "VDIT3/chatbot.py",
+      "bytes": 858,
+      "lines": 27,
+      "functions": [],
+      "resources": []
+    },
+    {
+      "path": "VDIT3/fake_call.py",
+      "bytes": 5484,
+      "lines": 166,
+      "functions": [],
+      "resources": []
+    },
+    {
+      "path": "verify-identity.html",
+      "bytes": 14714,
+      "lines": 406,
+      "functions": [
+        {
+          "name": "stopCamera",
+          "line": 221
+        },
+        {
+          "name": "escHtml",
+          "line": 229
+        },
+        {
+          "name": "getFirebaseUserWithRetry",
+          "line": 234
+        },
+        {
+          "name": "showOpenCameraButton",
+          "line": 248
+        },
+        {
+          "name": "init",
+          "line": 363
+        }
+      ],
+      "resources": [
+        {
+          "target": "/config.js",
+          "line": 5,
+          "local": true,
+          "exists": true
+        },
+        {
+          "target": "https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css",
+          "line": 9,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css",
+          "line": 10,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "https://fonts.googleapis.com/css2",
+          "line": 11,
+          "local": false,
+          "exists": null
+        },
+        {
+          "target": "styles.css",
+          "line": 13,
+          "local": true,
+          "exists": true
+        }
+      ]
+    }
+  ],
+  "apiRoutes": [
+    {
+      "method": "POST",
+      "path": "/api/admin/login",
+      "file": "routes/admin.js",
+      "line": 91,
+      "auth": "public login",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/stats",
+      "file": "routes/admin.js",
+      "line": 142,
+      "auth": "admin JWT",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/users",
+      "file": "routes/admin.js",
+      "line": 184,
+      "auth": "admin JWT",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/users/:id",
+      "file": "routes/admin.js",
+      "line": 198,
+      "auth": "admin JWT",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/users/:id/deactivate",
+      "file": "routes/admin.js",
+      "line": 215,
+      "auth": "admin JWT",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/users/:id",
+      "file": "routes/admin.js",
+      "line": 259,
+      "auth": "admin JWT",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/verifications",
+      "file": "routes/admin.js",
+      "line": 301,
+      "auth": "admin JWT",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/verifications/:userId/selfie",
+      "file": "routes/admin.js",
+      "line": 316,
+      "auth": "admin JWT",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/verifications/:userId/approve",
+      "file": "routes/admin.js",
+      "line": 340,
+      "auth": "admin JWT",
+      "lexicalValidationFieldReferences": [
+        "reason",
+        "deactivate"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/verifications/:userId/reject",
+      "file": "routes/admin.js",
+      "line": 365,
+      "auth": "admin JWT",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/posts",
+      "file": "routes/admin.js",
+      "line": 416,
+      "auth": "admin JWT",
+      "lexicalValidationFieldReferences": [
+        "content",
+        "category",
+        "location"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/posts",
+      "file": "routes/admin.js",
+      "line": 434,
+      "auth": "admin JWT",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/posts/:id",
+      "file": "routes/admin.js",
+      "line": 468,
+      "auth": "admin JWT",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/alerts",
+      "file": "routes/admin.js",
+      "line": 483,
+      "auth": "admin JWT",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/alerts/:id",
+      "file": "routes/admin.js",
+      "line": 511,
+      "auth": "admin JWT",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/incidents",
+      "file": "routes/admin.js",
+      "line": 524,
+      "auth": "admin JWT",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/incidents/:id",
+      "file": "routes/admin.js",
+      "line": 537,
+      "auth": "admin JWT",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/sos",
+      "file": "routes/admin.js",
+      "line": 550,
+      "auth": "admin JWT",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/tracking",
+      "file": "routes/admin.js",
+      "line": 562,
+      "auth": "admin JWT",
+      "lexicalValidationFieldReferences": [
+        "title",
+        "message",
+        "severity",
+        "location",
+        "saveAsAlert"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/broadcast",
+      "file": "routes/admin.js",
+      "line": 582,
+      "auth": "admin JWT",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/logs",
+      "file": "routes/admin.js",
+      "line": 634,
+      "auth": "admin JWT",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/safety-data/template",
+      "file": "routes/admin.js",
+      "line": 651,
+      "auth": "admin JWT",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/safety-data/stats",
+      "file": "routes/admin.js",
+      "line": 667,
+      "auth": "admin JWT",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/safety-data/upload",
+      "file": "routes/admin.js",
+      "line": 692,
+      "auth": "admin JWT",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/safety-data",
+      "file": "routes/admin.js",
+      "line": 783,
+      "auth": "admin JWT",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/sms/status",
+      "file": "routes/admin.js",
+      "line": 803,
+      "auth": "admin JWT",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/sms/test",
+      "file": "routes/admin.js",
+      "line": 812,
+      "auth": "admin JWT",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/community/posts",
+      "file": "routes/community.js",
+      "line": 82,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/community/posts",
+      "file": "routes/community.js",
+      "line": 97,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/community/posts/upload",
+      "file": "routes/community.js",
+      "line": 129,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/community/posts/:id/like",
+      "file": "routes/community.js",
+      "line": 175,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/community/alerts",
+      "file": "routes/community.js",
+      "line": 192,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/community/alerts",
+      "file": "routes/community.js",
+      "line": 224,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/community/incident-reports",
+      "file": "routes/community.js",
+      "line": 282,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/emergency/sos/start",
+      "file": "routes/emergencyLite.js",
+      "line": 157,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": [
+        "userId",
+        "location",
+        "location.latitude",
+        "location.longitude",
+        "pin",
+        "timerMinutes"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/emergency/sos/safe",
+      "file": "routes/emergencyLite.js",
+      "line": 326,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": [
+        "userId",
+        "pin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/emergency/sos/active/:userId",
+      "file": "routes/emergencyLite.js",
+      "line": 399,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/emergency/sos/history/:userId",
+      "file": "routes/emergencyLite.js",
+      "line": 421,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/emergency/trigger",
+      "file": "routes/emergencyLite.js",
+      "line": 434,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": [
+        "userId",
+        "location",
+        "location.latitude",
+        "location.longitude"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/emergency/contacts",
+      "file": "routes/emergencyLite.js",
+      "line": 509,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": [
+        "userId",
+        "name",
+        "phone",
+        "email",
+        "relationship"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/emergency/contacts/:userId",
+      "file": "routes/emergencyLite.js",
+      "line": 569,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/emergency/contacts/:userId/:contactId",
+      "file": "routes/emergencyLite.js",
+      "line": 579,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/emergency/send-location",
+      "file": "routes/emergencyLite.js",
+      "line": 592,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": [
+        "userId",
+        "location"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/legal/chat",
+      "file": "routes/legalChat.js",
+      "line": 123,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/legal/topics",
+      "file": "routes/legalChat.js",
+      "line": 183,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/legal/health",
+      "file": "routes/legalChat.js",
+      "line": 195,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/live-tracker/start",
+      "file": "routes/liveTracker.js",
+      "line": 81,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/live-tracker/update-location",
+      "file": "routes/liveTracker.js",
+      "line": 186,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/live-tracker/location/:userId",
+      "file": "routes/liveTracker.js",
+      "line": 228,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": [
+        "userId"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/live-tracker/verify-pin",
+      "file": "routes/liveTracker.js",
+      "line": 253,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/live-tracker/trigger-alert",
+      "file": "routes/liveTracker.js",
+      "line": 279,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/live-tracker/stop",
+      "file": "routes/liveTracker.js",
+      "line": 369,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/live-tracker/dashboard-alert",
+      "file": "routes/liveTracker.js",
+      "line": 395,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/live-tracker/lookup-code/:code",
+      "file": "routes/liveTracker.js",
+      "line": 595,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": [
+        "code"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/live-tracker/history/:userEmail",
+      "file": "routes/liveTracker.js",
+      "line": 622,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/safety/heatmap",
+      "file": "routes/safety.js",
+      "line": 20,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/safety/route",
+      "file": "routes/safety.js",
+      "line": 55,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": [
+        "routePoints",
+        "timeOfDay"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/safety/incidents",
+      "file": "routes/safety.js",
+      "line": 93,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/safety/report",
+      "file": "routes/safety.js",
+      "line": 158,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/safety/incident-points",
+      "file": "routes/safety.js",
+      "line": 263,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/safety/report-full",
+      "file": "routes/safety.js",
+      "line": 314,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": [
+        "userId",
+        "reporterName",
+        "incidentType",
+        "severity",
+        "location",
+        "location.coordinates.latitude",
+        "location.coordinates.longitude",
+        "description",
+        "incidentTime"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/safety/incidents/:id/vote",
+      "file": "routes/safety.js",
+      "line": 415,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": [
+        "userId",
+        "voteType"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/safety/incidents/:id/comment",
+      "file": "routes/safety.js",
+      "line": 473,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": [
+        "userId",
+        "userName",
+        "comment"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/safety/stats",
+      "file": "routes/safety.js",
+      "line": 508,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/safety/locations",
+      "file": "routes/safetyLocations.js",
+      "line": 32,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/safety/locations",
+      "file": "routes/safetyLocations.js",
+      "line": 53,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/safety/locations/stats",
+      "file": "routes/safetyLocations.js",
+      "line": 88,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/tracking/start",
+      "file": "routes/trackingLite.js",
+      "line": 26,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": [
+        "userId",
+        "name",
+        "phone"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/tracking/session/:id",
+      "file": "routes/trackingLite.js",
+      "line": 88,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/tracking/code/:code",
+      "file": "routes/trackingLite.js",
+      "line": 101,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/tracking/location",
+      "file": "routes/trackingLite.js",
+      "line": 114,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": [
+        "sessionId",
+        "location",
+        "location.latitude",
+        "location.longitude"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/tracking/checkin",
+      "file": "routes/trackingLite.js",
+      "line": 159,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": [
+        "sessionId",
+        "location"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/tracking/end",
+      "file": "routes/trackingLite.js",
+      "line": 176,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": [
+        "sessionId"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/tracking/user/:userId",
+      "file": "routes/trackingLite.js",
+      "line": 216,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/upsert",
+      "file": "routes/users.js",
+      "line": 53,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": [
+        "firebaseUid",
+        "email",
+        "name",
+        "phone",
+        "photoURL",
+        "agreedToTerms",
+        "agreedToGenderDeclaration"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/register",
+      "file": "routes/users.js",
+      "line": 152,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": [
+        "email",
+        "name",
+        "phone",
+        "firebaseUid"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/users/profile/:userId",
+      "file": "routes/users.js",
+      "line": 225,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "PUT",
+      "path": "/api/users/profile/:userId",
+      "file": "routes/users.js",
+      "line": 244,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": [
+        "name",
+        "phone",
+        "profilePicture",
+        "age",
+        "homeAddress",
+        "bloodGroup",
+        "allergies",
+        "medications",
+        "agreedToTerms",
+        "agreedToGenderDeclaration"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/users/stats/:userId",
+      "file": "routes/users.js",
+      "line": 301,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/users/email/:email",
+      "file": "routes/users.js",
+      "line": 320,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/avatar",
+      "file": "routes/users.js",
+      "line": 347,
+      "auth": "Firebase ID token",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/verification/submit",
+      "file": "routes/verification.js",
+      "line": 51,
+      "auth": "Firebase ID token",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/verification/status",
+      "file": "routes/verification.js",
+      "line": 106,
+      "auth": "Firebase ID token",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "file": "server.js",
+      "line": 210,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/dashboard/stats",
+      "file": "server.js",
+      "line": 240,
+      "auth": "no identity middleware",
+      "lexicalValidationFieldReferences": []
+    }
+  ],
+  "environmentVariables": {
+    "FRONTEND_URL": [
+      {
+        "file": "config/appUrls.js",
+        "line": 12
+      },
+      {
+        "file": "server.js",
+        "line": 230
+      }
+    ],
+    "APP_URL": [
+      {
+        "file": "config/appUrls.js",
+        "line": 13
+      },
+      {
+        "file": "config/appUrls.js",
+        "line": 20
+      },
+      {
+        "file": "config/listenWithFallback.js",
+        "line": 41
+      },
+      {
+        "file": "config/listenWithFallback.js",
+        "line": 41
+      },
+      {
+        "file": "config/listenWithFallback.js",
+        "line": 42
+      },
+      {
+        "file": "server.js",
+        "line": 231
+      }
+    ],
+    "PORT": [
+      {
+        "file": "config/appUrls.js",
+        "line": 14
+      },
+      {
+        "file": "config/appUrls.js",
+        "line": 22
+      },
+      {
+        "file": "config/listenWithFallback.js",
+        "line": 12
+      }
+    ],
+    "SERVER_URL": [
+      {
+        "file": "config/appUrls.js",
+        "line": 21
+      }
+    ],
+    "FIREBASE_SERVICE_ACCOUNT_JSON": [
+      {
+        "file": "config/firestoreAdmin.js",
+        "line": 48
+      }
+    ],
+    "FIREBASE_SERVICE_ACCOUNT_PATH": [
+      {
+        "file": "config/firestoreAdmin.js",
+        "line": 49
+      }
+    ],
+    "GOOGLE_APPLICATION_CREDENTIALS": [
+      {
+        "file": "config/firestoreAdmin.js",
+        "line": 49
+      }
+    ],
+    "PORT_RANGE": [
+      {
+        "file": "config/listenWithFallback.js",
+        "line": 14
+      }
+    ],
+    "ACTIVE_PORT": [
+      {
+        "file": "config/listenWithFallback.js",
+        "line": 40
+      }
+    ],
+    "ADMIN_JWT_SECRET": [
+      {
+        "file": "middleware/adminAuth.js",
+        "line": 9
+      }
+    ],
+    "ADMIN_EMAIL": [
+      {
+        "file": "routes/admin.js",
+        "line": 98
+      }
+    ],
+    "ADMIN_PASSWORD_HASH": [
+      {
+        "file": "routes/admin.js",
+        "line": 99
+      }
+    ],
+    "EMAIL_USER": [
+      {
+        "file": "routes/emergencyLite.js",
+        "line": 68
+      },
+      {
+        "file": "routes/liveTracker.js",
+        "line": 89
+      },
+      {
+        "file": "routes/liveTracker.js",
+        "line": 152
+      },
+      {
+        "file": "routes/liveTracker.js",
+        "line": 304
+      },
+      {
+        "file": "routes/liveTracker.js",
+        "line": 487
+      },
+      {
+        "file": "server.js",
+        "line": 229
+      },
+      {
+        "file": "services/emailService.js",
+        "line": 31
+      },
+      {
+        "file": "services/emailService.js",
+        "line": 91
+      },
+      {
+        "file": "services/userNotifications.js",
+        "line": 38
+      }
+    ],
+    "GROQ_LEGAL_RATE_LIMIT_WINDOW_MS": [
+      {
+        "file": "routes/legalChat.js",
+        "line": 64
+      }
+    ],
+    "GROQ_LEGAL_RATE_LIMIT_MAX": [
+      {
+        "file": "routes/legalChat.js",
+        "line": 65
+      }
+    ],
+    "VERIFY_INTERVAL": [
+      {
+        "file": "routes/liveTracker.js",
+        "line": 168
+      }
+    ],
+    "PIN_TIMEOUT": [
+      {
+        "file": "routes/liveTracker.js",
+        "line": 169
+      }
+    ],
+    "SMOKE_BASE": [
+      {
+        "file": "scripts/smoke-api.js",
+        "line": 8
+      }
+    ],
+    "NODE_ENV": [
+      {
+        "file": "server.js",
+        "line": 17
+      },
+      {
+        "file": "server.js",
+        "line": 24
+      },
+      {
+        "file": "server.js",
+        "line": 28
+      },
+      {
+        "file": "server.js",
+        "line": 61
+      },
+      {
+        "file": "server.js",
+        "line": 234
+      },
+      {
+        "file": "server.js",
+        "line": 374
+      },
+      {
+        "file": "server.js",
+        "line": 380
+      },
+      {
+        "file": "server.js",
+        "line": 398
+      }
+    ],
+    "TRUST_PROXY": [
+      {
+        "file": "server.js",
+        "line": 17
+      }
+    ],
+    "RATE_LIMIT_WINDOW_MS": [
+      {
+        "file": "server.js",
+        "line": 94
+      }
+    ],
+    "RATE_LIMIT_MAX_REQUESTS": [
+      {
+        "file": "server.js",
+        "line": 95
+      }
+    ],
+    "CLOUDINARY_CLOUD_NAME": [
+      {
+        "file": "services/cloudinaryService.js",
+        "line": 34
+      },
+      {
+        "file": "services/cloudinaryService.js",
+        "line": 43
+      }
+    ],
+    "CLOUDINARY_API_KEY": [
+      {
+        "file": "services/cloudinaryService.js",
+        "line": 35
+      },
+      {
+        "file": "services/cloudinaryService.js",
+        "line": 44
+      }
+    ],
+    "CLOUDINARY_API_SECRET": [
+      {
+        "file": "services/cloudinaryService.js",
+        "line": 36
+      },
+      {
+        "file": "services/cloudinaryService.js",
+        "line": 45
+      }
+    ],
+    "GMAIL_OAUTH_CLIENT_ID": [
+      {
+        "file": "services/emailService.js",
+        "line": 28
+      },
+      {
+        "file": "services/emailService.js",
+        "line": 40
+      }
+    ],
+    "GMAIL_OAUTH_CLIENT_SECRET": [
+      {
+        "file": "services/emailService.js",
+        "line": 29
+      },
+      {
+        "file": "services/emailService.js",
+        "line": 41
+      }
+    ],
+    "GMAIL_OAUTH_REFRESH_TOKEN": [
+      {
+        "file": "services/emailService.js",
+        "line": 30
+      },
+      {
+        "file": "services/emailService.js",
+        "line": 43
+      }
+    ],
+    "GOOGLE_MAPS_API_KEY": [
+      {
+        "file": "services/geocoding.js",
+        "line": 15
+      },
+      {
+        "file": "services/geocoding.js",
+        "line": 21
+      }
+    ],
+    "GROQ_MODEL": [
+      {
+        "file": "services/legalChatService.js",
+        "line": 14
+      }
+    ],
+    "GROQ_LEGAL_MAX_TOKENS": [
+      {
+        "file": "services/legalChatService.js",
+        "line": 15
+      }
+    ],
+    "GROQ_API_KEY": [
+      {
+        "file": "services/legalChatService.js",
+        "line": 22
+      }
+    ],
+    "TWILIO_ACCOUNT_SID": [
+      {
+        "file": "services/smsService.js",
+        "line": 21
+      }
+    ],
+    "TWILIO_AUTH_TOKEN": [
+      {
+        "file": "services/smsService.js",
+        "line": 22
+      }
+    ],
+    "TWILIO_PHONE_NUMBER": [
+      {
+        "file": "services/smsService.js",
+        "line": 23
+      }
+    ],
+    "WHATSAPP_API_KEY": [
+      {
+        "file": "services/whatsappService.js",
+        "line": 8
+      },
+      {
+        "file": "services/whatsappService.js",
+        "line": 10
+      },
+      {
+        "file": "services/whatsappService.js",
+        "line": 14
+      }
+    ],
+    "WHATSAPP_PHONE_NUMBER": [
+      {
+        "file": "services/whatsappService.js",
+        "line": 9
+      },
+      {
+        "file": "services/whatsappService.js",
+        "line": 15
+      }
+    ]
+  },
+  "configuredVariableNames": [
+    "PORT",
+    "NODE_ENV",
+    "APP_URL",
+    "FRONTEND_URL",
+    "MONGODB_URI",
+    "FIREBASE_API_KEY",
+    "FIREBASE_AUTH_DOMAIN",
+    "FIREBASE_PROJECT_ID",
+    "FIREBASE_STORAGE_BUCKET",
+    "FIREBASE_MESSAGING_SENDER_ID",
+    "FIREBASE_APP_ID",
+    "FIREBASE_SERVICE_ACCOUNT_PATH",
+    "TWILIO_ACCOUNT_SID",
+    "TWILIO_AUTH_TOKEN",
+    "TWILIO_PHONE_NUMBER",
+    "WHATSAPP_API_KEY",
+    "WHATSAPP_PHONE_NUMBER",
+    "GOOGLE_MAPS_API_KEY",
+    "SESSION_SECRET",
+    "JWT_SECRET",
+    "RATE_LIMIT_WINDOW_MS",
+    "RATE_LIMIT_MAX_REQUESTS",
+    "EMAIL_USER",
+    "EMAIL_PASS",
+    "GMAIL_OAUTH_CLIENT_ID",
+    "GMAIL_OAUTH_CLIENT_SECRET",
+    "GMAIL_OAUTH_REFRESH_TOKEN",
+    "VERIFY_INTERVAL",
+    "PIN_TIMEOUT",
+    "ADMIN_EMAIL",
+    "ADMIN_PASSWORD_HASH",
+    "ADMIN_JWT_SECRET",
+    "GROQ_API_KEY",
+    "GROQ_MODEL",
+    "GROQ_LEGAL_MAX_TOKENS",
+    "GROQ_LEGAL_RATE_LIMIT_MAX",
+    "GROQ_LEGAL_RATE_LIMIT_WINDOW_MS",
+    "CLOUDINARY_CLOUD_NAME",
+    "CLOUDINARY_API_KEY",
+    "CLOUDINARY_API_SECRET"
+  ],
+  "dependencies": [
+    {
+      "name": "bcryptjs",
+      "requested": "^2.4.3",
+      "installed": "2.4.3"
+    },
+    {
+      "name": "cloudinary",
+      "requested": "^2.10.0",
+      "installed": "2.10.0"
+    },
+    {
+      "name": "compression",
+      "requested": "^1.7.4",
+      "installed": "1.8.1"
+    },
+    {
+      "name": "connect-mongo",
+      "requested": "^5.1.0",
+      "installed": "5.1.0"
+    },
+    {
+      "name": "cors",
+      "requested": "^2.8.5",
+      "installed": "2.8.5"
+    },
+    {
+      "name": "csv-parser",
+      "requested": "^3.2.0",
+      "installed": "3.2.0"
+    },
+    {
+      "name": "dotenv",
+      "requested": "^16.3.1",
+      "installed": "16.6.1"
+    },
+    {
+      "name": "express",
+      "requested": "^4.18.2",
+      "installed": "4.21.2"
+    },
+    {
+      "name": "express-rate-limit",
+      "requested": "^7.1.5",
+      "installed": "7.5.1"
+    },
+    {
+      "name": "express-session",
+      "requested": "^1.17.3",
+      "installed": "1.18.2"
+    },
+    {
+      "name": "express-validator",
+      "requested": "^7.0.1",
+      "installed": "7.3.1"
+    },
+    {
+      "name": "firebase",
+      "requested": "^12.6.0",
+      "installed": "12.6.0"
+    },
+    {
+      "name": "firebase-admin",
+      "requested": "^13.0.0",
+      "installed": "13.7.0"
+    },
+    {
+      "name": "googleapis",
+      "requested": "^173.0.0",
+      "installed": "173.0.0"
+    },
+    {
+      "name": "groq-sdk",
+      "requested": "^1.1.2",
+      "installed": "1.1.2"
+    },
+    {
+      "name": "helmet",
+      "requested": "^7.1.0",
+      "installed": "7.2.0"
+    },
+    {
+      "name": "jsonwebtoken",
+      "requested": "^9.0.2",
+      "installed": "9.0.2"
+    },
+    {
+      "name": "mongoose",
+      "requested": "^8.0.3",
+      "installed": "8.20.1"
+    },
+    {
+      "name": "morgan",
+      "requested": "^1.10.0",
+      "installed": "1.10.1"
+    },
+    {
+      "name": "multer",
+      "requested": "^2.1.1",
+      "installed": "2.1.1"
+    },
+    {
+      "name": "nedb-promises",
+      "requested": "^6.2.3",
+      "installed": "6.2.3"
+    },
+    {
+      "name": "nodemailer",
+      "requested": "^7.0.11",
+      "installed": "7.0.11"
+    },
+    {
+      "name": "sanitize-html",
+      "requested": "^2.17.6",
+      "installed": "2.17.6"
+    },
+    {
+      "name": "socket.io",
+      "requested": "^4.6.1",
+      "installed": "4.8.1"
+    },
+    {
+      "name": "twilio",
+      "requested": "^4.19.0",
+      "installed": "4.23.0"
+    }
+  ],
+  "storageKeys": [
+    "hershield_backend_user_id",
+    "hershield_emergency_contacts",
+    "hershield_logged_in",
+    "hershield_sos_active",
+    "hershield_user_avatar",
+    "hershield_user_avatar_owner",
+    "hershield_user_email",
+    "hershield_user_name",
+    "hershield_user_phone",
+    "hershield_user_profile",
+    "hershield_user_uid",
+    "hs_admin_email",
+    "hs_admin_theme",
+    "hs_admin_token",
+    "safetyTrackerSession"
+  ],
+  "events": [
+    {
+      "name": "admin:broadcast",
+      "file": "admin-dashboard.html",
+      "line": 1793
+    },
+    {
+      "name": "community:postDeleted",
+      "file": "admin-dashboard.html",
+      "line": 1794
+    },
+    {
+      "name": "community:newPost",
+      "file": "admin-dashboard.html",
+      "line": 1795
+    },
+    {
+      "name": "safetyData:updated",
+      "file": "admin-dashboard.html",
+      "line": 1796
+    },
+    {
+      "name": "community:newPost",
+      "file": "community.html",
+      "line": 872
+    },
+    {
+      "name": "community:newAlert",
+      "file": "community.html",
+      "line": 880
+    },
+    {
+      "name": "community:likeUpdate",
+      "file": "community.html",
+      "line": 885
+    },
+    {
+      "name": "connect",
+      "file": "community.html",
+      "line": 890
+    },
+    {
+      "name": "disconnect",
+      "file": "community.html",
+      "line": 894
+    },
+    {
+      "name": "incident:new",
+      "file": "dashboard.html",
+      "line": 1267
+    },
+    {
+      "name": "connect",
+      "file": "live-tracker-viewer.js",
+      "line": 131
+    },
+    {
+      "name": "joinSession",
+      "file": "live-tracker-viewer.js",
+      "line": 133
+    },
+    {
+      "name": "connect_error",
+      "file": "live-tracker-viewer.js",
+      "line": 135
+    },
+    {
+      "name": "locationUpdated",
+      "file": "live-tracker-viewer.js",
+      "line": 136
+    },
+    {
+      "name": "sessionEnded",
+      "file": "live-tracker-viewer.js",
+      "line": 140
+    },
+    {
+      "name": "community:newPost",
+      "file": "routes/admin.js",
+      "line": 456
+    },
+    {
+      "name": "community:postDeleted",
+      "file": "routes/admin.js",
+      "line": 472
+    },
+    {
+      "name": "admin:broadcast",
+      "file": "routes/admin.js",
+      "line": 602
+    },
+    {
+      "name": "community:newAlert",
+      "file": "routes/admin.js",
+      "line": 621
+    },
+    {
+      "name": "data",
+      "file": "routes/admin.js",
+      "line": 709
+    },
+    {
+      "name": "end",
+      "file": "routes/admin.js",
+      "line": 715
+    },
+    {
+      "name": "error",
+      "file": "routes/admin.js",
+      "line": 716
+    },
+    {
+      "name": "safetyData:updated",
+      "file": "routes/admin.js",
+      "line": 740
+    },
+    {
+      "name": "safetyData:updated",
+      "file": "routes/admin.js",
+      "line": 788
+    },
+    {
+      "name": "community:newPost",
+      "file": "routes/community.js",
+      "line": 120
+    },
+    {
+      "name": "community:newPost",
+      "file": "routes/community.js",
+      "line": 166
+    },
+    {
+      "name": "community:likeUpdate",
+      "file": "routes/community.js",
+      "line": 183
+    },
+    {
+      "name": "community:newAlert",
+      "file": "routes/community.js",
+      "line": 215
+    },
+    {
+      "name": "locationUpdated",
+      "file": "routes/liveTracker.js",
+      "line": 209
+    },
+    {
+      "name": "incident:new",
+      "file": "routes/safety.js",
+      "line": 228
+    },
+    {
+      "name": "connect",
+      "file": "safety-map.html",
+      "line": 643
+    },
+    {
+      "name": "disconnect",
+      "file": "safety-map.html",
+      "line": 644
+    },
+    {
+      "name": "incident:new",
+      "file": "safety-map.html",
+      "line": 646
+    },
+    {
+      "name": "safetyData:updated",
+      "file": "safety-map.html",
+      "line": 1450
+    },
+    {
+      "name": "unhandledRejection",
+      "file": "server.js",
+      "line": 22
+    },
+    {
+      "name": "uncaughtException",
+      "file": "server.js",
+      "line": 26
+    },
+    {
+      "name": "connection",
+      "file": "server.js",
+      "line": 264
+    },
+    {
+      "name": "joinSession",
+      "file": "server.js",
+      "line": 268
+    },
+    {
+      "name": "viewerJoined",
+      "file": "server.js",
+      "line": 281
+    },
+    {
+      "name": "locationUpdate",
+      "file": "server.js",
+      "line": 287
+    },
+    {
+      "name": "error",
+      "file": "server.js",
+      "line": 291
+    },
+    {
+      "name": "locationUpdated",
+      "file": "server.js",
+      "line": 296
+    },
+    {
+      "name": "emergency",
+      "file": "server.js",
+      "line": 305
+    },
+    {
+      "name": "emergencyDeclared",
+      "file": "server.js",
+      "line": 311
+    },
+    {
+      "name": "checkIn",
+      "file": "server.js",
+      "line": 319
+    },
+    {
+      "name": "checkInReceived",
+      "file": "server.js",
+      "line": 322
+    },
+    {
+      "name": "endSession",
+      "file": "server.js",
+      "line": 332
+    },
+    {
+      "name": "sessionEnded",
+      "file": "server.js",
+      "line": 333
+    },
+    {
+      "name": "disconnect",
+      "file": "server.js",
+      "line": 342
+    },
+    {
+      "name": "viewerLeft",
+      "file": "server.js",
+      "line": 351
+    },
+    {
+      "name": "error",
+      "file": "server.js",
+      "line": 364
+    },
+    {
+      "name": "SIGTERM",
+      "file": "server.js",
+      "line": 436
+    },
+    {
+      "name": "SIGINT",
+      "file": "server.js",
+      "line": 444
+    },
+    {
+      "name": "data",
+      "file": "services/firestoreRepository.js",
+      "line": 509
+    },
+    {
+      "name": "end",
+      "file": "services/firestoreRepository.js",
+      "line": 527
+    },
+    {
+      "name": "error",
+      "file": "services/firestoreRepository.js",
+      "line": 528
+    }
+  ],
+  "mediaQueries": [
+    {
+      "query": "(max-width:600px)",
+      "file": "admin-dashboard.html",
+      "line": 249
+    },
+    {
+      "query": "(max-width:1100px)",
+      "file": "admin-dashboard.html",
+      "line": 261
+    },
+    {
+      "query": "(max-width:768px)",
+      "file": "admin-dashboard.html",
+      "line": 262
+    },
+    {
+      "query": "(max-width: 576px)",
+      "file": "auth.html",
+      "line": 281
+    },
+    {
+      "query": "(max-width: 768px)",
+      "file": "dashboard.html",
+      "line": 189
+    },
+    {
+      "query": "(max-width: 576px)",
+      "file": "dashboard.html",
+      "line": 199
+    },
+    {
+      "query": "(max-width: 768px)",
+      "file": "index.html",
+      "line": 514
+    },
+    {
+      "query": "(max-width: 991px)",
+      "file": "live-tracker.html",
+      "line": 136
+    },
+    {
+      "query": "(max-width: 767px)",
+      "file": "live-tracker.html",
+      "line": 185
+    },
+    {
+      "query": "(max-width: 576px)",
+      "file": "live-tracker.html",
+      "line": 224
+    },
+    {
+      "query": "(max-width: 991px)",
+      "file": "live-tracker.html",
+      "line": 556
+    },
+    {
+      "query": "(max-width: 767px)",
+      "file": "live-tracker.html",
+      "line": 563
+    },
+    {
+      "query": "(max-width: 576px)",
+      "file": "live-tracker.html",
+      "line": 576
+    },
+    {
+      "query": "(max-width: 991px)",
+      "file": "live-tracker.html",
+      "line": 761
+    },
+    {
+      "query": "(max-width: 767px)",
+      "file": "live-tracker.html",
+      "line": 767
+    },
+    {
+      "query": "(max-width: 576px)",
+      "file": "live-tracker.html",
+      "line": 774
+    },
+    {
+      "query": "(max-width: 991px)",
+      "file": "live-tracker.html",
+      "line": 786
+    },
+    {
+      "query": "(min-width: 992px)",
+      "file": "live-tracker.html",
+      "line": 822
+    },
+    {
+      "query": "(max-width: 991px)",
+      "file": "live-tracker.html",
+      "line": 831
+    },
+    {
+      "query": "(max-width: 991px)",
+      "file": "live-tracker.html",
+      "line": 909
+    },
+    {
+      "query": "(min-width: 992px)",
+      "file": "navigation.js",
+      "line": 882
+    },
+    {
+      "query": "(max-width: 991px)",
+      "file": "navigation.js",
+      "line": 897
+    },
+    {
+      "query": "(max-width: 576px)",
+      "file": "navigation.js",
+      "line": 935
+    },
+    {
+      "query": "(prefers-reduced-motion: no-preference)",
+      "file": "Safety Map/women-safety-map/src/App.css",
+      "line": 10
+    },
+    {
+      "query": "(max-width: 991px)",
+      "file": "safety-map.html",
+      "line": 254
+    },
+    {
+      "query": "(max-width: 768px)",
+      "file": "styles.css",
+      "line": 196
+    }
+  ],
+  "otherFiles": [
+    {
+      "path": ".claude/launch.json",
+      "bytes": 188
+    },
+    {
+      "path": ".dockerignore",
+      "bytes": 634
+    },
+    {
+      "path": ".DS_Store",
+      "bytes": 10244
+    },
+    {
+      "path": ".env",
+      "bytes": 3196
+    },
+    {
+      "path": ".env.example",
+      "bytes": 4317
+    },
+    {
+      "path": ".firebaseignore",
+      "bytes": 1043
+    },
+    {
+      "path": ".firebaserc",
+      "bytes": 55
+    },
+    {
+      "path": ".gitattributes",
+      "bytes": 43
+    },
+    {
+      "path": ".gitignore",
+      "bytes": 314
+    },
+    {
+      "path": "data/community_posts.db",
+      "bytes": 1347
+    },
+    {
+      "path": "data/incidents.db",
+      "bytes": 75
+    },
+    {
+      "path": "data/local_db.json",
+      "bytes": 1620
+    },
+    {
+      "path": "data/safety_locations.csv",
+      "bytes": 5225
+    },
+    {
+      "path": "data/tracking_sessions.db",
+      "bytes": 60273
+    },
+    {
+      "path": "data/tracking_sessions_api.db",
+      "bytes": 841
+    },
+    {
+      "path": "data/users.db",
+      "bytes": 871
+    },
+    {
+      "path": "Dockerfile",
+      "bytes": 1124
+    },
+    {
+      "path": "download (1).jpg",
+      "bytes": 93964
+    },
+    {
+      "path": "firebase.json",
+      "bytes": 2289
+    },
+    {
+      "path": "firestore.indexes.json",
+      "bytes": 355
+    },
+    {
+      "path": "front.png",
+      "bytes": 1142287
+    },
+    {
+      "path": "functions/.DS_Store",
+      "bytes": 6148
+    },
+    {
+      "path": "functions/.env",
+      "bytes": 935
+    },
+    {
+      "path": "GENDER_VERIFICATION_REPORT_ADDENDUM.md",
+      "bytes": 11820
+    },
+    {
+      "path": "GMAIL_OAUTH_REFRESH_TOKEN_UPDATE.md",
+      "bytes": 6886
+    },
+    {
+      "path": "hershield-firebase-adminsdk.json",
+      "bytes": 2379
+    },
+    {
+      "path": "incident_reports.csv",
+      "bytes": 1775
+    },
+    {
+      "path": "ka_crime_2023_sexual_harrassment_etc.csv",
+      "bytes": 5514
+    },
+    {
+      "path": "package-lock.json",
+      "bytes": 393943
+    },
+    {
+      "path": "package.json",
+      "bytes": 1301
+    },
+    {
+      "path": "PROJECT_DOCUMENTATION.md",
+      "bytes": 10049
+    },
+    {
+      "path": "PROJECT_OVERVIEW.md",
+      "bytes": 49351
+    },
+    {
+      "path": "public/uploads/community/post_1784919739587_8490.jpg",
+      "bytes": 835
+    },
+    {
+      "path": "README.md",
+      "bytes": 12550
+    },
+    {
+      "path": "Safety Map/.DS_Store",
+      "bytes": 8196
+    },
+    {
+      "path": "Safety Map/crime_data.csv",
+      "bytes": 6816
+    },
+    {
+      "path": "Safety Map/crime_data.csv.zip",
+      "bytes": 3085
+    },
+    {
+      "path": "Safety Map/package-lock.json",
+      "bytes": 99799
+    },
+    {
+      "path": "Safety Map/package.json",
+      "bytes": 376
+    },
+    {
+      "path": "Safety Map/requirements.txt",
+      "bytes": 95
+    },
+    {
+      "path": "Safety Map/women-safety-app-firebase-adminsdk.json.json",
+      "bytes": 2394
+    },
+    {
+      "path": "Safety Map/women-safety-map/.DS_Store",
+      "bytes": 6148
+    },
+    {
+      "path": "Safety Map/women-safety-map/.gitignore",
+      "bytes": 310
+    },
+    {
+      "path": "Safety Map/women-safety-map/package-lock.json",
+      "bytes": 665895
+    },
+    {
+      "path": "Safety Map/women-safety-map/package.json",
+      "bytes": 936
+    },
+    {
+      "path": "Safety Map/women-safety-map/public/favicon.ico",
+      "bytes": 3870
+    },
+    {
+      "path": "Safety Map/women-safety-map/public/logo192.png",
+      "bytes": 5347
+    },
+    {
+      "path": "Safety Map/women-safety-map/public/logo512.png",
+      "bytes": 9664
+    },
+    {
+      "path": "Safety Map/women-safety-map/public/manifest.json",
+      "bytes": 492
+    },
+    {
+      "path": "Safety Map/women-safety-map/public/robots.txt",
+      "bytes": 67
+    },
+    {
+      "path": "Safety Map/women-safety-map/README.md",
+      "bytes": 3359
+    },
+    {
+      "path": "Safety Map/women-safety-map/src/logo.svg",
+      "bytes": 2632
+    },
+    {
+      "path": "Sheherhackathon/.DS_Store",
+      "bytes": 6148
+    },
+    {
+      "path": "threat_analysis.csv",
+      "bytes": 77
+    },
+    {
+      "path": "VDIT3/.DS_Store",
+      "bytes": 6148
+    },
+    {
+      "path": "VDIT3/audio/friend_emergency.mp3",
+      "bytes": 157722
+    },
+    {
+      "path": "VDIT3/response.text",
+      "bytes": 0
+    }
+  ],
+  "dataFiles": [
+    {
+      "file": "data/safety_locations.csv",
+      "rows": 71,
+      "columns": [
+        "latitude",
+        "longitude",
+        "risk_level",
+        "location",
+        "category",
+        "last_updated"
+      ],
+      "riskLevels": {
+        "1": 29,
+        "2": 26,
+        "3": 15
+      },
+      "numericCoordinateRows": 70
+    },
+    {
+      "file": "incident_reports.csv",
+      "rows": 17,
+      "columns": [
+        "Report ID",
+        "Incident Type",
+        "Location",
+        "Latitude",
+        "Longitude",
+        "Date and Time"
+      ],
+      "riskLevels": {}
+    },
+    {
+      "file": "ka_crime_2023_sexual_harrassment_etc.csv",
+      "rows": 39,
+      "columns": [
+        "﻿Districts",
+        "Assault on Women with Intent to Outrage her Modesty - Incidents (I)",
+        "Assault on Women with Intent to Outrage her Modesty - Victims (V)",
+        "Assault on Women with Intent to Outrage her Modesty - R (Crime Rate)",
+        "Assault on Women - I",
+        "Assault on Women - V",
+        "Assault on Women - R",
+        "Sexual Harrassment Total - I",
+        "Sexual Harrassment Total - V",
+        "Sexual Harrassment Total - R",
+        "SH At work/premises - I",
+        "SH At work/premises - V",
+        "SH At work/premises - R",
+        "SH in Public transport - I",
+        "SH in Public transport - V",
+        "SH in Public transport - R",
+        "SH in shelter homes for women and children - I",
+        "SH in shelter homes for women and children - V",
+        "SH in shelter homes for women and children - R",
+        "SH in Other places - I",
+        "SH in Other places - V",
+        "SH in Other places - R",
+        "Assault or use of Criminal\r\nForce on women with intent\r\nto Disrobe (Sec.354B IPC) - I",
+        "Assault or use of Criminal\r\nForce on women with intent\r\nto Disrobe (Sec.354B IPC) - V",
+        "Assault or use of Criminal\r\nForce on women with intent\r\nto Disrobe (Sec.354B IPC) - R",
+        "Voyeurism - I",
+        "Voyeurism - V",
+        "Voyeurism - R",
+        "Stalking - I",
+        "Stalking - V",
+        "Stalking - R",
+        "Rape (Sec 376) - I",
+        "Rape - V",
+        "Rape - R",
+        "Attempt to Commit Rape (Sec.376/511) - I",
+        "Attempt to Commit Rape - V",
+        "Attempt to Commit Rape - R"
+      ],
+      "riskLevels": {}
+    },
+    {
+      "file": "Safety Map/crime_data.csv",
+      "rows": 180,
+      "columns": [
+        "latitude",
+        "longitude",
+        "risk_level",
+        "location"
+      ],
+      "riskLevels": {
+        "1": 58,
+        "2": 69,
+        "3": 16
+      },
+      "numericCoordinateRows": 143,
+      "commentLines": 19
+    },
+    {
+      "file": "threat_analysis.csv",
+      "rows": 0,
+      "columns": [
+        "timestamp",
+        "text",
+        "source",
+        "threat_level",
+        "keywords_found",
+        "locations_found",
+        "sentiment"
+      ],
+      "riskLevels": {}
+    },
+    {
+      "file": "data/community_posts.db",
+      "format": "NeDB JSON lines",
+      "logRecords": 5,
+      "topLevelFields": [
+        "$$indexCreated",
+        "_id",
+        "category",
+        "comments",
+        "content",
+        "createdAt",
+        "imageUrl",
+        "kind",
+        "likes",
+        "location",
+        "message",
+        "severity",
+        "source",
+        "title",
+        "updatedAt",
+        "userEmail",
+        "userName"
+      ],
+      "note": "Log entries are not necessarily current unique records; no personal field values included"
+    },
+    {
+      "file": "data/incidents.db",
+      "format": "NeDB JSON lines",
+      "logRecords": 1,
+      "topLevelFields": [
+        "$$indexCreated"
+      ],
+      "note": "Log entries are not necessarily current unique records; no personal field values included"
+    },
+    {
+      "file": "data/tracking_sessions.db",
+      "format": "NeDB JSON lines",
+      "logRecords": 46,
+      "topLevelFields": [
+        "$$indexCreated",
+        "_id",
+        "createdAt",
+        "destination",
+        "email",
+        "emergencyContacts",
+        "isTrackingActive",
+        "lastVerified",
+        "locationLogs",
+        "name",
+        "pin",
+        "source",
+        "trackingCode",
+        "transportMode",
+        "updatedAt",
+        "userId"
+      ],
+      "note": "Log entries are not necessarily current unique records; no personal field values included"
+    },
+    {
+      "file": "data/tracking_sessions_api.db",
+      "format": "NeDB JSON lines",
+      "logRecords": 3,
+      "topLevelFields": [
+        "$$indexCreated",
+        "_id",
+        "checkIns",
+        "createdAt",
+        "currentLocation",
+        "destination",
+        "duration",
+        "emergencyAlerts",
+        "endTime",
+        "estimatedDuration",
+        "locationHistory",
+        "name",
+        "notes",
+        "phone",
+        "safetyScore",
+        "startPoint",
+        "startTime",
+        "status",
+        "totalDistance",
+        "trackingCode",
+        "travelMode",
+        "updatedAt",
+        "userId"
+      ],
+      "note": "Log entries are not necessarily current unique records; no personal field values included"
+    },
+    {
+      "file": "data/users.db",
+      "format": "NeDB JSON lines",
+      "logRecords": 5,
+      "topLevelFields": [
+        "$$indexCreated",
+        "_id",
+        "createdAt",
+        "email",
+        "emergencyContacts",
+        "isActive",
+        "name",
+        "phone",
+        "profilePicture",
+        "safetyPreferences",
+        "statistics",
+        "updatedAt"
+      ],
+      "note": "Log entries are not necessarily current unique records; no personal field values included"
+    },
+    {
+      "file": "data/local_db.json",
+      "topLevelFields": [
+        "sessions"
+      ],
+      "collectionSizes": {
+        "sessions": 2
+      }
+    }
+  ],
+  "metadataNotes": [
+    "File and line counts are the pre-audit project snapshot, excluding dependencies, virtual environments, Git internals and Firebase caches.",
+    "API validation-field references and function names are lexical navigation aids, not authoritative schemas or semantic analysis.",
+    "Other-file metadata does not assert that every binary, secret, historical personal record, or generated artifact was read in full.",
+    "Configured variable names indicate presence of a name in root .env only, not a valid credential or a functioning service."
+  ],
+  "subprojects": [
+    {
+      "file": "Safety Map/package.json",
+      "name": "w",
+      "version": "1.0.0",
+      "main": "index.js",
+      "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "start": "node server.js"
+      },
+      "keywords": [],
+      "author": "",
+      "license": "ISC",
+      "dependencies": {
+        "cors": "^2.8.5",
+        "dotenv": "^16.4.7",
+        "express": "^4.21.2",
+        "firebase-admin": "^13.1.0"
+      },
+      "description": ""
+    },
+    {
+      "file": "Safety Map/women-safety-map/package.json",
+      "name": "women-safety-map",
+      "version": "0.1.0",
+      "private": true,
+      "dependencies": {
+        "@testing-library/dom": "^10.4.0",
+        "@testing-library/jest-dom": "^6.6.3",
+        "@testing-library/react": "^16.2.0",
+        "@testing-library/user-event": "^13.5.0",
+        "axios": "^1.8.1",
+        "leaflet": "^1.9.4",
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0",
+        "react-leaflet": "^5.0.0",
+        "react-scripts": "5.0.1",
+        "web-vitals": "^2.1.4"
+      },
+      "scripts": {
+        "start": "react-scripts start",
+        "build": "react-scripts build",
+        "test": "react-scripts test",
+        "eject": "react-scripts eject"
+      },
+      "eslintConfig": {
+        "extends": [
+          "react-app",
+          "react-app/jest"
+        ]
+      },
+      "browserslist": {
+        "production": [
+          ">0.2%",
+          "not dead",
+          "not op_mini all"
+        ],
+        "development": [
+          "last 1 chrome version",
+          "last 1 firefox version",
+          "last 1 safari version"
+        ]
+      }
+    }
+  ],
+  "pythonMapRequirements": [
+    "numpy>=1.21.0",
+    "pandas>=1.3.0",
+    "folium==0.14.0",
+    "geopy==2.3.0",
+    "requests==2.31.0",
+    "geocoder==1.38.1"
+  ],
+  "prototypeAssistant": {
+    "files": [
+      "VDIT3/app.py",
+      "VDIT3/chatbot.py",
+      "VDIT3/fake_call.py"
+    ],
+    "provider": "Google Gemini",
+    "model": "gemini-2.0-flash",
+    "imports": [
+      "streamlit",
+      "google.generativeai",
+      "pygame"
+    ],
+    "dedicatedDependencyManifestFound": false
+  }
+}

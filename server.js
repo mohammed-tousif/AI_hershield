@@ -30,10 +30,14 @@ process.on('uncaughtException', (err) => {
 
 // CORS configuration
 const corsOptions = {
-    origin: '*', // Allow all origins for development
+    origin(origin, callback) {
+        const allowed = new Set([process.env.FRONTEND_URL, process.env.APP_URL, 'https://hershield-web.web.app', 'https://hershield-web.firebaseapp.com'].filter(Boolean).map(value => new URL(value).origin));
+        if (!origin || allowed.has(origin) || (process.env.NODE_ENV !== 'production' && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin))) return callback(null, true);
+        return callback(null, false);
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
+    credentials: false
 };
 
 // Socket.IO setup — force polling only so it works through Firebase Hosting's HTTPS proxy
@@ -57,6 +61,8 @@ app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Never retain location-sharing capabilities in access logs.
+morgan.token('url', req => req.originalUrl.replace(/(\/view\/|\/lookup-code\/|\/code\/)[^/?]+/gi, '$1[redacted]').split('?')[0]);
 // Logging
 if (process.env.NODE_ENV === 'development') {
     app.use(morgan('dev'));
@@ -121,10 +127,10 @@ const emergencyLimiter = rateLimit({
     legacyHeaders: false,
 });
 
-// Serve static files from the project root (always use __dirname, not '.')
-app.use(express.static(__dirname));
+// Explicit public assets only; source, credentials and data are never static files.
+app.use(require('./middleware/publicAssets').publicAssets(__dirname));
 // Uploaded community images (created by multer)
-app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+// Historical uploads/data are intentionally not served. Current images use Cloudinary.
 
 // Root route → landing page
 app.get('/', (req, res) => {
@@ -160,12 +166,16 @@ const adminLimiter = rateLimit({
     legacyHeaders: false,
 });
 
+// Central deny-by-default API identity/ownership boundary.
+app.use('/api', require('./middleware/apiAccess').apiAccess);
+
 // API Routes
 app.use('/api/emergency', emergencyLimiter, emergencyRoutes);
 app.use('/api/tracking', trackingRoutes);
 app.use('/api/safety', safetyRoutes);
 app.use('/api/safety', safetyLocationsRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/email-verification', require('./routes/emailVerification'));
 app.use('/api/live-tracker', emergencyLimiter, require('./routes/liveTracker'));
 app.use('/api/community', communityRoutes);
 app.use('/api/admin',    adminLimiter, adminRoutes);
@@ -226,7 +236,7 @@ app.get('/api/health', (req, res) => {
         status: 'ok',
         timestamp: new Date(),
         database: dbHealth,
-        email: { configured: emailConfigured, user: emailConfigured ? process.env.EMAIL_USER : null },
+        email: { configured: emailConfigured },
         frontendUrl: process.env.FRONTEND_URL || null,
         appUrl: process.env.APP_URL || null,
         port: typeof global.__HER_SHIELD_HTTP_PORT__ === 'number' ? global.__HER_SHIELD_HTTP_PORT__ : null,
@@ -239,132 +249,24 @@ app.get('/api/health', (req, res) => {
 // Dashboard stats — real-time counts from Firestore
 app.get('/api/dashboard/stats', async (req, res) => {
     const TIMEOUT_MS = 6000;
-    const fallback = { communityMembers: 0, totalSosAlerts: 0, safeTrips: 0, safeZones: 0 };
+    let timer;
     try {
         const { getDashboardStats } = require('./services/firestoreRepository');
         const timeoutP = new Promise(resolve =>
-            setTimeout(() => resolve({ _timedOut: true }), TIMEOUT_MS)
+            timer = setTimeout(() => resolve({ _timedOut: true }), TIMEOUT_MS)
         );
         const result = await Promise.race([getDashboardStats(), timeoutP]);
         if (result && result._timedOut) {
-            console.warn('/api/dashboard/stats: Firestore timed out — returning zeros');
-            return res.json({ success: true, stats: fallback, warning: 'timeout' });
+            return res.status(503).json({ success: false, message: 'Statistics are temporarily unavailable. Please retry.' });
         }
         return res.json({ success: true, stats: result });
     } catch (err) {
-        // Gracefully return zeros if Firestore is not configured or throws
         console.warn('/api/dashboard/stats error:', err.message);
-        return res.json({ success: true, stats: fallback, warning: err.message });
-    }
+        return res.status(503).json({ success: false, message: 'Statistics are temporarily unavailable. Please retry.' });
+    } finally { clearTimeout(timer); }
 });
 
-// Socket.IO connection handling
-const activeSessions = new Map(); // sessionId -> Set of socket IDs
-
-io.on('connection', (socket) => {
-    console.log(`✅ Client connected: ${socket.id}`);
-
-    // Join tracking session room
-    socket.on('joinSession', (sessionId) => {
-        socket.join(sessionId);
-
-        // Track active connections per session
-        if (!activeSessions.has(sessionId)) {
-            activeSessions.set(sessionId, new Set());
-        }
-        activeSessions.get(sessionId).add(socket.id);
-
-        console.log(`📍 Socket ${socket.id} joined session: ${sessionId}`);
-        console.log(`👥 Active viewers in session ${sessionId}: ${activeSessions.get(sessionId).size}`);
-
-        // Notify others in the room
-        socket.to(sessionId).emit('viewerJoined', {
-            viewerCount: activeSessions.get(sessionId).size
-        });
-    });
-
-    // Handle location updates
-    socket.on('locationUpdate', (data) => {
-        const { sessionId, location } = data;
-
-        if (!sessionId || !location) {
-            socket.emit('error', { message: 'Invalid location update data' });
-            return;
-        }
-
-        // Broadcast location to all clients in the session room
-        io.to(sessionId).emit('locationUpdated', {
-            location,
-            timestamp: new Date()
-        });
-
-        console.log(`📍 Location updated for session ${sessionId}`);
-    });
-
-    // Handle emergency alerts
-    socket.on('emergency', (data) => {
-        const { sessionId, location } = data;
-
-        console.log(`🚨 Emergency triggered for session: ${sessionId}`);
-
-        // Broadcast emergency to all clients in the session
-        io.to(sessionId).emit('emergencyDeclared', {
-            sessionId,
-            location,
-            timestamp: new Date()
-        });
-    });
-
-    // Handle check-ins
-    socket.on('checkIn', (data) => {
-        const { sessionId, location, message } = data;
-
-        io.to(sessionId).emit('checkInReceived', {
-            location,
-            message,
-            timestamp: new Date()
-        });
-
-        console.log(`✅ Check-in received for session ${sessionId}`);
-    });
-
-    // Handle session end
-    socket.on('endSession', (sessionId) => {
-        io.to(sessionId).emit('sessionEnded', {
-            sessionId,
-            timestamp: new Date()
-        });
-
-        console.log(`🏁 Session ended: ${sessionId}`);
-    });
-
-    // Handle disconnection
-    socket.on('disconnect', () => {
-        console.log(`❌ Client disconnected: ${socket.id}`);
-
-        // Remove from active sessions
-        activeSessions.forEach((viewers, sessionId) => {
-            if (viewers.has(socket.id)) {
-                viewers.delete(socket.id);
-
-                // Notify remaining viewers
-                io.to(sessionId).emit('viewerLeft', {
-                    viewerCount: viewers.size
-                });
-
-                // Clean up empty sessions
-                if (viewers.size === 0) {
-                    activeSessions.delete(sessionId);
-                }
-            }
-        });
-    });
-
-    // Handle errors
-    socket.on('error', (error) => {
-        console.error('Socket error:', error);
-    });
-});
+require('./services/socketAccess').installSocketAccess(io);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

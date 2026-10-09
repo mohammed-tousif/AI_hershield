@@ -10,7 +10,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBGXF_WodaMeP10oziYhG0NdqHw2fJogxM&libraries=geometry"></script>
     <script src="/config.js"></script>
     <style>
         :root {
@@ -284,6 +283,10 @@
             background-color: #FF7A6A;
         }
     </style>
+    <link rel="stylesheet" href="/responsive.css">
+    <script src="/responsive.js" defer></script>
+    <link rel="stylesheet" href="/email-verification.css">
+    <script src="/email-verification.js" defer></script>
 </head>
 
 <body>
@@ -291,11 +294,8 @@
     <div class="gradient-overlay"></div>
 
     <!-- Firebase SDK and Unified Navigation -->
-    <script type="module">
-        import './firebase-config.js';
-        import './firebase-auth.js';
-        import './navigation.js';
-    </script>
+    <script src="/navigation.js" defer></script>
+    <script>import('./firebase-auth.js').catch(() => window.hsConnectionNotice?.('Sign-in services are taking longer to load. Check your connection and retry.'));</script>
 
     <!-- Main Content -->
     <div class="main-content">
@@ -905,6 +905,7 @@
             }
         }
 
+        window.addEventListener('hershield:retry', () => { loadDashboardStats(); loadRecentAlerts(); });
         const STAT_IDS = ['statSafeTrips', 'statSafeZones', 'statCommunity', 'statSosAlerts'];
         const STAT_FALLBACK = { safeTrips: 0, safeZones: 0, communityMembers: 0, totalSosAlerts: 0 };
 
@@ -935,28 +936,28 @@
         }
 
         async function loadDashboardStats() {
-            // Race the fetch against a 5-second timeout so spinners never freeze
+            // Race the fetch against a 15-second timeout so spinners never freeze
             const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(), 5000);
+            const timer = setTimeout(() => controller.abort(), 15000);
             try {
                 const res  = await fetch('/api/dashboard/stats', { signal: controller.signal });
                 clearTimeout(timer);
                 if (!res.ok) {
                     // Non-2xx (e.g. 404 if server not restarted yet)
                     console.warn('Dashboard stats: HTTP', res.status, '— using fallback data');
-                    setStatValues(STAT_FALLBACK);
+                    clearStatSpinners('—');
                     return;
                 }
                 const data = await res.json();
                 if (data.success && data.stats) {
                     setStatValues(data.stats);
                 } else {
-                    setStatValues(STAT_FALLBACK);
+                    clearStatSpinners('—');
                 }
             } catch (e) {
                 clearTimeout(timer);
                 console.warn('Dashboard stats unavailable:', e.message);
-                setStatValues(STAT_FALLBACK);
+                clearStatSpinners('—');
             }
         }
 
@@ -1164,7 +1165,7 @@
                     strokeWeight: 2,
                     scale: 11
                 },
-                title: `🚨 User Report: ${typeLabel}`,
+                title: `🚨 User Report: ${hsEscapeHTML(typeLabel)}`,
                 zIndex: 20   // always on top of static markers
             });
 
@@ -1176,10 +1177,10 @@
             const iw = new google.maps.InfoWindow({
                 content:
                     `<div style="max-width:240px;font-size:.85rem;padding:4px;">`+
-                    `<div style="font-weight:700;margin-bottom:6px;font-size:.95rem;">${badge} User Report: ${typeLabel}</div>`+
-                    `<div style="margin-bottom:4px;"><i style="color:#888">&#128205;</i> ${point.location || 'Unknown location'}</div>`+
-                    (point.description ? `<div style="color:#444;margin-bottom:4px;">${point.description}</div>` : '')+
-                    `<div style="margin-bottom:4px;">Severity: <b style="color:${color};">${(point.severity||'').toUpperCase()}</b></div>`+
+                    `<div style="font-weight:700;margin-bottom:6px;font-size:.95rem;">${badge} User Report: ${hsEscapeHTML(typeLabel)}</div>`+
+                    `<div style="margin-bottom:4px;"><i style="color:#888">&#128205;</i> ${hsEscapeHTML(point.location || 'Unknown location')}</div>`+
+                    (point.description ? `<div style="color:#444;margin-bottom:4px;">${hsEscapeHTML(point.description)}</div>` : '')+
+                    `<div style="margin-bottom:4px;">Severity: <b style="color:${color};">${hsEscapeHTML((point.severity||'').toUpperCase())}</b></div>`+
                     `<div style="font-size:.78rem;color:#888;">🕒 ${time}</div>`+
                     `</div>`
             });
@@ -1216,6 +1217,7 @@
         }
 
         function toggleHeatmap() {
+            if (!map || !heatmap) { window.hsConnectionNotice('The map is still loading. Please try this control once it is ready.'); return; }
             showHeatmap = !showHeatmap;
             const btn = document.getElementById('toggleHeatmapBtn');
 
@@ -1229,6 +1231,7 @@
         }
 
         function toggleMarkers() {
+            if (!map) { window.hsConnectionNotice('The map is still loading. Please try this control once it is ready.'); return; }
             showMarkers = !showMarkers;
             const btn = document.getElementById('toggleMarkersBtn');
 
@@ -1242,6 +1245,7 @@
         }
 
         function setMapStyle(style) {
+            if (!map) { window.hsConnectionNotice('The map is still loading. Please try this control once it is ready.'); return; }
             const dayStyle = [];
             const nightStyle = [
                 { elementType: 'geometry', stylers: [{ color: '#212121' }] },
@@ -1258,7 +1262,24 @@
         }
 
         // Initialize the map when the page loads
-        window.onload = initMap;
+        document.addEventListener('DOMContentLoaded', () => {
+            const target = document.getElementById('googleMap');
+            target.textContent = 'Loading the safety map…';
+            const start = () => {
+                if (window.google?.maps) { target.textContent = ''; initMap(); return; }
+                const script = document.createElement('script');
+                script.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyBGXF_WodaMeP10oziYhG0NdqHw2fJogxM&libraries=geometry&loading=async&callback=onDashboardMapsReady';
+                script.async = true;
+                const timer = setTimeout(() => { if (!map) target.textContent = 'The map is taking longer to load. Other safety tools are still available.'; }, 12000);
+                window.onDashboardMapsReady = () => { clearTimeout(timer); target.textContent = ''; initMap(); };
+                script.onerror = () => { clearTimeout(timer); target.textContent = 'Map unavailable. Check your connection and reload to retry.'; };
+                document.head.appendChild(script);
+            };
+            if ('IntersectionObserver' in window) {
+                const observer = new IntersectionObserver(entries => { if (entries.some(e => e.isIntersecting)) { observer.disconnect(); start(); } }, { rootMargin: '200px' });
+                observer.observe(target);
+            } else start();
+        });
 
         // ── Socket.IO: live incident updates ────────────────────────────────
         (function initDashboardIncidentSocket() {

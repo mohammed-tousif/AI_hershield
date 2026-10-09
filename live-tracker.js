@@ -129,10 +129,10 @@ class LocationAutocomplete {
         if (!this.dropdown) return;
         this.activeIndex = -1;
         this.dropdown.innerHTML = predictions.map((p, i) => {
-            const main    = p.structured_formatting?.main_text    || p.description;
-            const secondary = p.structured_formatting?.secondary_text || '';
+            const main    = window.hsEscapeHTML(p.structured_formatting?.main_text || p.description);
+            const secondary = window.hsEscapeHTML(p.structured_formatting?.secondary_text || '');
             return `
-            <div class="lt-suggestion-item" data-place-id="${p.place_id}" data-index="${i}">
+            <div class="lt-suggestion-item" data-place-id="${window.hsEscapeHTML(p.place_id)}" data-index="${i}">
                 <div class="lt-place-icon"><i class="fas fa-map-marker-alt"></i></div>
                 <div>
                     <div class="lt-place-name">${main}</div>
@@ -465,13 +465,14 @@ class SafetyTracker {
             }
 
             this.sessionId      = data.sessionId;
-            this.pin            = pin;
+            this.pin            = null;
+            document.getElementById('pin').value = '';
             this.verifyInterval = data.verifyInterval || 120000;
             this.pinTimeout     = data.pinTimeout     || 20000;
             this.trackingLink   = data.trackingLink   || null;
 
             this.saveSession({
-                sessionId: this.sessionId, pin: this.pin,
+                sessionId: this.sessionId, ownerUid: (await window.getHerShieldUser())?.uid,
                 verifyInterval: this.verifyInterval, pinTimeout: this.pinTimeout,
                 trackingLink: this.trackingLink, startTime: Date.now()
             });
@@ -499,14 +500,19 @@ class SafetyTracker {
     // ── Session persistence ───────────────────────────────────────────────
     saveSession(data) { localStorage.setItem('safetyTrackerSession', JSON.stringify(data)); }
 
-    restoreSession() {
+    async restoreSession() {
         try {
             const raw = localStorage.getItem('safetyTrackerSession');
             if (!raw) return;
             const data = JSON.parse(raw);
             if (Date.now() - data.startTime > 86400000) { this.clearSession(); return; }
             this.sessionId      = data.sessionId;
-            this.pin            = data.pin;
+            const user = await window.getHerShieldUser();
+            if (!user || data.ownerUid !== user.uid) { this.clearSession(); return; }
+            const response = await fetch('/api/live-tracker/location/' + encodeURIComponent(data.sessionId));
+            const session = await response.json();
+            if (!response.ok || !session.success || session.active === false) { this.clearSession(); return; }
+            this.pin = null;
             this.verifyInterval = data.verifyInterval;
             this.pinTimeout     = data.pinTimeout;
             this.trackingLink   = data.trackingLink || null;
@@ -626,13 +632,18 @@ class SafetyTracker {
             if (this.accuracyCircle) { this.accuracyCircle.setCenter(p); this.accuracyCircle.setRadius(accuracy); }
         }
 
+        if (this._locationSendPending) return;
+        this._locationSendPending = true;
         try {
-            await fetch(`/api/live-tracker/update-location`, {
+            const response = await fetch(`/api/live-tracker/update-location`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId: this.sessionId, lat, lng, accuracy })
             });
-        } catch (err) { console.warn('Location update failed:', err.message); }
+            const result = await response.json();
+            if (!response.ok || !result.success || result.skipped) throw new Error(result.message || 'Location was not shared');
+        } catch (err) { this.showToast('Location not shared', err.message); }
+        finally { this._locationSendPending = false; }
     }
 
     /** Live accuracy readout in the tracking view so the person doing the demo can
@@ -687,7 +698,7 @@ class SafetyTracker {
     showPinModal() {
         const modalEl = document.getElementById('safetyCheckModal');
         if (!modalEl) return;
-        new bootstrap.Modal(modalEl).show();
+        new bootstrap.Modal(modalEl, { backdrop: 'static', keyboard: false }).show();
         const audio = document.getElementById('alertSound');
         if (audio) audio.play().catch(() => {});
         if (this.responseTimerId) clearTimeout(this.responseTimerId);
@@ -704,7 +715,7 @@ class SafetyTracker {
         const errorDiv = document.getElementById('codeError');
         if (!inputEl || !errorDiv) return;
         const inputPin = inputEl.value;
-        if (inputPin !== this.pin) { errorDiv.style.display = 'block'; errorDiv.textContent = 'Incorrect PIN!'; return; }
+        if (!/^\d{4,10}$/.test(inputPin)) { errorDiv.style.display = 'block'; errorDiv.textContent = 'Enter your numeric PIN.'; return; }
 
         try {
             const resp = await fetch(`/api/live-tracker/verify-pin`, {
@@ -718,14 +729,18 @@ class SafetyTracker {
                 errorDiv.textContent = data.message || 'Verification failed';
                 return;
             }
-        } catch { /* ignore network hiccups */ }
+        } catch {
+            errorDiv.style.display = 'block';
+            errorDiv.textContent = 'Could not confirm with the server. Check your connection and retry. The safety timer is still running.';
+            return;
+        }
 
         errorDiv.style.display = 'none';
         inputEl.value = '';
         const modalEl = document.getElementById('safetyCheckModal');
         bootstrap.Modal.getInstance(modalEl)?.hide();
         if (this.responseTimerId) clearTimeout(this.responseTimerId);
-        this.showToast('Safety Confirmed ✅', 'Next check in 2 minutes.');
+        this.showToast('Safety Confirmed ✅', 'Next check in ' + Math.round(this.verifyInterval / 60000) + ' minutes.');
         this.resetVerificationTimer();
     }
 
@@ -764,7 +779,7 @@ class SafetyTracker {
         const errorDiv  = document.getElementById('endTrackingError');
         if (!endPinEl || !errorDiv) return;
         const inputPin  = endPinEl.value;
-        if (inputPin !== this.pin) { errorDiv.style.display = 'block'; errorDiv.textContent = 'Incorrect PIN!'; return; }
+        if (!/^\d{4,10}$/.test(inputPin)) { errorDiv.style.display = 'block'; errorDiv.textContent = 'Enter your numeric PIN.'; return; }
 
         try {
             const resp = await fetch(`/api/live-tracker/stop`, {

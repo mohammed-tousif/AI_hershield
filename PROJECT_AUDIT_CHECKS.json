@@ -1,0 +1,475 @@
+{
+  "date": "2026-10-07",
+  "scope": "Local syntax checks and isolated route tests with synthetic data; no real Firebase, notifications, Groq or Cloudinary calls.",
+  "syntax": [
+    {
+      "file": "admin-dashboard.html",
+      "script": 1,
+      "pass": true,
+      "detail": "valid classic script syntax"
+    },
+    {
+      "file": "admin-dashboard.html",
+      "script": 2,
+      "pass": true,
+      "detail": "valid classic script syntax"
+    },
+    {
+      "file": "admin-login.html",
+      "script": 1,
+      "pass": true,
+      "detail": "valid classic script syntax"
+    },
+    {
+      "file": "admin-login.html",
+      "script": 2,
+      "pass": true,
+      "detail": "valid classic script syntax"
+    },
+    {
+      "file": "animations.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "auth.html",
+      "script": 1,
+      "pass": true,
+      "detail": "valid module syntax"
+    },
+    {
+      "file": "community.html",
+      "script": 1,
+      "pass": true,
+      "detail": "valid classic script syntax"
+    },
+    {
+      "file": "community.html",
+      "script": 2,
+      "pass": true,
+      "detail": "valid module syntax"
+    },
+    {
+      "file": "community.html",
+      "script": 3,
+      "pass": true,
+      "detail": "valid classic script syntax"
+    },
+    {
+      "file": "config/appUrls.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "config/database.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "config/firestoreAdmin.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "config/listenWithFallback.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "config.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "dashboard.html",
+      "script": 1,
+      "pass": true,
+      "detail": "valid module syntax"
+    },
+    {
+      "file": "dashboard.html",
+      "script": 2,
+      "pass": true,
+      "detail": "valid classic script syntax"
+    },
+    {
+      "file": "dashboard.html",
+      "script": 3,
+      "pass": true,
+      "detail": "valid classic script syntax"
+    },
+    {
+      "file": "firebase-auth.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "firebase-config.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "index.html",
+      "script": 1,
+      "pass": true,
+      "detail": "valid classic script syntax"
+    },
+    {
+      "file": "live-tracker-viewer.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "live-tracker.html",
+      "script": 1,
+      "pass": true,
+      "detail": "valid classic script syntax"
+    },
+    {
+      "file": "live-tracker.html",
+      "script": 2,
+      "pass": true,
+      "detail": "valid module syntax"
+    },
+    {
+      "file": "live-tracker.html",
+      "script": 3,
+      "pass": true,
+      "detail": "valid classic script syntax"
+    },
+    {
+      "file": "live-tracker.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "middleware/adminAuth.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "middleware/loginThrottle.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "middleware/requireAuth.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "navigation.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "report_button.html",
+      "script": 1,
+      "pass": true,
+      "detail": "valid classic script syntax"
+    },
+    {
+      "file": "routes/admin.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "routes/community.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "routes/emergencyLite.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "routes/legalChat.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "routes/liveTracker.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "routes/safety.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "routes/safetyLocations.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "routes/trackingLite.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "routes/users.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "routes/verification.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "Safety Map/safety-map.html",
+      "script": 1,
+      "pass": true,
+      "detail": "valid classic script syntax"
+    },
+    {
+      "file": "Safety Map/safety_route_map.html",
+      "script": 1,
+      "pass": true,
+      "detail": "valid classic script syntax"
+    },
+    {
+      "file": "Safety Map/safety_route_map.html",
+      "script": 2,
+      "pass": true,
+      "detail": "valid classic script syntax"
+    },
+    {
+      "file": "Safety Map/server.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "Safety Map/women-safety-map/src/reportWebVitals.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "Safety Map/women-safety-map/src/setupTests.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "safety-map.html",
+      "script": 1,
+      "pass": true,
+      "detail": "valid classic script syntax"
+    },
+    {
+      "file": "safety-map.html",
+      "script": 2,
+      "pass": true,
+      "detail": "valid classic script syntax"
+    },
+    {
+      "file": "safety-map.html",
+      "script": 3,
+      "pass": true,
+      "detail": "valid module syntax"
+    },
+    {
+      "file": "safety-map.html",
+      "script": 4,
+      "pass": true,
+      "detail": "valid classic script syntax"
+    },
+    {
+      "file": "safety-map.html",
+      "script": 5,
+      "pass": true,
+      "detail": "valid classic script syntax"
+    },
+    {
+      "file": "safetymap.html",
+      "script": 1,
+      "pass": true,
+      "detail": "valid classic script syntax"
+    },
+    {
+      "file": "scripts/smoke-api.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "server.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "services/cloudinaryService.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "services/emailService.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "services/firestoreRepository.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "services/geocoding.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "services/legalChatService.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "services/safetyAnalytics.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "services/sanitize.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "services/smsService.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "services/userNotifications.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "services/verificationRetention.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "services/whatsappService.js",
+      "pass": true,
+      "detail": "valid JavaScript syntax"
+    },
+    {
+      "file": "Sheherhackathon/index.html",
+      "script": 1,
+      "pass": true,
+      "detail": "valid classic script syntax"
+    },
+    {
+      "file": "verify-identity.html",
+      "script": 1,
+      "pass": true,
+      "detail": "valid module syntax"
+    }
+  ],
+  "observations": [
+    {
+      "name": "Unauthenticated profile read",
+      "status": 200,
+      "returnedSensitiveProfile": true,
+      "returnedContacts": true
+    },
+    {
+      "name": "Unauthenticated profile update",
+      "status": 200,
+      "updated": true
+    },
+    {
+      "name": "Unauthenticated live-tracker history",
+      "status": 200,
+      "returnedPin": false
+    },
+    {
+      "name": "Unauthenticated SOS history",
+      "status": 200,
+      "returnedPinHash": true
+    },
+    {
+      "name": "Unauthenticated location update",
+      "status": 200,
+      "updated": true
+    },
+    {
+      "name": "Accuracy missing from location persistence call",
+      "status": 200,
+      "returnedAccuracy": 50,
+      "submittedAccuracy": 450
+    },
+    {
+      "name": "Rejected low-accuracy GPS fix",
+      "status": 200,
+      "skipped": true
+    },
+    {
+      "name": "Public incident list exposes reporter identity",
+      "status": 200,
+      "returnedReporterEmail": true
+    },
+    {
+      "name": "Empty route accepted",
+      "status": 200,
+      "safetyScore": 100,
+      "riskLevel": "low"
+    },
+    {
+      "name": "Incident comment validators not checked",
+      "status": 200,
+      "storedInvalidComment": true
+    },
+    {
+      "name": "Incident report not HTML stripped",
+      "status": 200,
+      "storedMarkup": true
+    },
+    {
+      "name": "Admin access guard",
+      "status": 401,
+      "denied": true
+    },
+    {
+      "name": "Verification access guard",
+      "status": 401,
+      "denied": true
+    },
+    {
+      "name": "Active tracking admin statistic wrong field",
+      "activeTracking": 0,
+      "fixtureIsTrackingActive": true,
+      "mode": "Direct real route handler with complete synthetic repository fixture"
+    },
+    {
+      "name": "Live tracker start stores plain PIN",
+      "status": 201,
+      "storedPlainPin": true,
+      "acceptedNoEmergencyContacts": true
+    },
+    {
+      "name": "Express static exposes backend source",
+      "status": 200,
+      "type": "application/javascript; charset=UTF-8"
+    },
+    {
+      "name": "Express static exposes service account filename",
+      "status": 200,
+      "bytes": "2379",
+      "contentsNotRead": true
+    },
+    {
+      "name": "Retention user scan capped at 1000",
+      "requestedUsers": 5000,
+      "appliedLimit": 1000,
+      "mode": "Real repository function with synthetic Firestore query object"
+    },
+    {
+      "name": "Client PIN confirmation ignores network failure",
+      "mode": "Real method extracted into a VM with synthetic DOM and rejected fetch",
+      "displayedSafetyConfirmed": true,
+      "timeoutCleared": true,
+      "timerReset": true,
+      "noNetworkRequestSent": true
+    }
+  ]
+}

@@ -4,13 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <!-- ↓ Auth guard: runs synchronously before any content renders -->
-    <script>
-        (function() {
-            if (localStorage.getItem('hershield_logged_in') !== 'true') {
-                window.location.replace('auth.html?next=safety-map.html');
-            }
-        })();
-    </script>
+    <!-- Authentication is checked against Firebase state by navigation.js. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Safety Map | Women Safety App</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -398,6 +392,10 @@
             font-weight: 500;
         }
     </style>
+    <link rel="stylesheet" href="/responsive.css">
+    <script src="/responsive.js" defer></script>
+    <link rel="stylesheet" href="/email-verification.css">
+    <script src="/email-verification.js" defer></script>
 </head>
 
 <body>
@@ -405,11 +403,8 @@
     <div class="gradient-overlay"></div>
 
     <!-- Firebase SDK and Unified Navigation -->
-    <script type="module">
-        import './firebase-config.js';
-        import './firebase-auth.js';
-        import './navigation.js';
-    </script>
+    <script src="/navigation.js" defer></script>
+    <script>import('./firebase-auth.js').catch(() => window.hsConnectionNotice?.('Sign-in services are taking longer to load. Check your connection and retry.'));</script>
 
     <div class="dashboard-container">
         <!-- Sidebar is now handled by navigation.js -->
@@ -625,8 +620,8 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="/safety-stats.js"></script>
-    <script src="/route-planning-fix.js"></script>
+
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
@@ -666,7 +661,7 @@
             ].join(';');
             toast.innerHTML =
                 `<div style="font-weight:700;margin-bottom:4px">${badge} New Incident Reported</div>`+
-                `<div style="opacity:.85">${typeLabel} — ${point.location}</div>`;
+                `<div style="opacity:.85">${hsEscapeHTML(typeLabel)} — ${hsEscapeHTML(point.location)}</div>`;
             document.body.appendChild(toast);
             setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 400); }, 5000);
         }
@@ -762,6 +757,9 @@
                 script.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyBGXF_WodaMeP10oziYhG0NdqHw2fJogxM&libraries=places,directions&callback=onGoogleMapsLoaded';
                 script.async = true;
                 script.defer = true;
+                const timer = setTimeout(() => { if (!map) window.hsConnectionNotice('The map is taking longer to load. Check your connection and reload to retry.'); }, 15000);
+                script.addEventListener('load', () => clearTimeout(timer), { once: true });
+                script.onerror = () => { clearTimeout(timer); window.hsConnectionNotice('The map could not load. Other navigation remains available.'); };
                 document.head.appendChild(script);
                 console.log("Loading Google Maps API...");
             } else {
@@ -913,7 +911,7 @@
                     title: point.location
                 });
                 const iw = new google.maps.InfoWindow({
-                    content: `<strong>${point.location}</strong><br>Risk: ${adjustedRisk === 3 ? 'High' : adjustedRisk === 2 ? 'Medium' : 'Low'}`
+                    content: `<strong>${hsEscapeHTML(point.location)}</strong><br>Risk: ${adjustedRisk === 3 ? 'High' : adjustedRisk === 2 ? 'Medium' : 'Low'}`
                 });
                 marker.addListener('click', () => iw.open(map, marker));
                 markers.push(marker);
@@ -936,7 +934,7 @@
                     strokeColor: '#ffffff',
                     scale: 10
                 },
-                title: `📍 ${point.location}`,
+                title: `📍 ${hsEscapeHTML(point.location)}`,
                 zIndex: 10
             });
             const badge = point.severity === 'high' ? '🔴' : point.severity === 'medium' ? '🟡' : '🟢';
@@ -944,10 +942,10 @@
             const iw = new google.maps.InfoWindow({
                 content:
                     `<div style="max-width:220px;font-size:.85rem;">`+
-                    `<strong>${badge} User Report: ${typeLabel}</strong><br>`+
-                    `<em>${point.location}</em><br>`+
-                    (point.description ? `<span style="color:#555">${point.description}</span><br>` : '') +
-                    `Severity: <b style="color:${riskColor}">${(point.severity||'').toUpperCase()}</b>`+
+                    `<strong>${badge} User Report: ${hsEscapeHTML(typeLabel)}</strong><br>`+
+                    `<em>${hsEscapeHTML(point.location)}</em><br>`+
+                    (point.description ? `<span style="color:#555">${hsEscapeHTML(point.description)}</span><br>` : '') +
+                    `Severity: <b style="color:${riskColor}">${hsEscapeHTML((point.severity||'').toUpperCase())}</b>`+
                     `</div>`
             });
             marker.addListener('click', () => iw.open(map, marker));
@@ -1444,7 +1442,7 @@
             let _socket;
             function connect() {
                 try {
-                    _socket = window._safetyMapSocket || io({ transports: ['polling'] });
+                    _socket = window._safetyMapSocket || io(window.HERSHIELD_BACKEND || location.origin, { transports: ['polling'] });
                     window._safetyMapSocket = _socket;
 
                     _socket.on('safetyData:updated', async (payload) => {

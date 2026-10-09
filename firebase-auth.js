@@ -69,31 +69,6 @@ async function syncUserToFirestore(user, consent = {}) {
             localStorage.setItem('hershield_backend_user_id', user.uid);
             console.log('✅ User synced to Firestore:', user.uid);
 
-            // ── Restore profile picture from Firestore if not already cached for THIS account ──
-            // This makes the avatar survive logout / browser clears / new devices.
-            const hasLocalAvatar = !!getCachedAvatar(user.uid);
-            if (!hasLocalAvatar) {
-                try {
-                    const profileRes = await fetch(`/api/users/profile/${encodeURIComponent(user.uid)}`);
-                    if (profileRes.ok) {
-                        const profileData = await profileRes.json();
-                        const storedPic = profileData?.user?.profilePicture;
-                        if (storedPic && /^https?:\/\//i.test(storedPic)) {
-                            setCachedAvatar(user.uid, storedPic);
-                            console.log('✅ Profile picture restored from Firestore:', storedPic);
-                            // Refresh all avatar elements on the page
-                            document.querySelectorAll('.user-avatar, .profile-avatar').forEach(img => {
-                                img.src = storedPic;
-                            });
-                            if (typeof window.refreshHershieldSidebarProfile === 'function') {
-                                window.refreshHershieldSidebarProfile();
-                            }
-                        }
-                    }
-                } catch (profileErr) {
-                    console.warn('⚠️ Could not restore profile picture:', profileErr.message);
-                }
-            }
         } else {
             console.warn('⚠️ Firestore upsert returned', res.status);
         }
@@ -114,14 +89,22 @@ class FirebaseAuthService {
         onAuthStateChanged(auth, async (user) => {
             this.currentUser = user;
 
+            const previousUid = localStorage.getItem('hershield_backend_user_id');
+            if (!user || (previousUid && previousUid !== user.uid)) {
+                ['hershield_emergency_contacts','hershield_sos_active','hershield_live_tracker','hershield_user_name','hershield_user_profile'].forEach(key => localStorage.removeItem(key));
+            }
+
+            this.notifyAuthStateListeners(user);
+            this.updateUI(user);
             if (user) {
+                localStorage.setItem('hershield_backend_user_id', user.uid);
                 // Ensure localStorage is in sync
                 localStorage.setItem('hershield_logged_in', 'true');
                 localStorage.setItem('hershield_user_email', user.email);
                 if (!localStorage.getItem('hershield_user_name')) {
                     localStorage.setItem(
                         'hershield_user_name',
-                        user.displayName || user.email.split('@')[0]
+                        user.displayName || user.email?.split('@')[0] || 'HerShield User'
                     );
                 }
 
@@ -156,8 +139,6 @@ class FirebaseAuthService {
                 localStorage.removeItem('hershield_backend_user_id');
             }
 
-            this.notifyAuthStateListeners(user);
-            this.updateUI(user);
         });
     }
 
@@ -212,7 +193,7 @@ class FirebaseAuthService {
 
         userNames.forEach((name) => {
             name.textContent =
-                localStorage.getItem('hershield_user_name') || user.displayName || user.email.split('@')[0];
+                localStorage.getItem('hershield_user_name') || user.displayName || user.email?.split('@')[0] || 'HerShield User';
         });
 
         userEmails.forEach(email => {
@@ -222,15 +203,15 @@ class FirebaseAuthService {
 
     async loginWithEmail(email, password) {
         try {
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const userCredential = await window.hsWithTimeout(signInWithEmailAndPassword(auth, email, password), 20000, 'Sign-in is taking too long. Check your connection and retry.');
             const user = userCredential.user;
 
             localStorage.setItem('hershield_logged_in', 'true');
             localStorage.setItem('hershield_user_email', user.email);
-            localStorage.setItem('hershield_user_name', user.displayName || user.email.split('@')[0]);
+            localStorage.setItem('hershield_user_name', user.displayName || user.email?.split('@')[0] || 'HerShield User');
 
             // Sync / create Firestore user document
-            await syncUserToFirestore(user);
+            void syncUserToFirestore(user);
 
             return { success: true, user };
         } catch (error) {
@@ -240,7 +221,7 @@ class FirebaseAuthService {
 
     async registerWithEmail(email, password, displayName, consent = {}) {
         try {
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const userCredential = await window.hsWithTimeout(createUserWithEmailAndPassword(auth, email, password), 25000, 'Account creation is taking too long. Check whether you can sign in before retrying.');
             const user = userCredential.user;
 
             if (displayName) {
@@ -249,7 +230,7 @@ class FirebaseAuthService {
 
             localStorage.setItem('hershield_logged_in', 'true');
             localStorage.setItem('hershield_user_email', user.email);
-            localStorage.setItem('hershield_user_name', displayName || user.email.split('@')[0]);
+            localStorage.setItem('hershield_user_name', displayName || user.email?.split('@')[0] || 'HerShield User');
 
             // Sync / create Firestore user document
             await syncUserToFirestore({ ...user, displayName: displayName || user.displayName }, consent);
@@ -501,6 +482,7 @@ class FirebaseAuthService {
     async logout() {
         try {
             await signOut(auth);
+            ['hershield_emergency_contacts','hershield_sos_active','safetyTrackerSession','hershield_user_uid','hershield_user_phone'].forEach(key => localStorage.removeItem(key));
 
             // Clear localStorage
             localStorage.removeItem('hershield_logged_in');

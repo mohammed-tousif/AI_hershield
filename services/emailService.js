@@ -58,6 +58,9 @@ function toRecipientHeader(to) {
 
 /** Build a raw RFC 2822 message and base64url-encode it, as required by the Gmail API. */
 function buildRawMessage({ from, to, subject, html }) {
+    if ([from, ...(Array.isArray(to) ? to : [to])].some(value => typeof value !== 'string' || /[\r\n]/.test(value))) {
+        throw new Error('Invalid email header.');
+    }
     const messageParts = [
         `From: ${from}`,
         `To: ${toRecipientHeader(to)}`,
@@ -93,7 +96,7 @@ async function sendMail({ from, to, subject, html }) {
     const result = await gmail.users.messages.send({
         userId: 'me',
         requestBody: { raw },
-    });
+    }, { timeout: 12000, retry: false });
 
     return { success: true, id: result.data.id };
 }

@@ -6,9 +6,10 @@
  */
 const jwt = require('jsonwebtoken');
 
-const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || 'hershield_ADMIN_secret_change_me';
+const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || null;
 
 function adminAuth(req, res, next) {
+    if (!ADMIN_JWT_SECRET || ADMIN_JWT_SECRET.length < 32) return res.status(503).json({ success: false, message: 'Admin authentication is not configured securely.' });
     const header = req.headers['authorization'] || '';
     const token  = header.startsWith('Bearer ') ? header.slice(7) : null;
 
@@ -17,7 +18,7 @@ function adminAuth(req, res, next) {
     }
 
     try {
-        const payload = jwt.verify(token, ADMIN_JWT_SECRET);
+        const payload = jwt.verify(token, ADMIN_JWT_SECRET, { algorithms: ['HS256'] });
         if (!payload.isAdmin) {
             return res.status(403).json({ success: false, message: 'Not an admin token' });
         }

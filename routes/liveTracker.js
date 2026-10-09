@@ -4,6 +4,14 @@ require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 const express = require('express');
 const { body, param, validationResult } = require('express-validator');
 const router = express.Router();
+const { newShareCode, shareExpiresAt, hashPin, verifyPin, findSharedSession, viewerLocation, endViewers, isLive } = require('../services/trackingSecurity');
+router.get('/view/:code', async (req, res, next) => {
+    try {
+        const session = await findSharedSession(req.params.code);
+        if (!session) return res.status(410).json({ success: false, active: false, message: 'This tracking link is invalid, expired, or has ended.' });
+        return res.json(viewerLocation(session));
+    } catch (error) { next(error); }
+});
 const {
     liveSessionCreate,
     liveSessionGetByUserId,
@@ -35,7 +43,7 @@ const startValidators = [
     body('source').optional({ nullable: true }).isString().isLength({ max: 200 }).withMessage('Source must be under 200 characters'),
     body('destination').optional({ nullable: true }).isString().isLength({ max: 200 }).withMessage('Destination must be under 200 characters'),
     body('transportMode').optional({ nullable: true }).isString().isLength({ max: 50 }),
-    body('pin').notEmpty().withMessage('PIN is required').isLength({ min: 4, max: 10 }).withMessage('PIN must be 4-10 characters'),
+    body('pin').matches(/^\d{4,10}$/).withMessage('PIN must contain 4–10 digits'),
     body('email').optional({ nullable: true }).isEmail().withMessage('Invalid email').normalizeEmail(),
     body('emergencyContacts').optional({ nullable: true }).isArray({ max: 20 }).withMessage('emergencyContacts must be an array'),
     body('emergencyContacts.*').optional().isEmail().withMessage('Each emergency contact must be a valid email'),
@@ -53,7 +61,7 @@ const updateLocationValidators = [
 
 const pinValidators = [
     body('userId').trim().notEmpty().withMessage('userId is required').isLength({ max: 100 }),
-    body('pin').trim().notEmpty().withMessage('PIN is required').isLength({ min: 4, max: 10 }),
+    body('pin').trim().matches(/^\d{4,10}$/).withMessage('PIN must contain 4–10 digits'),
 ];
 
 const userIdOnlyValidators = [
@@ -86,13 +94,13 @@ router.post('/start', startValidators, checkValidation, async (req, res) => {
         const transportMode = stripHtml(req.body.transportMode || '');
         const { pin, emergencyContacts, email, startLat, startLng } = req.body;
 
-        const userEmail = email || process.env.EMAIL_USER;
-        const userId    = Date.now().toString() + Math.floor(Math.random() * 1000);
-        const trackingCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+        const userEmail = req.authUser.email || '';
+        const userId    = require('crypto').randomUUID();
+        const trackingCode = newShareCode();
 
         // ── Tracking link — FRONTEND_URL so emergency contacts open Firebase-hosted page
         const origin = req.body.baseUrl || getFrontendUrl();
-        const trackingLink = liveTrackerLink(userId);
+        const trackingLink = liveTrackerLink(userId, { code: trackingCode });
 
         // ── Map link using real GPS coords if provided ────────────────────
         const mapLink = (startLat && startLng)
@@ -104,7 +112,9 @@ router.post('/start', startValidators, checkValidation, async (req, res) => {
             email: userEmail,
             source, destination,
             transportMode: transportMode || 'Not Specified',
-            pin,
+            pinHash: await hashPin(pin),
+            ownerUid: req.authUser.uid,
+            shareExpiresAt: shareExpiresAt(),
             emergencyContacts,
             trackingLink,
             isTrackingActive: true,
@@ -201,14 +211,13 @@ router.post('/update-location', updateLocationValidators, checkValidation, async
             return res.status(400).json({ success: false, message: 'Tracking is not active' });
         }
 
-        await liveSessionPushLocation(userId, lat, lng);
+        await liveSessionPushLocation(userId, lat, lng, accuracy == null ? null : Number(accuracy));
 
         // ── Broadcast to all viewer sockets in this session room ──────────────
         const io = req.app.get('io');
-        if (io) {
-            io.to(userId).emit('locationUpdated', {
-                location: { lat, lng, accuracy: accuracy || 50 },
-                timestamp: new Date(),
+        if (io && isLive(session)) {
+            io.to('tracking:' + userId).emit('locationUpdated', {
+                sessionId: userId,
             });
         }
 
@@ -232,16 +241,17 @@ router.get('/location/:userId', [param('userId').trim().notEmpty().isLength({ ma
         if (!session) {
             return res.status(404).json({ success: false, message: 'Session not found' });
         }
+        if (!session.isTrackingActive) return res.json({ success: true, active: false });
         const logs = session.locationLogs || [];
         if (logs.length === 0) {
-            return res.json({ success: true, message: 'No location yet' });
+            return res.json({ success: true, active: true, message: 'No location yet' });
         }
         const last = logs[logs.length - 1];
         return res.json({
             success: true,
             lat: last.lat,
             lng: last.lng,
-            accuracy: last.accuracy || 50,
+            accuracy: last.accuracy ?? null,
             timestamp: last.timestamp || session.lastVerified,
         });
     } catch (error) {
@@ -258,8 +268,9 @@ router.post('/verify-pin', pinValidators, checkValidation, async (req, res) => {
         if (!session) {
             return res.status(404).json({ success: false, message: 'Session not found' });
         }
+        if (!session.isTrackingActive) return res.status(409).json({ success: false, message: 'This tracking session has ended.' });
 
-        if (session.pin !== pin) {
+        if (!await verifyPin(pin, session.pinHash)) {
             return res.status(401).json({ success: false, message: 'Incorrect PIN' });
         }
 
@@ -284,6 +295,7 @@ router.post('/trigger-alert', userIdOnlyValidators, checkValidation, async (req,
         if (!session) {
             return res.status(404).json({ success: false, message: 'Session not found' });
         }
+        if (!session.isTrackingActive) return res.status(409).json({ success: false, message: 'This tracking session has ended.' });
 
         const logs = session.locationLogs || [];
         const lastLocation = logs.length > 0 ? logs[logs.length - 1] : null;
@@ -375,11 +387,12 @@ router.post('/stop', pinValidators, checkValidation, async (req, res) => {
             return res.status(404).json({ success: false, message: 'Session not found' });
         }
 
-        if (session.pin !== pin) {
+        if (!await verifyPin(pin, session.pinHash)) {
             return res.status(401).json({ success: false, message: 'Incorrect PIN' });
         }
 
         await liveSessionStop(userId);
+        endViewers(req.app.get('io'), userId);
 
         res.json({ success: true, message: 'Tracking stopped' });
     } catch (error) {
@@ -551,7 +564,7 @@ router.post('/dashboard-alert', dashboardAlertValidators, checkValidation, async
                     userId,
                     userName: userName || 'User',
                     userEmail: userEmail || '',
-                    status: 'safe',   // dashboard alerts are point-in-time; no PIN-based session
+                    status: 'alerted',   // dashboard alerts are point-in-time; no PIN-based session
                     location: loc,
                     trackingCode: null,
                     trackingLink: null,
@@ -559,7 +572,7 @@ router.post('/dashboard-alert', dashboardAlertValidators, checkValidation, async
                     timerMinutes: null,
                     triggeredAt: now,
                     expiresAt: null,
-                    resolvedAt: now,
+                    resolvedAt: null,
                     // Also missing before — the admin panel reads
                     // emergencyContacts.length for a "guardians notified" count,
                     // but only a separate contactCount number was ever stored.
@@ -577,8 +590,8 @@ router.post('/dashboard-alert', dashboardAlertValidators, checkValidation, async
         const smsFailed  = smsResults.filter(r => !r.success).length;
 
         return res.json({
-            success: true,
-            message: 'Emergency alert dispatched.',
+            success: smsSent + emailSentCount > 0,
+            message: smsSent + emailSentCount > 0 ? 'Emergency alert submitted to the configured delivery service.' : 'No alerts could be sent. Please call your emergency contacts directly.',
             notifications: {
                 sms:   { sent: smsSent, failed: smsFailed },
                 email: { sent: emailSentCount, failed: emailRecipients.length - emailSentCount },
@@ -592,7 +605,7 @@ router.post('/dashboard-alert', dashboardAlertValidators, checkValidation, async
 });
 
 // Resolve tracking code → session userId (for email links with ?code=)
-router.get('/lookup-code/:code', [param('code').trim().isLength({ max: 20 })], checkValidation, async (req, res) => {
+router.get('/lookup-code/:code', [param('code').trim().isLength({ max: 64 })], checkValidation, async (req, res) => {
     try {
         const code = (req.params.code || '').trim();
         if (!code) {
@@ -626,7 +639,7 @@ router.get('/history/:userEmail', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Valid email required.' });
         }
         const sessions = await liveSessionsByEmail(email);
-        const formatted = sessions.map((s) => ({
+        const formatted = sessions.filter(s => s.ownerUid === req.authUser.uid).map((s) => ({
             _id:              s._id || s.userId,
             sessionId:        s.userId,
             name:             s.name,

@@ -306,6 +306,12 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="/responsive.css">
+    <script src="/responsive.js" defer></script>
+    <script>
+        for (const handler of ['handleLogin','handleSignup','handleRecovery']) window[handler] = event => { event.preventDefault(); window.hsConnectionNotice('Sign-in is still loading. Please wait a moment and try again.'); return false; };
+        fetch('/api/health').catch(() => {});
+    </script>
 </head>
 
 <body>
@@ -644,9 +650,8 @@
                 const result = await window.authService.loginWithEmail(email, password);
                 if (result.success) {
                     // Wait for Firebase auth state to propagate before redirecting
-                    setTimeout(() => {
-                        redirectAfterVerificationCheck(result.user);
-                    }, 1000);
+                    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Opening your dashboard…';
+                    await redirectAfterVerificationCheck(result.user);
                 } else {
                     throw new Error(result.error);
                 }
@@ -682,12 +687,7 @@
             try {
                 const result = await window.authService.registerWithEmail(email, password, name, { agreedToTerms, agreedToGenderDeclaration, phone });
                 if (result.success) {
-                    // Firebase signs the user in immediately on account creation —
-                    // send them straight into the mandatory selfie step rather than
-                    // back to the Login tab (which just meant logging in again).
-                    setTimeout(() => {
-                        window.location.replace('verify-identity.html');
-                    }, 500);
+                    window.location.replace('verify-email.html?next=identity');
                 } else {
                     throw new Error(result.error);
                 }
@@ -822,8 +822,8 @@
 
                 const modalEl = document.getElementById('completeAccountModal');
                 bootstrap.Modal.getInstance(modalEl)?.hide();
-                // Same as manual signup — mandatory selfie step before the dashboard.
-                window.location.replace('verify-identity.html');
+                // Trusted provider emails can already be verified; the status page checks.
+                window.location.replace('verify-email.html?next=identity');
             } catch (error) {
                 btn.disabled = false;
                 btn.innerHTML = 'Continue';

@@ -16,12 +16,16 @@ const {
     incidentsFetchAll,
     isFirestoreConfigured,
 } = require('../services/firestoreRepository');
+const { clean } = require('../middleware/apiAccess');
 const { stripHtml } = require('../services/sanitize');
 const cloudinaryService = require('../services/cloudinaryService');
 
 const VALID_CATEGORIES = ['general', 'alert', 'tip', 'experience', 'event', 'question'];
 
 function checkValidation(req, res, next) {
+    req.body.userId = req.authUser.uid;
+    req.body.userEmail = req.authUser.email || '';
+    req.body.userName = req.authUser.name || 'Community Member';
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ success: false, message: errors.array()[0].msg, details: errors.array() });
@@ -34,7 +38,7 @@ const postValidators = [
     body('userName').optional({ nullable: true }).isString().isLength({ max: 100 }).withMessage('Name must be under 100 characters'),
     body('userEmail').optional({ nullable: true }).isEmail().withMessage('Invalid email').normalizeEmail(),
     body('location').optional({ nullable: true }).isString().isLength({ max: 200 }).withMessage('Location must be under 200 characters'),
-    body('imageUrl').optional({ nullable: true }).isString().isLength({ max: 2000 }),
+    body('imageUrl').optional({ checkFalsy: true }).isURL({ protocols: ['https'], require_protocol: true }).isLength({ max: 2000 }),
     body('category').optional({ nullable: true }).isIn(VALID_CATEGORIES).withMessage('Invalid category'),
 ];
 
@@ -117,7 +121,7 @@ router.post('/posts', postValidators, checkValidation, async (req, res) => {
 
         // Broadcast to all connected clients
         const io = getIo(req);
-        if (io) io.emit('community:newPost', post);
+        if (io) io.emit('community:newPost', clean(post, true));
 
         res.status(201).json({ success: true, post });
     } catch (err) {
@@ -163,7 +167,7 @@ router.post('/posts/upload', upload.single('image'), postValidators, checkValida
         await communityInsert(post);
 
         const io = getIo(req);
-        if (io) io.emit('community:newPost', post);
+        if (io) io.emit('community:newPost', clean(post, true));
 
         res.status(201).json({ success: true, post });
     } catch (err) {
@@ -176,11 +180,11 @@ router.post('/posts/:id/like', likeValidators, checkValidation, async (req, res)
     try {
         const { id } = req.params;
         // accept userEmail OR userId — email is the stable identifier in this app
-        const userId  = req.body.userEmail || req.body.userId || 'anonymous';
+        const userId = req.authUser.uid;
         const result  = await communityLikePost(id, userId);
 
         const io = getIo(req);
-        if (io) io.emit('community:likeUpdate', { postId: id, ...result });
+        if (io) io.emit('community:likeUpdate', { postId: id, likes: result.likes });
 
         res.json({ success: true, ...result });
     } catch (err) {
@@ -212,7 +216,7 @@ router.post('/alerts', alertValidators, checkValidation, async (req, res) => {
         await communityInsert(alert);
 
         const io = getIo(req);
-        if (io) io.emit('community:newAlert', alert);
+        if (io) io.emit('community:newAlert', clean(alert, true));
 
         res.status(201).json({ success: true, alert });
     } catch (err) {

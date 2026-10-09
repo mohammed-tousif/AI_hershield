@@ -101,26 +101,8 @@ async function sendBulkSosEmails(contacts, userName, userEmail, location, tracki
 // ─── Shared in-memory SOS timer map (exported so server.js can re-hydrate) ───
 const sosTimerMap = new Map(); // userId → { timeoutId, sosId }
 
-function hashPin(pin) {
-    return crypto.createHash('sha256').update(String(pin)).digest('hex');
-}
-
-function generateTrackingCode(len = 6) {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let code = '';
-    while (code.length < len) code += chars[Math.floor(Math.random() * chars.length)];
-    return code;
-}
-
-async function ensureUniqueCode() {
-    let code;
-    let tries = 0;
-    do {
-        code = generateTrackingCode();
-        tries++;
-    } while (tries < 10 && (await trackingCodeExists(code)));
-    return code;
-}
+const { hashPin, verifyPin, newShareCode, shareExpiresAt, endViewers } = require('../services/trackingSecurity');
+async function ensureUniqueCode() { return newShareCode(); }
 
 async function autoExpireSos(userId, sosId) {
     sosTimerMap.delete(userId);
@@ -158,9 +140,9 @@ router.post(
     '/sos/start',
     [
         body('userId').notEmpty().withMessage('userId is required'),
-        body('location').isObject().withMessage('location is required'),
-        body('location.latitude').isFloat().withMessage('Valid latitude required'),
-        body('location.longitude').isFloat().withMessage('Valid longitude required'),
+        body('location').optional({ nullable: true }).isObject(),
+        body('location.latitude').optional().isFloat({ min: -90, max: 90 }).toFloat(),
+        body('location.longitude').optional().isFloat({ min: -180, max: 180 }).toFloat(),
         body('pin').isLength({ min: 4, max: 4 }).isNumeric().withMessage('PIN must be exactly 4 digits'),
         body('timerMinutes').optional().isInt({ min: 1, max: 240 }).withMessage('timerMinutes must be 1–240'),
     ],
@@ -197,6 +179,7 @@ router.post(
             }
 
             // Create live tracking session keyed to userId
+            endViewers(req.app.get('io'), userId);
             const trackingCode = await ensureUniqueCode();
             const trackingLink = liveTrackerLink(userId, { code: trackingCode });
 
@@ -205,10 +188,13 @@ router.post(
                 trackingCode,
                 name: user.name || 'HerShield User',
                 email: user.email || '',
-                source: `${location.latitude.toFixed(5)},${location.longitude.toFixed(5)}`,
+                source: location ? `${location.latitude.toFixed(5)},${location.longitude.toFixed(5)}` : 'Location unavailable',
                 destination: '',
                 transportMode: 'emergency',
-                pin: hashPin(pin),
+                pinHash: await hashPin(pin),
+                ownerUid: req.authUser.uid,
+                shareExpiresAt: timerMinutes ? new Date(Date.now() + timerMinutes * 60000).toISOString() : shareExpiresAt(),
+                trackingLink,
                 emergencyContacts: contacts,
                 isTrackingActive: true,
                 lastVerified: new Date(),
@@ -223,7 +209,7 @@ router.post(
             // Best-effort — the admin panel's SOS Events table reads
             // location.address, which never existed before (only raw
             // lat/lng), so it always showed blank there.
-            const address = await reverseGeocode(location.latitude, location.longitude);
+            const address = location ? await reverseGeocode(location.latitude, location.longitude) : null;
             const locationWithAddress = address ? { ...location, address } : location;
 
             await sosCreate({
@@ -240,7 +226,7 @@ router.post(
                 emergencyContacts: contacts,
                 trackingCode,
                 trackingLink,
-                pinHash: hashPin(pin),
+                pinHash: await hashPin(pin),
                 timerMinutes: timerMinutes || null,
                 triggeredAt,
                 expiresAt,
@@ -304,7 +290,7 @@ router.post(
             return res.status(201).json({
                 success: true,
                 message: contacts.length > 0
-                    ? `SOS activated. Alerts sent to ${contacts.length} contact(s).`
+                    ? `SOS activated. ${alertResults.filter(r => r.success && !r.mock).length} notification(s) accepted by delivery providers.`
                     : 'SOS activated. No emergency contacts configured — add contacts in your profile.',
                 sosId,
                 trackingCode,
@@ -341,7 +327,7 @@ router.post(
             }
 
             // Verify PIN
-            if (hashPin(pin) !== sosSession.pinHash) {
+            if (!await verifyPin(pin, sosSession.pinHash)) {
                 return res.status(401).json({ error: 'Incorrect PIN. Location sharing continues.' });
             }
 
@@ -350,6 +336,7 @@ router.post(
             if (timer) { clearTimeout(timer.timeoutId); sosTimerMap.delete(userId); }
 
             await sosMarkSafe(sosSession._id, new Date());
+            endViewers(req.app.get('io'), userId);
             await liveSessionStop(userId);
 
             // ── Send "safe" SMS to user + all contacts ───────────────────────
@@ -421,7 +408,7 @@ router.get('/sos/active/:userId', async (req, res) => {
 router.get('/sos/history/:userId', async (req, res) => {
     try {
         const history = await sosFindByUserId(req.params.userId, 20);
-        return res.json({ success: true, history });
+        return res.json({ success: true, history: history.map(({ pinHash, pin, ...item }) => item) });
     } catch (err) {
         return res.status(err.statusCode || 500).json({ error: err.message });
     }

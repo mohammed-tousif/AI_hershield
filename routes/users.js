@@ -54,7 +54,7 @@ router.post(
     '/upsert',
     [
         body('firebaseUid').notEmpty().withMessage('firebaseUid is required'),
-        body('email').isEmail().normalizeEmail(),
+        body('email').optional({ checkFalsy: true }).isEmail(),
         body('name').optional().trim(),
         body('phone').optional().trim(),
         body('photoURL').optional(),
@@ -92,7 +92,7 @@ router.post(
                 _id: firebaseUid,            // ← Firebase UID IS the Firestore doc ID
                 firebaseUid,
                 email,
-                name: name || email.split('@')[0],
+                name: name || email?.split('@')[0] || 'HerShield User',
                 phone: phone || '',
                 profilePicture: photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(name || email)}&background=BDA6CE&color=fff`,
                 emergencyContacts: [],
@@ -152,7 +152,7 @@ router.post(
 router.post(
     '/register',
     [
-        body('email').isEmail().normalizeEmail(),
+        body('email').optional({ checkFalsy: true }).isEmail(),
         body('name').notEmpty().trim(),
         body('phone').optional().trim(),
         body('firebaseUid').optional(),
@@ -182,7 +182,7 @@ router.post(
                 firebaseUid: firebaseUid || null,
                 email,
                 name,
-                phone,
+                phone: phone || '',
                 profilePicture: profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=BDA6CE&color=fff`,
                 emergencyContacts: [],
                 safetyPreferences: defaultPreferences(),
@@ -319,7 +319,7 @@ router.get('/stats/:userId', async (req, res) => {
  */
 router.get('/email/:email', async (req, res) => {
     try {
-        const user = await usersFindByEmail(req.params.email);
+        const user = await usersFindById(req.authUser.uid);
         if (!user) return res.json({ success: true, exists: false });
 
         res.json({

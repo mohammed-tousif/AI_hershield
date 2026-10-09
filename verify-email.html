@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="referrer" content="no-referrer">
+    <title>Verify your email · HerShield</title>
+    <link rel="stylesheet" href="/email-verification.css">
+    <script src="/config.js"></script>
+    <script src="/email-verification.js" defer></script>
+</head>
+<body class="hs-email-page">
+    <header class="hs-email-header"><a href="dashboard.html" aria-label="HerShield dashboard">HerShield<span>YOUR SAFETY, YOUR SPACE</span></a><a href="dashboard.html" class="hs-email-back">Back to dashboard</a></header>
+    <main class="hs-email-card" id="emailVerificationPage">
+        <span class="hs-email-eyebrow">A LITTLE CHECK. MORE CONFIDENCE.</span>
+        <div class="hs-email-symbol" aria-hidden="true">✉</div>
+        <h1 id="emailHeading">Make it yours.</h1>
+        <p id="emailIntro">Verify your email address with a one-time code. Your next login will still use your password.</p>
+        <p id="emailAddress" class="hs-email-address"></p>
+        <p id="emailStatus" role="status" aria-live="polite">Checking your email status…</p>
+        <button id="emailRetry" type="button" class="hs-email-secondary" hidden>Retry status check</button>
+        <section id="emailCodeSection" hidden aria-label="Email verification">
+            <button id="emailSend" type="button" class="hs-email-secondary">Send verification code</button>
+            <form id="emailCodeForm">
+                <label for="emailCode">Your six-digit code</label>
+                <input id="emailCode" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" minlength="6" maxlength="6" required placeholder="000000" aria-describedby="emailCodeHelp">
+                <p id="emailCodeHelp">Codes expire after 5 minutes. Only the most recent code works.</p>
+                <button id="emailVerify" type="submit" class="hs-email-primary">Verify email address</button>
+            </form>
+            <p class="hs-email-footnote">No email yet? Check spam or junk, then request another code when the countdown ends.</p>
+        </section>
+        <a id="emailContinue" href="dashboard.html" class="hs-email-primary" hidden>Continue</a>
+        <p class="hs-email-footnote">Your safety tools remain available while you complete this step.</p>
+    </main>
+</body>
+</html>

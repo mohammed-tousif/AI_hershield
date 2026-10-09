@@ -19,7 +19,7 @@ async function reverseGeocode(latitude, longitude) {
     if (!isConfigured() || typeof latitude !== 'number' || typeof longitude !== 'number') return null;
     try {
         const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${process.env.GOOGLE_MAPS_API_KEY}`;
-        const res = await fetch(url);
+        const res = await fetch(url, { signal: AbortSignal.timeout(2500) });
         if (!res.ok) return null;
         const data = await res.json();
         if (data.status !== 'OK' || !data.results?.length) return null;

@@ -90,6 +90,7 @@ function checkValidation(req, res, next) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 router.post('/login', loginRateLimiter, loginBackoffGuard, async (req, res) => {
     try {
+        if (!ADMIN_JWT_SECRET || ADMIN_JWT_SECRET.length < 32) return res.status(503).json({ success: false, message: 'Admin authentication is not configured securely.' });
         const { email, password } = req.body;
         if (!email || !password || typeof email !== 'string' || typeof password !== 'string') {
             return res.status(400).json({ success: false, message: 'Email and password required' });
@@ -147,7 +148,7 @@ router.get('/stats', async (req, res) => {
             communityFindByKind('alert', 200),
             incidentsFetchAll(200),
             sosListAll(200),
-            sosFindActive(),
+            Promise.resolve(null),
             liveSessionsListAll(100),
         ]);
 
@@ -453,7 +454,7 @@ router.post('/posts', adminPostValidators, checkValidation, async (req, res) => 
 
         await communityInsert(post);
         const io = getIo(req);
-        if (io) io.emit('community:newPost', post);
+        if (io) io.emit('community:newPost', require('../middleware/apiAccess').clean(post, true));
 
         await log(req, 'CREATE_POST', { postId: post._id, category });
         res.status(201).json({ success: true, post });

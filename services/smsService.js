@@ -174,7 +174,7 @@ class SMSService {
         const body = buildEmergencyMsg(userName, location, trackingLink);
         if (!this.isConfigured) {
             console.log(`📱 [MOCK SMS] Emergency → ${e164}\n${body}`);
-            return { success: true, mock: true, sid: `MOCK_${Date.now()}`, to: e164 };
+            return { success: false, unavailable: true, reason: 'SMS delivery is not configured', mock: true, sid: `MOCK_${Date.now()}`, to: e164 };
         }
         return _sendOne(e164, body);
     }
@@ -187,7 +187,7 @@ class SMSService {
         const body = buildSafeMsg(userName);
         if (!this.isConfigured) {
             console.log(`📱 [MOCK SMS] Safe confirmation → ${e164}`);
-            return { success: true, mock: true, sid: `MOCK_${Date.now()}`, to: e164 };
+            return { success: false, unavailable: true, reason: 'SMS delivery is not configured', mock: true, sid: `MOCK_${Date.now()}`, to: e164 };
         }
         return _sendOne(e164, body);
     }
@@ -200,7 +200,7 @@ class SMSService {
         const body = buildUserSosConfirmMsg(trackingCode, trackingLink, timerMinutes);
         if (!this.isConfigured) {
             console.log(`📱 [MOCK SMS] SOS confirmation to user → ${e164}`);
-            return { success: true, mock: true, sid: `MOCK_${Date.now()}`, to: e164 };
+            return { success: false, unavailable: true, reason: 'SMS delivery is not configured', mock: true, sid: `MOCK_${Date.now()}`, to: e164 };
         }
         return _sendOne(e164, body);
     }
@@ -213,7 +213,7 @@ class SMSService {
         const body = buildLocationMsg(userName, location, message);
         if (!this.isConfigured) {
             console.log(`📱 [MOCK SMS] Location → ${e164}`);
-            return { success: true, mock: true, sid: `MOCK_${Date.now()}`, to: e164 };
+            return { success: false, unavailable: true, reason: 'SMS delivery is not configured', mock: true, sid: `MOCK_${Date.now()}`, to: e164 };
         }
         return _sendOne(e164, body);
     }
@@ -226,7 +226,7 @@ class SMSService {
         const body = buildCheckInMsg(userName, location);
         if (!this.isConfigured) {
             console.log(`📱 [MOCK SMS] Check-in → ${e164}`);
-            return { success: true, mock: true, sid: `MOCK_${Date.now()}`, to: e164 };
+            return { success: false, unavailable: true, reason: 'SMS delivery is not configured', mock: true, sid: `MOCK_${Date.now()}`, to: e164 };
         }
         return _sendOne(e164, body);
     }
@@ -286,7 +286,7 @@ class SMSService {
         const body = `HerShield SMS Test OK. Twilio is working correctly. Sent at ${new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' })}`;
 
         if (!this.isConfigured) {
-            return { success: true, mock: true, sid: `MOCK_${Date.now()}`, to: e164, message: body };
+            return { success: false, unavailable: true, reason: 'SMS delivery is not configured', mock: true, sid: `MOCK_${Date.now()}`, to: e164, message: body };
         }
         return _sendOne(e164, body);
     }

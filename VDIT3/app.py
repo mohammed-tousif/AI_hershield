@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import google.generativeai as genai
 from datetime import datetime
@@ -63,7 +64,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Configure API key
-genai.configure(api_key="AIzaSyCWn-s64zRpZYsf5p6u1Z0pztC-VAsxpao")
+genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 
 # Initialize session state
 if 'current_page' not in st.session_state:

@@ -339,7 +339,10 @@ async function liveSessionCreate(session, docId) {
         source: session.source,
         destination: session.destination,
         transportMode: session.transportMode,
-        pin: session.pin,
+        pinHash: session.pinHash,
+        ownerUid: session.ownerUid,
+        shareExpiresAt: session.shareExpiresAt,
+        trackingLink: session.trackingLink || null,
         emergencyContacts: session.emergencyContacts || [],
         isTrackingActive: session.isTrackingActive !== false,
         lastVerified: toTimestamp(session.lastVerified || new Date()),
@@ -371,7 +374,7 @@ async function liveSessionSetVerified(userId) {
     );
 }
 
-async function liveSessionPushLocation(userId, lat, lng) {
+async function liveSessionPushLocation(userId, lat, lng, accuracy = null) {
     const db = firestoreOrThrow();
     const ref = db.collection(COL.LIVE_TRACKER).doc(userId);
     await db.runTransaction(async (tx) => {
@@ -382,6 +385,7 @@ async function liveSessionPushLocation(userId, lat, lng) {
         logs.push({
             lat,
             lng,
+            accuracy,
             timestamp: admin.firestore.Timestamp.now(),
         });
         while (logs.length > MAX_LIVE_LOCATION_LOGS) logs.shift();
@@ -695,9 +699,9 @@ async function getDashboardStats() {
     // Helper: count documents in a collection efficiently.
     // Tries the Firestore aggregation API first (much cheaper), falls back to
     // fetching all doc IDs if the SDK version doesn't support aggregate().
-    async function countCollection(colName) {
+    async function countCollection(colName, filter) {
         try {
-            const colRef = db.collection(colName);
+            const colRef = filter ? db.collection(colName).where(...filter) : db.collection(colName);
             if (typeof colRef.count === 'function') {
                 // Firestore v9+ aggregation — only reads metadata, not documents
                 const snapshot = await colRef.count().get();
@@ -708,15 +712,15 @@ async function getDashboardStats() {
             return snap.size;
         } catch (e) {
             console.warn(`getDashboardStats: count failed for ${colName}:`, e.message);
-            return 0;
+            throw e;
         }
     }
 
     const [communityMembers, totalSosAlerts, safeTrips, safeZones] = await Promise.all([
         countCollection(COL.USERS),
         countCollection(COL.SOS_EVENTS),
-        countCollection(COL.LIVE_TRACKER),
-        countCollection(COL.SAFETY_LOCATIONS),
+        countCollection(COL.TRACKING_SESSIONS, ['status', '==', 'completed']),
+        countCollection(COL.SAFETY_LOCATIONS, ['risk_level', '==', 1]),
     ]);
 
     return { communityMembers, totalSosAlerts, safeTrips, safeZones };
@@ -772,4 +776,3 @@ module.exports = {
     adminLogsList,
     getDashboardStats,
 };
-

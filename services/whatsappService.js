@@ -31,7 +31,7 @@ class WhatsAppService {
             console.log('💬 [MOCK WhatsApp] Emergency alert would be sent to:', to);
             console.log('Message:', message);
             return {
-                success: true,
+                success: false, unavailable: true, reason: 'WhatsApp delivery is not enabled',
                 mock: true,
                 messageId: 'MOCK_WA_' + Date.now(),
                 to,
@@ -44,7 +44,7 @@ class WhatsAppService {
         // For now, return mock response
         console.log('💬 WhatsApp message would be sent to:', to);
         return {
-            success: true,
+            success: false, unavailable: true, reason: 'WhatsApp delivery is not enabled',
             mock: true,
             messageId: 'WA_' + Date.now(),
             to,
@@ -56,13 +56,13 @@ class WhatsAppService {
      * Send location via WhatsApp
      */
     async sendLocationUpdate({ to, userName, location, message }) {
-        const googleMapsLink = `https://maps.google.com/?q=${location.latitude},${location.longitude}`;
+        const googleMapsLink = location ? `https://maps.google.com/?q=${location.latitude},${location.longitude}` : 'Location unavailable';
         const whatsappMessage = `*Her Shield Location Update*\n\n${userName} shared their location:\n\n${message || ''}\n\n📍 ${googleMapsLink}\n\n_Sent via Her Shield Safety Network_`;
 
         if (!this.isConfigured) {
             console.log('💬 [MOCK WhatsApp] Location update would be sent to:', to);
             return {
-                success: true,
+                success: false, unavailable: true, reason: 'WhatsApp delivery is not enabled',
                 mock: true,
                 messageId: 'MOCK_WA_' + Date.now()
             };
@@ -70,7 +70,7 @@ class WhatsAppService {
 
         // TODO: Implement actual WhatsApp API call
         return {
-            success: true,
+            success: false, unavailable: true, reason: 'WhatsApp delivery is not enabled',
             mock: true,
             messageId: 'WA_' + Date.now(),
             note: 'WhatsApp Business API integration pending'
@@ -81,7 +81,7 @@ class WhatsAppService {
      * Format emergency message for WhatsApp
      */
     formatEmergencyMessage(userName, location, trackingLink) {
-        const googleMapsLink = `https://maps.google.com/?q=${location.latitude},${location.longitude}`;
+        const googleMapsLink = location ? `https://maps.google.com/?q=${location.latitude},${location.longitude}` : 'Location unavailable';
 
         return `🚨 *EMERGENCY ALERT* 🚨\n\n*${userName}* has triggered an emergency SOS!\n\n*Last known location:*\n📍 ${googleMapsLink}\n\n${trackingLink ? `*Live tracking:*\n🔗 ${trackingLink}\n\n` : ''}⚠️ Please check on them immediately!\n\n_Her Shield Safety Network_`;
     }
@@ -117,16 +117,16 @@ class WhatsAppService {
      * Send check-in notification via WhatsApp
      */
     async sendCheckInNotification({ to, userName, location, checkInMessage }) {
-        const googleMapsLink = `https://maps.google.com/?q=${location.latitude},${location.longitude}`;
+        const googleMapsLink = location ? `https://maps.google.com/?q=${location.latitude},${location.longitude}` : 'Location unavailable';
         const message = `✅ *Her Shield Check-in*\n\n${userName} checked in safely.\n\n${checkInMessage}\n\n📍 Location: ${googleMapsLink}\n\n🕐 Time: ${new Date().toLocaleString()}\n\n_Her Shield Safety Network_`;
 
         if (!this.isConfigured) {
             console.log('💬 [MOCK WhatsApp] Check-in would be sent to:', to);
-            return { success: true, mock: true };
+            return { success: false, unavailable: true, reason: 'WhatsApp delivery is not enabled', mock: true };
         }
 
         return {
-            success: true,
+            success: false, unavailable: true, reason: 'WhatsApp delivery is not enabled',
             mock: true,
             messageId: 'WA_' + Date.now()
         };

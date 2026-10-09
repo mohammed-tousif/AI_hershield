@@ -81,6 +81,7 @@ class NavigationManager {
     }
 
     handleAuthenticationRedirect() {
+        if (this.currentPage === 'live-tracker' && /(?:[?&])(code|track)=/.test(location.search)) return;
         const publicPages = ['landing', 'auth'];
         const protectedPages = ['dashboard', 'safety-map', 'live-tracker', 'community'];
 
@@ -100,33 +101,13 @@ class NavigationManager {
         }
     }
 
-    performRedirectCheck(protectedPages) {
-        // Check both Firebase auth and localStorage
-        const localAuth = this.checkLoginStatus();
-        const firebaseAuth = window.authService && window.authService.isLoggedIn();
-        const isAuthenticated = localAuth || firebaseAuth;
-
-        console.log('🔒 Auth Check:', {
-            page: this.currentPage,
-            isAuthenticated,
-            localAuth,
-            firebaseAuth,
-            localStorageValue: localStorage.getItem('hershield_logged_in')
-        });
-
-        if (protectedPages.includes(this.currentPage) && !isAuthenticated) {
-            console.warn('⛔ Access denied. Redirecting to auth.html');
-            // Redirect to auth page if not logged in - use replace to prevent back
-            window.location.replace('auth.html');
-            return;
-        }
-
-        if ((this.currentPage === 'landing' || this.currentPage === 'auth') && isAuthenticated) {
-            console.log('✅ Already logged in. Redirecting to dashboard.html');
-            // Redirect to dashboard if already logged in - use replace to prevent back
-            window.location.replace('dashboard.html');
-            return;
-        }
+    async performRedirectCheck(protectedPages) {
+        if (this.currentPage === 'live-tracker' && /(?:[?&])(code|track)=/.test(location.search)) return;
+        try {
+            const user = await window.getHerShieldUser();
+            this.isLoggedIn = !!user;
+            if (protectedPages.includes(this.currentPage) && !user) location.replace('auth.html');
+        } catch { if (protectedPages.includes(this.currentPage)) location.replace('auth.html'); }
     }
 
     setupBrowserNavigationHandlers() {
@@ -144,26 +125,7 @@ class NavigationManager {
         });
     }
 
-    handleBrowserNavigation() {
-        // Re-check authentication status
-        this.isLoggedIn = this.checkLoginStatus();
-        const isAuthenticated = this.checkLoginStatus() ||
-            (window.authService && window.authService.isLoggedIn());
-
-        const protectedPages = ['dashboard', 'safety-map', 'live-tracker', 'community'];
-
-        // If on protected page and not authenticated, redirect to auth
-        if (protectedPages.includes(this.currentPage) && !isAuthenticated) {
-            window.location.replace('auth.html'); // Use replace to prevent back
-            return;
-        }
-
-        // If on auth/landing page and authenticated, redirect to dashboard
-        if ((this.currentPage === 'auth' || this.currentPage === 'landing') && isAuthenticated) {
-            window.location.replace('dashboard.html'); // Use replace to prevent back
-            return;
-        }
-    }
+    handleBrowserNavigation() { this.handleAuthenticationRedirect(); }
 
     login(email, password) {
         // Simulate login - in real app, this would call an API
@@ -214,9 +176,9 @@ class NavigationManager {
                     </div>
                     
                     <button type="button" class="sidebar-profile sidebar-profile-btn" id="sidebarProfileBtn" title="Edit your profile">
-                        <img src="${loadScopedAvatar() || 'https://i.pravatar.cc/150?img=32'}" alt="User Avatar" class="profile-avatar">
+                        <img src="${window.hsEscapeHTML(loadScopedAvatar() || 'https://i.pravatar.cc/150?img=32')}" alt="User Avatar" class="profile-avatar">
                         <div class="profile-info">
-                            <h6 class="profile-name">${localStorage.getItem('hershield_user_name') || localStorage.getItem('hershield_user_email')?.split('@')[0] || 'Her Shield User'}</h6>
+                            <h6 class="profile-name">${window.hsEscapeHTML(localStorage.getItem('hershield_user_name') || localStorage.getItem('hershield_user_email')?.split('@')[0] || 'Her Shield User')}</h6>
                             <small class="profile-role">Tap to edit profile</small>
                         </div>
                         <i class="fas fa-chevron-right ms-auto text-muted small profile-chevron" aria-hidden="true"></i>
@@ -342,12 +304,13 @@ class NavigationManager {
                                         <i class="fas fa-broadcast-tower" style="font-size:2rem;color:white;"></i>
                                     </div>
                                     <h5 class="fw-bold text-danger">🔴 SOS ACTIVE</h5>
-                                    <p class="text-muted small mb-1">Sharing live location with <strong id="sosContactCount">0</strong> contact(s)</p>
+                                    <p class="text-muted small mb-1"><strong id="sosContactCount">0</strong> emergency contact(s) configured</p>
+                                    <p class="small" id="sosDeliveryStatus" role="status">Check with your contacts that they received the tracking link.</p>
                                     <p class="text-muted small" id="sosTimerDisplay"></p>
                                 </div>
                                 <div class="alert alert-warning small d-flex align-items-start gap-2" role="alert">
                                     <i class="fas fa-shield-alt mt-1"></i>
-                                    <span>Keep this app open to continue sharing your live location. Your contacts have a link to track you in real time.</span>
+                                    <span>Keep this app open to continue sending location updates. Delivery depends on the configured notification service; call your contacts if they have not received the link.</span>
                                 </div>
                                 <div class="d-grid">
                                     <button type="button" class="btn btn-success py-3" id="imSafeBtn">
@@ -386,7 +349,7 @@ class NavigationManager {
 
             <!-- Emergency Contacts Modal -->
             <div class="modal fade" id="emergencyContactsModal" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
                     <div class="modal-content border-0 shadow-lg" style="border-radius: 24px;">
                         <div class="modal-header border-0 text-white" style="background: linear-gradient(135deg, var(--gradient-start), var(--gradient-middle));">
                             <h5 class="modal-title fw-bold">Emergency Contacts</h5>
@@ -420,7 +383,7 @@ class NavigationManager {
                                         </optgroup>
                                         <optgroup label="Friends &amp; Others">
                                             <option value="Close Friend">Close Friend</option>
-                                            <option value="Best Friend">Best Friend"</option>
+                                            <option value="Best Friend">Best Friend</option>
                                             <option value="Roommate">Roommate</option>
                                             <option value="Colleague">Colleague</option>
                                             <option value="Neighbour">Neighbour</option>
@@ -430,7 +393,7 @@ class NavigationManager {
                                     </select>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label fw-bold">Phone Number <span class="text-muted fw-normal">(for SMS alerts)</span></label>
+                                    <label class="form-label fw-bold">Phone Number <span class="text-muted fw-normal">(calling; SMS requires a configured provider)</span></label>
                                     <input type="tel" class="form-control" id="contactPhone" placeholder="+91 98765 43210 or 9876543210">
                                 </div>
                                 <div class="mb-3">
@@ -483,6 +446,7 @@ class NavigationManager {
                                         <div class="mb-3">
                                             <label class="form-label fw-bold" for="profileEmailField">Email</label>
                                             <input type="email" class="form-control" id="profileEmailField" readonly autocomplete="email">
+                                            <a id="profileEmailVerification" href="verify-email.html" class="form-text">Check email verification status</a>
                                         </div>
                                         <div class="mb-3">
                                             <label class="form-label fw-bold" for="profilePhotoUrl">Photo URL <span class="text-muted fw-normal">(optional)</span></label>
@@ -1217,22 +1181,21 @@ class NavigationManager {
                 });
 
                 if (contacts.length === 0) {
-                    if (noContactsMsg) noContactsMsg.style.display = 'block';
+                    if (noContactsMsg) { noContactsMsg.textContent = 'No contacts added yet.'; noContactsMsg.style.display = 'block'; }
                 } else {
                     if (noContactsMsg) noContactsMsg.style.display = 'none';
                     contacts.forEach((contact) => {
                         const item = document.createElement('div');
                         item.className = 'list-group-item d-flex justify-content-between align-items-center px-0';
-                        item.innerHTML = `
-                            <div>
-                                <h6 class="mb-0 fw-bold">${contact.name}</h6>
-                                <small class="text-muted">${[contact.phone, contact.email].filter(Boolean).join(' · ')}</small>
-                                <small class="d-block text-muted">${contact.relationship || ''}</small>
-                            </div>
-                            <button class="btn btn-sm btn-outline-danger border-0" onclick="window.removeContact('${contact._id}')">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        `;
+                        const details = document.createElement('div');
+                        const name = document.createElement('h6'); name.className = 'mb-0 fw-bold'; name.textContent = contact.name;
+                        const channels = document.createElement('small'); channels.className = 'text-muted'; channels.textContent = [contact.phone, contact.email].filter(Boolean).join(' · ');
+                        const relationship = document.createElement('small'); relationship.className = 'd-block text-muted'; relationship.textContent = contact.relationship || '';
+                        details.append(name, channels, relationship);
+                        const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'btn btn-sm btn-outline-danger border-0'; remove.textContent = 'Remove';
+                        remove.setAttribute('aria-label', 'Remove ' + contact.name);
+                        remove.addEventListener('click', () => window.removeContact(contact._id));
+                        item.append(details, remove);
                         savedContactsList.appendChild(item);
                     });
                 }
@@ -1244,11 +1207,13 @@ class NavigationManager {
             const userId = getCurrentUserId();
             if (userId) {
                 try {
-                    await fetch(`/api/emergency/contacts/${encodeURIComponent(userId)}/${encodeURIComponent(contactId)}`, {
+                    const response = await fetch(`/api/emergency/contacts/${encodeURIComponent(userId)}/${encodeURIComponent(contactId)}`, {
                         method: 'DELETE',
                     });
+                    if (!response.ok) throw new Error('The server could not remove this contact.');
                 } catch (e) {
-                    console.warn('Delete contact failed, removing locally:', e.message);
+                    window.hsConnectionNotice?.(e.message);
+                    return;
                 }
             }
             // Update local cache optimistically
@@ -1263,8 +1228,9 @@ class NavigationManager {
 
                 emergencyContactsBtn.addEventListener('click', async (e) => {
                     e.preventDefault();
-                    await renderContacts();
                     modal.show();
+                    if (noContactsMsg) { noContactsMsg.textContent = "Loading your saved contacts…"; noContactsMsg.style.display = "block"; }
+                    void renderContacts();
 
                     if (window.innerWidth < 992 && sidebar) {
                         sidebar.classList.remove('active');
@@ -1326,19 +1292,7 @@ class NavigationManager {
                     });
                 }
 
-                // Show contacts modal on first dashboard load if no contacts yet
-                if (this.currentPage === 'dashboard') {
-                    const userId = getCurrentUserId();
-                    if (userId) {
-                        setTimeout(async () => {
-                            const contacts = await fetchContactsFromFirestore();
-                            if (contacts.length === 0) {
-                                await renderContacts();
-                                modal.show();
-                            }
-                        }, 1800);
-                    }
-                }
+
             }
         }
 
@@ -1433,7 +1387,7 @@ class NavigationManager {
                 return new Promise((resolve, reject) => {
                     if (!navigator.geolocation) return reject(new Error('Geolocation not supported'));
                     navigator.geolocation.getCurrentPosition(
-                        (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+                        (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy }),
                         (err) => reject(new Error(err.message || 'Location unavailable')),
                         { timeout: 10000, maximumAge: 30000 }
                     );
@@ -1441,17 +1395,21 @@ class NavigationManager {
             }
 
             // ── Push location to live-tracker backend ──
+            let gpsPushPending = false;
             async function pushLocationUpdate(userId) {
+                if (gpsPushPending) return;
+                gpsPushPending = true;
                 try {
                     const loc = await getCurrentLocation();
-                    await fetch('/api/live-tracker/update-location', {
+                    const response = await fetch('/api/live-tracker/update-location', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ userId, lat: loc.latitude, lng: loc.longitude }),
+                        body: JSON.stringify({ userId, lat: loc.latitude, lng: loc.longitude, accuracy: loc.accuracy }),
                     });
+                    if (!response.ok) throw new Error('Location update was not accepted.');
                 } catch (e) {
                     console.warn('GPS push failed:', e.message);
-                }
+                } finally { gpsPushPending = false; }
             }
 
             // ── Start GPS polling loop (every 10s) ──
@@ -1484,14 +1442,10 @@ class NavigationManager {
             if (sosNavBtn)   sosNavBtn.addEventListener('click', openSosModal);
             if (quickSosBtn) quickSosBtn.addEventListener('click', openSosModal);
 
-            // ── Close button (only allowed when idle) ──
+            // Closing the dialog does not stop the authenticated SOS session.
             const sosCloseBtn = document.getElementById('sosModalCloseBtn');
             if (sosCloseBtn) {
                 sosCloseBtn.addEventListener('click', () => {
-                    if (sosSate === 'active') {
-                        // Don't allow close while SOS active — they must use I'm Safe
-                        return;
-                    }
                     sosModal.hide();
                 });
             }
@@ -1500,7 +1454,8 @@ class NavigationManager {
             const generatePinBtn = document.getElementById('sosGeneratePinBtn');
             if (generatePinBtn) {
                 generatePinBtn.addEventListener('click', () => {
-                    const pin = String(Math.floor(1000 + Math.random() * 9000));
+                    const bytes = crypto.getRandomValues(new Uint32Array(1));
+                    const pin = String(1000 + (bytes[0] % 9000));
                     document.getElementById('sosPinInput').value = pin;
                     const display = document.getElementById('sosPinDisplay');
                     display.textContent = `Your PIN: ${pin} — Remember this!`;
@@ -1532,8 +1487,8 @@ class NavigationManager {
                             location = await getCurrentLocation();
                         } catch (geoErr) {
                             // Fallback dummy location — still send alert
-                            location = { latitude: 0, longitude: 0 };
-                            showSosFeedback('Could not get GPS location — alert sent with last known position.', 'warning');
+                            location = null;
+                            showSosFeedback('GPS is unavailable. The alert will say location unavailable; tracking will retry.', 'warning');
                         }
 
                         const timerVal = document.getElementById('sosTimerSelect').value;
@@ -1563,6 +1518,8 @@ class NavigationManager {
                         }));
 
                         setSosActiveUI({ sosId: result.sosId, trackingCode: result.trackingCode, expiresAt: result.expiresAt, contactCount: result.contactCount });
+                        document.getElementById('sosDeliveryStatus').textContent = result.message;
+                        document.getElementById('sosPinInput').value = '';
                         startGpsPoll(userId);
 
                         sosTriggerBtn.disabled = false;
@@ -1581,7 +1538,10 @@ class NavigationManager {
                 imSafeBtn.addEventListener('click', () => {
                     document.getElementById('imSafePinInput').value = '';
                     document.getElementById('imSafePinError').textContent = '';
-                    imSafeModal.show();
+                    if (sosModalEl.classList.contains('show')) {
+                        sosModalEl.addEventListener('hidden.bs.modal', () => imSafeModal.show(), { once: true });
+                        sosModal.hide();
+                    } else imSafeModal.show();
                 });
             }
 
@@ -2096,9 +2056,9 @@ class NavigationManager {
 let navManager;
 
 // Initialize navigation when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    navManager = new NavigationManager();
-});
+function initializeNavigation() { if (!navManager) { navManager = new NavigationManager(); window.navManager = navManager; } }
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initializeNavigation, { once: true });
+else initializeNavigation();
 
 // Export for global access
 window.navManager = navManager;

@@ -122,7 +122,7 @@ async function downloadAuthenticated(publicId) {
         sign_url: true,
     });
 
-    const resp = await fetch(url);
+    const resp = await fetch(url, { signal: AbortSignal.timeout(15000) });
     if (!resp.ok) {
         const err = new Error(`Cloudinary fetch failed with HTTP ${resp.status}`);
         err.code = resp.status === 404 ? 404 : resp.status;
