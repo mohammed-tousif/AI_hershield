@@ -11,6 +11,7 @@
         rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <script src="/config.js"></script>
+    <script src="/map-location.js"></script>
     <style>
         :root {
             --gradient-start: #FF9A86;
@@ -362,9 +363,10 @@
                         </div>
                     </div>
                     <div style="position:relative;">
+                        <p id="mapLocationStatus" role="status" aria-live="polite" class="small px-2 py-2 mb-0">Default map view — your current location has not been determined.</p>
                         <div id="googleMap" class="map-container" style="height: 400px;"></div>
                         <!-- GPS Recenter Button -->
-                        <button onclick="centerMapToCurrentLocation()" title="Center to my current location"
+                        <button id="mapRecenterButton" onclick="centerMapToCurrentLocation()" title="Center to my current location" aria-label="Center to my current location"
                             style="position:absolute;bottom:16px;right:16px;z-index:10;background:#fff;
                                    border:none;border-radius:50%;width:44px;height:44px;box-shadow:0 2px 8px rgba(0,0,0,0.3);
                                    display:flex;align-items:center;justify-content:center;cursor:pointer;
@@ -680,7 +682,7 @@
         // Initialize Google Maps with Safety Heatmap
         let map, heatmap, safetyData = [], incidentData = [], markers = [];
         let showHeatmap = true, showMarkers = true;
-        let currentLocationMarker = null;
+
 
         // A true GPS/WiFi-positioning fix is rarely worse than a few hundred
         // meters even in poor conditions; a device with no GPS chip falling back
@@ -747,60 +749,12 @@
             });
         }
 
+        let dashboardLocator;
         function centerMapToCurrentLocation() {
-            if (!map) return;
-            if (!navigator.geolocation) {
-                showNotification('Not Supported', 'Your browser does not support location access.', 'error');
-                return;
-            }
-            if (window.isSecureContext === false) {
-                showNotification(
-                    'Insecure Connection',
-                    'Location access requires HTTPS (or localhost). This page was loaded over a plain http:// address, so the browser blocks GPS access.',
-                    'error'
-                );
-                return;
-            }
-            navigator.geolocation.getCurrentPosition((position) => {
-                const accuracy = position.coords.accuracy || 0;
-                if (accuracy > MAX_TRUSTED_ACCURACY_M) {
-                    console.warn(`Ignoring low-accuracy fix for recenter: ±${accuracy.toFixed(0)}m`);
-                    showNotification(
-                        'Location Too Imprecise',
-                        `Your device's location is only accurate to ±${Math.round(accuracy / 1000)}km right now (likely network-based positioning, not real GPS), so the map wasn't recentered on it. This usually means the device has no GPS chip or GPS/location services are off.`,
-                        'warning'
-                    );
-                    return;
-                }
-                const pos = {
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude
-                };
-                map.setCenter(pos);
-                map.setZoom(16);
-                if (currentLocationMarker) currentLocationMarker.setMap(null);
-                currentLocationMarker = new google.maps.Marker({
-                    position: pos,
-                    map: map,
-                    title: 'Your current location',
-                    icon: {
-                        path: google.maps.SymbolPath.CIRCLE,
-                        scale: 8,
-                        fillColor: '#2563eb',
-                        fillOpacity: 1,
-                        strokeColor: '#ffffff',
-                        strokeWeight: 3
-                    }
-                });
-            }, (error) => {
-                console.warn('Could not center map to current location:', error.message);
-                const messages = {
-                    1: 'Location permission was denied. Please allow location access for this site in your browser settings, then try again.',
-                    2: 'Your current location is unavailable right now. Check that GPS/location services are turned on for your device.',
-                    3: 'Location request timed out. Please try again — this can happen with a weak GPS/network signal.',
-                };
-                showNotification('Location Unavailable', messages[error.code] || ('Could not get your location: ' + error.message), 'error');
-            }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+            dashboardLocator ||= new HSMapLocation.MapLocation({ getMap: () => map,
+                status: document.getElementById('mapLocationStatus'),
+                buttons: [document.getElementById('mapRecenterButton')] });
+            return dashboardLocator.locate();
         }
 
         function severityClass(severity) {

@@ -48,6 +48,12 @@ Remaining operational limits: in-memory rate limits and SOS timers assume one ba
 
 ## Deployment and credential remediation
 
+### Dashboard and Safety Map location correction (10 October)
+
+Both maps use `map-location.js` for a bounded 15-second high-accuracy watch, preferring a reading within 100 metres and retaining the best fresh reading while the device improves its estimate. Readings older than 30 seconds, invalid coordinates, and missing accuracy are rejected. At the deadline, readings within 2 km may be displayed explicitly as approximate, with a scaled zoom and an accuracy circle; less precise readings do not produce a current-location pin. This describes device-reported uncertainty, not a guarantee of actual GPS accuracy. Permission, unavailable-location, and timeout errors appear persistently next to the map; the default view is explicitly labelled as unconfirmed. Watches stop on success, deadline, permission denial, or page exit; repeated recenter requests share the pending operation.
+
+The Safety Map recenter button now uses the actual lexical map instance instead of testing the unrelated `window.map`. Map initialization no longer waits for safety-data requests, and data refreshes update overlays without recreating the map, resetting its viewport, or adding duplicate location markers. Route origin coordinates become usable immediately; optional reverse geocoding cannot leave the location button spinning or overwrite subsequent user edits. These changes affect map positioning and route origin selection, not SOS delivery or live-tracking acceptance policies. Synthetic regression tests cover coarse-to-accurate readings, stale/invalid fixes, permission denial, cancellation, duplicate requests, and map preservation during data refreshes. Physical-device accuracy still requires user confirmation with location permissions enabled.
+
 ### Email OTP verification
 
 Manual signup now visits `verify-email.html?next=identity` before the existing identity step. The signup screen automatically requests a code if no current challenge/cooldown exists. Existing authenticated users see an unverified-email banner and a profile link; they request a code explicitly. Verified emails show a distinct **Verified email address** status. This does not claim identity or phone verification. Safety tools remain accessible to unverified accounts; this feature is email ownership verification, not an API authorization gate or a passwordless login system.
