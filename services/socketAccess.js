@@ -1,5 +1,6 @@
 'use strict';
-const { findSharedSession, endViewers } = require('./trackingSecurity');
+const { findSharedSession, viewerLocation, endViewers } = require('./trackingSecurity');
+const hub = require('./liveLocationHub');
 function installSocketAccess(io) {
     // Public feed broadcasts are read-only. Tracking rooms require a live share capability.
     io.on('connection', socket => {
@@ -16,7 +17,9 @@ function installSocketAccess(io) {
                 if (joined) await socket.leave('tracking:' + joined.id);
                 joined = { code, id: s._id || s.userId };
                 await socket.join('tracking:' + joined.id);
-                reply({ success: true });
+                // Hand over the current position immediately instead of making the
+                // guardian wait for the sender's next update.
+                reply({ success: true, location: viewerLocation(s, hub.snapshot(joined.id, s.trackingCode)) });
             } catch { reply({ success: false, message: 'Tracking unavailable.' }); }
         });
         // Clients cannot publish location, emergency or end events. Authenticated REST

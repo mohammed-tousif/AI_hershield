@@ -42,8 +42,10 @@ const {apiAccess}=require('../middleware/apiAccess');
 const {publicAssets,PUBLIC_FILES}=require('../middleware/publicAssets');
 const security=require('../services/trackingSecurity');
 let server,base;
+const emits=[];
+const fakeIo={to:room=>({emit:(event,payload)=>emits.push({room,event,payload})}),in:()=>({socketsLeave(){}})};
 before(async()=>{
-    const app=express(); app.use(express.json()); app.use(publicAssets(path.resolve(__dirname,'..')));
+    const app=express(); app.set('io',fakeIo); app.use(express.json()); app.use(publicAssets(path.resolve(__dirname,'..')));
     app.use('/api',apiAccess);
     app.use('/api/users',require('../routes/users'));
     app.use('/api/live-tracker',require('../routes/liveTracker'));
@@ -124,19 +126,26 @@ test('A PIN confirmation network failure preserves the safety timeout and shows 
     await method.call({sessionId:'test',showToast:()=>confirmed=true,resetVerificationTimer:()=>confirmed=true});
     assert.equal(cleared,false);assert.equal(confirmed,false);assert.match(error.textContent,/timer is still running/);
 });
-test('Slow location requests do not accumulate parallel uploads',async()=>{
-    const source=fs.readFileSync(path.join(__dirname,'../live-tracker.js'),'utf8');
-    const start=source.indexOf('async handleLocationUpdate(position)');
-    const end=source.indexOf('    /** Live accuracy',start);
-    let calls=0,release;
-    const ctx={console,Date,haversineDistanceKm:()=>0,fetch:()=>{calls++;return new Promise(resolve=>{release=()=>resolve({ok:true,json:async()=>({success:true})});});}};
-    const method=vm.runInNewContext('({'+source.slice(start,end)+'})',ctx).handleLocationUpdate;
-    const tracker={sessionId:'synthetic',_updateAccuracyStatus(){},showToast(){}};
-    const position={coords:{latitude:15,longitude:75,accuracy:10}};
-    const first=method.call(tracker,position);
-    await method.call(tracker,position);assert.equal(calls,1);
-    release();await first;assert.equal(tracker._locationSendPending,false);
-    const third=method.call(tracker,position);assert.equal(calls,2);release();await third;
+test('Guardians get each fix in real time with server time; sender state is owner-only; expired shares refuse updates',async()=>{
+    const start=await request('/api/live-tracker/start',{user:'alice',method:'POST',body:{name:'Alice',pin:'123456',emergencyContacts:[]}});
+    const id=start.data.sessionId,code=live.get(id).trackingCode;
+    emits.length=0;
+    assert.equal((await request('/api/live-tracker/update-location',{user:'alice',method:'POST',body:{userId:id,lat:15.5,lng:75.5,accuracy:12,fixAgeMs:4000}})).status,200);
+    const pushed=emits.find(e=>e.event==='locationUpdated');
+    assert.equal(pushed.room,'tracking:'+id);
+    assert.equal(pushed.payload.lat,15.5);assert.equal(pushed.payload.accuracy,12);
+    const age=Date.parse(pushed.payload.serverTime)-Date.parse(pushed.payload.timestamp);
+    assert.ok(age>=4000&&age<6000,'the timestamp reflects when the fix was taken, not when it arrived');
+    assert.equal(pushed.payload.email,undefined);assert.equal(pushed.payload.pinHash,undefined);
+    const view=await request('/api/live-tracker/view/'+code);
+    assert.equal(view.data.lat,15.5);assert.ok(Date.parse(view.data.serverTime));
+    assert.equal((await request('/api/live-tracker/sender-state',{user:'bob',method:'POST',body:{userId:id,state:'background'}})).status,403);
+    assert.equal((await request('/api/live-tracker/sender-state',{user:'alice',method:'POST',body:{userId:id,state:'background'}})).status,200);
+    assert.equal(emits.find(e=>e.event==='senderState').payload.senderState,'background','same field the viewer reads from /view and locationUpdated');
+    assert.equal((await request('/api/live-tracker/view/'+code)).data.senderState,'background');
+    live.get(id).shareExpiresAt=new Date(Date.now()-1000).toISOString();
+    const expired=await request('/api/live-tracker/update-location',{user:'alice',method:'POST',body:{userId:id,lat:15.6,lng:75.6,accuracy:12}});
+    assert.equal(expired.status,410);assert.equal(expired.data.ended,true);
 });
 test('Socket clients cannot register mutation handlers or join with a raw session ID',async()=>{
     const {installSocketAccess}=require('../services/socketAccess');let connection;

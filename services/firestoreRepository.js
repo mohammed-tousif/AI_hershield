@@ -21,7 +21,30 @@ const COL = {
 };
 
 const MAX_INCIDENT_SCAN = 5000;
-const MAX_LIVE_LOCATION_LOGS = 2000;
+
+// Short-lived cache for live-session reads. At a 2s location cadence every fix
+// would otherwise cost two Firestore reads (ownership check + route handler)
+// and exhaust the free tier's daily read quota. Every live-session write in
+// this process updates or drops its entry, so staleness is limited to
+// out-of-process writers and bounded by the TTL.
+const LIVE_CACHE_TTL_MS = 30000;
+const liveCache = new Map();     // sessionId -> { data, at }
+const liveIdByCode = new Map();  // share code -> sessionId; always re-verified against data.trackingCode
+
+function liveCacheGet(id) {
+    const entry = liveCache.get(id);
+    if (!entry) return undefined;
+    if (Date.now() - entry.at > LIVE_CACHE_TTL_MS) { liveCache.delete(id); return undefined; }
+    return structuredClone(entry.data);
+}
+
+function liveCachePut(id, data) {
+    if (!data) return;
+    if (liveCache.size >= 500) liveCache.delete(liveCache.keys().next().value);
+    if (liveIdByCode.size >= 2000) liveIdByCode.clear();
+    liveCache.set(id, { data: structuredClone(data), at: Date.now() });
+    if (data.trackingCode) liveIdByCode.set(data.trackingCode, id);
+}
 
 function firestoreOrThrow() {
     const db = getFirestoreAdmin();
@@ -350,20 +373,37 @@ async function liveSessionCreate(session, docId) {
         createdAt: toTimestamp(session.createdAt || new Date()),
     };
     await db.collection(COL.LIVE_TRACKER).doc(docId).set(payload);
+    // SOS reuses the uid as the session id — never serve the previous session.
+    liveCache.delete(docId);
 }
 
 async function liveSessionGetByUserId(userId) {
+    const cached = liveCacheGet(userId);
+    if (cached !== undefined) return cached;
     const db = firestoreOrThrow();
     const snap = await db.collection(COL.LIVE_TRACKER).doc(userId).get();
-    return serializeDoc(snap);
+    const session = serializeDoc(snap);
+    liveCachePut(userId, session);
+    return session;
 }
 
 async function liveSessionFindByCode(code) {
-    const db = firestoreOrThrow();
     const upper = (code || '').toUpperCase();
+    const knownId = liveIdByCode.get(upper);
+    if (knownId) {
+        const session = await liveSessionGetByUserId(knownId);
+        // The code->id mapping can outlive a session (SOS reuses the uid as the
+        // doc id with a fresh code), so an old link must never resolve to a new
+        // session: only accept the cached route if the codes still match.
+        if (session && session.trackingCode === upper) return session;
+        liveIdByCode.delete(upper);
+    }
+    const db = firestoreOrThrow();
     const q = await db.collection(COL.LIVE_TRACKER).where('trackingCode', '==', upper).limit(1).get();
     if (q.empty) return null;
-    return serializeDoc(q.docs[0]);
+    const session = serializeDoc(q.docs[0]);
+    liveCachePut(session._id, session);
+    return session;
 }
 
 async function liveSessionSetVerified(userId) {
@@ -372,30 +412,35 @@ async function liveSessionSetVerified(userId) {
         { lastVerified: admin.firestore.Timestamp.now() },
         { merge: true }
     );
+    liveCache.delete(userId);
 }
 
-async function liveSessionPushLocation(userId, lat, lng, accuracy = null) {
+/**
+ * Persists the newest fix as `lastLocation` with a single write — no read,
+ * no transaction. The old version rewrote the entire history array (up to
+ * 2,000 entries) inside a transaction on every fix, which collided with
+ * Firestore's ~1 write/sec per-document limit while moving. History is now
+ * sampled (`appendToLog`, decided by services/liveLocationHub.js) so the
+ * document stays well under Firestore's 1 MB limit for a full 24h share.
+ */
+async function liveSessionPushLocation(userId, lat, lng, accuracy = null, { timestamp, appendToLog = true } = {}) {
     const db = firestoreOrThrow();
-    const ref = db.collection(COL.LIVE_TRACKER).doc(userId);
-    await db.runTransaction(async (tx) => {
-        const snap = await tx.get(ref);
-        if (!snap.exists) throw new Error('Session not found');
-        const data = snap.data();
-        const logs = Array.isArray(data.locationLogs) ? [...data.locationLogs] : [];
-        logs.push({
-            lat,
-            lng,
-            accuracy,
-            timestamp: admin.firestore.Timestamp.now(),
-        });
-        while (logs.length > MAX_LIVE_LOCATION_LOGS) logs.shift();
-        tx.update(ref, { locationLogs: logs });
-    });
+    const point = { lat, lng, accuracy, timestamp: toTimestamp(timestamp || new Date()) };
+    const update = { lastLocation: point };
+    if (appendToLog) update.locationLogs = admin.firestore.FieldValue.arrayUnion(point);
+    await db.collection(COL.LIVE_TRACKER).doc(userId).update(update);
+    const entry = liveCache.get(userId);
+    if (entry) {
+        const plain = serializeValue(point);
+        entry.data.lastLocation = plain;
+        if (appendToLog) entry.data.locationLogs = [...(entry.data.locationLogs || []), plain];
+    }
 }
 
 async function liveSessionStop(userId) {
     const db = firestoreOrThrow();
     await db.collection(COL.LIVE_TRACKER).doc(userId).set({ isTrackingActive: false }, { merge: true });
+    liveCache.delete(userId);
 }
 
 async function safetyLocationsList() {

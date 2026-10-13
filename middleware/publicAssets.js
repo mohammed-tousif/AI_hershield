@@ -8,7 +8,7 @@ const PUBLIC_FILES = new Set([
     'firebase-auth.js', 'navigation.js', 'styles.css', 'responsive.css', 'responsive.js',
     'animations.js', 'live-tracker.js', 'live-tracker-viewer.js', 'front.png', 'download (1).jpg',
     'verify-email.html', 'email-verification.js', 'email-verification.css',
-    'map-location.js',
+    'map-location.js', 'live-location-sender.js',
 ]);
 function publicAssets(root) {
     const serve = express.static(root, { dotfiles: 'deny', index: false, redirect: false });

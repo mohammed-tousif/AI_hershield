@@ -17,17 +17,6 @@ async function readJsonResponse(response) {
     }
 }
 
-// ── Great-circle distance in km between two lat/lng points (Haversine formula) ─
-function haversineDistanceKm(lat1, lon1, lat2, lon2) {
-    const R = 6371;
-    const toRad = (d) => d * (Math.PI / 180);
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
-    const a = Math.sin(dLat / 2) ** 2 +
-        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  Location Autocomplete Engine
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -241,11 +230,10 @@ class SafetyTracker {
         this.pinTimeout     = 20000;
         this.checkTimerId   = null;
         this.responseTimerId = null;
-        this.watchId        = null;
+        this.sender         = null; // HSLocationSender while sharing
         this.isTracking     = false;
         this.trackingLink   = null;
         this._geoErrorShown = false;
-        this._lastGoodFix   = null; // { lat, lng, time } — used to reject implausible GPS jumps
 
         // Map elements
         this.map           = null;
@@ -536,17 +524,16 @@ class SafetyTracker {
             if (this.marker) { this.map.panTo(this.marker.getPosition()); this.map.setZoom(15); }
         }
 
-        if (!navigator.geolocation) {
-            this.showNotification('Location Not Supported', 'Your browser does not support GPS location, so your live location cannot be shared. Please use a different browser/device.', 'error');
-        } else if (window.isSecureContext === false) {
-            this.showNotification('Insecure Connection', 'This page was opened over a plain http:// address, so the browser blocks GPS access. Open it over https:// (or localhost) to share your live location.', 'error');
-        } else {
-            this.watchId = navigator.geolocation.watchPosition(
-                (pos) => this.handleLocationUpdate(pos),
-                (err) => this.handleGeoError(err),
-                { enableHighAccuracy: true }
-            );
-        }
+        // Shared sender (live-location-sender.js): continuous fixes while moving,
+        // a heartbeat while still, no dropped fixes, screen kept awake.
+        this.sender?.stop();
+        this.sender = new window.HSLocationSender({
+            sessionId: this.sessionId,
+            onFix: (fix) => this._showOwnFix(fix),
+            onStatus: (status) => this._onSenderStatus(status),
+            onEnded: (message) => this._onSharingEnded(message),
+        });
+        this.sender.start();
 
         this.resetVerificationTimer();
 
@@ -559,91 +546,96 @@ class SafetyTracker {
         };
     }
 
-    async handleLocationUpdate(position) {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-        const accuracy = position.coords.accuracy || 50;
-        const now = Date.now();
-
+    /** Move the sender's own map marker to an accepted fix. Uploading, accuracy
+     *  filtering (>2km = network/IP positioning, never shared) and jump
+     *  rejection all happen in live-location-sender.js. */
+    _showOwnFix(fix) {
+        const accuracy = fix.accuracy ?? 50;
         this._updateAccuracyStatus(accuracy);
+        if (!this.map) return;
+        const p = { lat: fix.lat, lng: fix.lng };
+        if (this.marker) { this.marker.setPosition(p); this.map.panTo(p); }
+        else this._placeMarker(p, accuracy);
+        if (this.accuracyCircle) { this.accuracyCircle.setCenter(p); this.accuracyCircle.setRadius(accuracy); }
+    }
 
-        // Hard floor on accuracy, checked BEFORE anything else — this is the fix
-        // for the gap in the jump-detection below: that check only rejects a bad
-        // reading relative to a previous *good* one, so if the very FIRST reading
-        // in a session is the bad one (no previous fix to compare against), it was
-        // accepted unconditionally and became the (wrong) anchor that every real
-        // reading afterward got compared against and rejected relative to.
-        // A true GPS or WiFi-positioning fix is rarely worse than a few hundred
-        // meters even in poor conditions; a device with no GPS chip falling back to
-        // IP-based geolocation typically reports accuracy in the 5,000-50,000+
-        // meter range and can place you in an entirely different city. Anything
-        // above this ceiling is treated as untrustworthy, full stop, regardless of
-        // whether it's the first reading or the hundredth.
-        const MAX_TRUSTED_ACCURACY_M = 2000;
-        if (accuracy > MAX_TRUSTED_ACCURACY_M) {
-            console.warn(`Ignoring low-accuracy location fix: ±${accuracy.toFixed(0)}m (likely network/IP-based, not real GPS)`);
+    _setSharingStatus(text, color) {
+        const el = document.getElementById('sharingStatus');
+        if (!el) return;
+        el.textContent = text;
+        el.style.color = color;
+    }
+
+    _onSenderStatus(status) {
+        switch (status.type) {
+        case 'sent': {
+            const age = status.fixAgeMs > 15000 ? ` (GPS fix ${Math.round(status.fixAgeMs / 1000)}s old — weak signal)` : '';
+            this._setSharingStatus(`📡 Shared with your guardians at ${new Date(status.at).toLocaleTimeString()}${age}`, age ? '#e67e22' : '#2ecc71');
+            break;
+        }
+        case 'retrying':
+            this._setSharingStatus('⚠️ Can\'t reach the server — retrying. Your guardians may see an older location until it reconnects.', '#e67e22');
+            break;
+        case 'skipped':
+            this._setSharingStatus('⚠️ Location was too imprecise to share — waiting for a better GPS fix.', '#e67e22');
+            break;
+        case 'low-accuracy':
+            this._updateAccuracyStatus(status.accuracy);
             if (!this._lowAccuracyWarningShown) {
                 this._lowAccuracyWarningShown = true;
                 this.showNotification(
                     'Waiting for Accurate GPS',
-                    `Your device's current location fix is only accurate to ±${Math.round(accuracy / 1000)}km (likely network-based positioning, not real GPS) — probably because this device doesn't have a GPS chip or GPS is disabled. Ignoring it and waiting for a better fix. On a phone, make sure Location Services / GPS is turned on for best accuracy.`,
+                    `Your device's current location fix is only accurate to ±${Math.round(status.accuracy / 1000)}km (likely network-based positioning, not real GPS) — probably because this device doesn't have a GPS chip or GPS is disabled. Ignoring it and waiting for a better fix. On a phone, make sure Location Services / GPS is turned on for best accuracy.`,
                     'warning'
                 );
                 setTimeout(() => { this._lowAccuracyWarningShown = false; }, 60000);
             }
-            return; // Never use this as the anchor or share it with contacts
-        }
-
-        // Reject implausible GPS jumps — a single bad-but-under-the-ceiling reading
-        // would otherwise "teleport" the shared live location away for that update
-        // cycle, which is exactly what emergency contacts see when they open the
-        // tracking link.
-        if (this._lastGoodFix) {
-            const dtHours = (now - this._lastGoodFix.time) / 3600000;
-            const distanceKm = haversineDistanceKm(this._lastGoodFix.lat, this._lastGoodFix.lng, lat, lng);
-            const impliedSpeedKmh = dtHours > 0 ? distanceKm / dtHours : 0;
-            // Ignore small jitter (<2km) so this only ever catches genuine teleports,
-            // not real fast travel — 300km/h is above any real road/rail speed in
-            // this context, but well below what a bad network-location fallback
-            // produces (a city-to-city jump implies tens of thousands of km/h).
-            // Also require the new reading to itself be low-accuracy before
-            // rejecting — a high-accuracy reading that disagrees is more likely a
-            // genuine fast move than sensor noise.
-            if (distanceKm > 2 && impliedSpeedKmh > 300 && accuracy > 300) {
-                console.warn(`Ignoring implausible location jump: ${distanceKm.toFixed(1)}km in ${(dtHours * 3600).toFixed(0)}s (accuracy ${accuracy.toFixed(0)}m)`);
-                if (!this._jumpWarningShown) {
-                    this._jumpWarningShown = true;
-                    this.showNotification(
-                        'Weak Location Signal',
-                        'Got an unreliable location reading (likely network-based positioning instead of real GPS) and ignored it so your shared location doesn\'t jump to the wrong place. It will keep retrying.',
-                        'warning'
-                    );
-                    setTimeout(() => { this._jumpWarningShown = false; }, 60000);
-                }
-                return; // Don't update the map or push this reading to the server
+            break;
+        case 'jump':
+            if (!this._jumpWarningShown) {
+                this._jumpWarningShown = true;
+                this.showNotification(
+                    'Weak Location Signal',
+                    'Got an unreliable location reading (likely network-based positioning instead of real GPS) and ignored it so your shared location doesn\'t jump to the wrong place. It will keep retrying.',
+                    'warning'
+                );
+                setTimeout(() => { this._jumpWarningShown = false; }, 60000);
             }
+            break;
+        case 'geo-error':
+            this.handleGeoError(status);
+            break;
+        case 'wake-lock':
+            this._updateKeepAwakeNotice(status);
+            break;
+        case 'unsupported':
+            this.showNotification('Location Not Supported', 'Your browser does not support GPS location, so your live location cannot be shared. Please use a different browser/device.', 'error');
+            break;
+        case 'insecure':
+            this.showNotification('Insecure Connection', 'This page was opened over a plain http:// address, so the browser blocks GPS access. Open it over https:// (or localhost) to share your live location.', 'error');
+            break;
         }
-        this._lastGoodFix = { lat, lng, time: now };
+    }
 
-        if (this.map) {
-            const p = { lat, lng };
-            if (this.marker) { this.marker.setPosition(p); this.map.panTo(p); }
-            else this._placeMarker(p, accuracy);
-            if (this.accuracyCircle) { this.accuracyCircle.setCenter(p); this.accuracyCircle.setRadius(accuracy); }
-        }
+    _updateKeepAwakeNotice({ active, supported }) {
+        const el = document.getElementById('keepAwakeNotice');
+        if (!el) return;
+        el.textContent = active
+            ? '🔆 Your screen will stay on while sharing. Keep this page open — switching apps or locking your phone pauses your location for your guardians.'
+            : supported === false
+                ? '⚠️ Keep this page open and your screen on. This browser can\'t keep the screen awake, and a locked phone or another app in front pauses your location for your guardians.'
+                : '⚠️ Keep this page open and your screen on — tap anywhere on the page so it can keep the screen awake. A locked phone pauses your location for your guardians.';
+        el.className = 'alert small mb-3 ' + (active ? 'alert-info' : 'alert-warning');
+    }
 
-        if (this._locationSendPending) return;
-        this._locationSendPending = true;
-        try {
-            const response = await fetch(`/api/live-tracker/update-location`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: this.sessionId, lat, lng, accuracy })
-            });
-            const result = await response.json();
-            if (!response.ok || !result.success || result.skipped) throw new Error(result.message || 'Location was not shared');
-        } catch (err) { this.showToast('Location not shared', err.message); }
-        finally { this._locationSendPending = false; }
+    _onSharingEnded(message) {
+        this.isTracking = false;
+        window.onbeforeunload = null;
+        if (this.checkTimerId) clearInterval(this.checkTimerId);
+        if (this.responseTimerId) clearTimeout(this.responseTimerId);
+        this.clearSession();
+        this._setSharingStatus('⛔ Location sharing has ended.', '#e74c3c');
+        this.showNotification('Sharing Ended', `${message} Start a new journey to share your location again.`, 'warning');
     }
 
     /** Live accuracy readout in the tracking view so the person doing the demo can
@@ -665,6 +657,12 @@ class SafetyTracker {
      *  otherwise "live tracking" silently stops sharing location with no feedback. */
     handleGeoError(err) {
         console.warn('Geolocation error:', err.message);
+        if (err.code === 3) {
+            // A slow fix (indoors, weak signal) is routine — the sender keeps re-sending
+            // the last good position, so a status line is enough; no modal.
+            this._setSharingStatus('📍 GPS is slow to respond — still sharing your last known position and retrying.', '#e67e22');
+            return;
+        }
         if (this._geoErrorShown) return; // avoid stacking repeated modals
         this._geoErrorShown = true;
         const messages = {
@@ -799,7 +797,7 @@ class SafetyTracker {
 
         this.isTracking = false;
         window.onbeforeunload = null;
-        if (this.watchId) navigator.geolocation.clearWatch(this.watchId);
+        this.sender?.stop();
         if (this.checkTimerId) clearInterval(this.checkTimerId);
         if (this.responseTimerId) clearTimeout(this.responseTimerId);
         this.clearSession();

@@ -306,11 +306,12 @@ class NavigationManager {
                                     <h5 class="fw-bold text-danger">🔴 SOS ACTIVE</h5>
                                     <p class="text-muted small mb-1"><strong id="sosContactCount">0</strong> emergency contact(s) configured</p>
                                     <p class="small" id="sosDeliveryStatus" role="status">Check with your contacts that they received the tracking link.</p>
+                                    <p class="small mb-1" id="sosSharingStatus" role="status" aria-live="polite">📡 Starting live location sharing…</p>
                                     <p class="text-muted small" id="sosTimerDisplay"></p>
                                 </div>
                                 <div class="alert alert-warning small d-flex align-items-start gap-2" role="alert">
                                     <i class="fas fa-shield-alt mt-1"></i>
-                                    <span>Keep this app open to continue sending location updates. Delivery depends on the configured notification service; call your contacts if they have not received the link.</span>
+                                    <span><span id="sosKeepAwakeNotice">Keep this page open and your screen on — a locked phone or another app in front pauses your live location.</span> Delivery depends on the configured notification service; call your contacts if they have not received the link.</span>
                                 </div>
                                 <div class="d-grid">
                                     <button type="button" class="btn btn-success py-3" id="imSafeBtn">
@@ -1311,7 +1312,7 @@ class NavigationManager {
 
             // State
             let sosSate = 'idle'; // 'idle' | 'active'
-            let sosGpsPollInterval = null;
+            let sosSender = null; // HSLocationSender while SOS is sharing location
             let sosTimerInterval   = null;
             let activeSosData      = null; // { sosId, trackingCode, expiresAt, contactCount }
 
@@ -1337,9 +1338,9 @@ class NavigationManager {
             function resetSosUI() {
                 sosSate = 'idle';
                 activeSosData = null;
-                clearInterval(sosGpsPollInterval);
+                sosSender?.stop();
+                sosSender = null;
                 clearInterval(sosTimerInterval);
-                sosGpsPollInterval = null;
                 sosTimerInterval = null;
                 document.getElementById('sosStep1').style.display = '';
                 document.getElementById('sosStep2').style.display = 'none';
@@ -1389,34 +1390,53 @@ class NavigationManager {
                     navigator.geolocation.getCurrentPosition(
                         (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy }),
                         (err) => reject(new Error(err.message || 'Location unavailable')),
-                        { timeout: 10000, maximumAge: 30000 }
+                        // Only for the initial alert message (speed matters most here);
+                        // continuous sharing below always uses fresh fixes.
+                        { timeout: 10000, maximumAge: 10000 }
                     );
                 });
             }
 
-            // ── Push location to live-tracker backend ──
-            let gpsPushPending = false;
-            async function pushLocationUpdate(userId) {
-                if (gpsPushPending) return;
-                gpsPushPending = true;
-                try {
-                    const loc = await getCurrentLocation();
-                    const response = await fetch('/api/live-tracker/update-location', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ userId, lat: loc.latitude, lng: loc.longitude, accuracy: loc.accuracy }),
-                    });
-                    if (!response.ok) throw new Error('Location update was not accepted.');
-                } catch (e) {
-                    console.warn('GPS push failed:', e.message);
-                } finally { gpsPushPending = false; }
+            function setSosSharingStatus(text, color) {
+                const el = document.getElementById('sosSharingStatus');
+                if (el) { el.textContent = text; el.style.color = color || ''; }
             }
 
-            // ── Start GPS polling loop (every 10s) ──
+            // ── Continuous live location sharing (live-location-sender.js) ──
+            // Previously a 10s getCurrentPosition poll with maximumAge 30s, which
+            // could re-send the same cached position for 30s while the server
+            // labelled it as fresh — guardians saw a dot that didn't move.
             function startGpsPoll(userId) {
-                clearInterval(sosGpsPollInterval);
-                pushLocationUpdate(userId); // immediate first push
-                sosGpsPollInterval = setInterval(() => pushLocationUpdate(userId), 10000);
+                sosSender?.stop();
+                if (!window.HSLocationSender) { setSosSharingStatus('⚠️ Live sharing could not start — reload this page.', '#e74c3c'); return; }
+                sosSender = new window.HSLocationSender({
+                    sessionId: userId,
+                    onStatus: (status) => {
+                        if (status.type === 'sent') {
+                            const weak = status.fixAgeMs > 15000 ? ` (GPS fix ${Math.round(status.fixAgeMs / 1000)}s old — weak signal)` : '';
+                            setSosSharingStatus(`📡 Live location shared at ${new Date(status.at).toLocaleTimeString()}${weak}`, weak ? '#e67e22' : '#2ecc71');
+                        } else if (status.type === 'retrying') {
+                            setSosSharingStatus('⚠️ Can\'t reach the server — retrying. Call your contacts if this continues.', '#e67e22');
+                        } else if (status.type === 'low-accuracy' || status.type === 'skipped') {
+                            setSosSharingStatus('📍 Waiting for an accurate GPS fix (turn on Location/GPS)…', '#e67e22');
+                        } else if (status.type === 'geo-error') {
+                            setSosSharingStatus(status.code === 1
+                                ? '⛔ Location permission is blocked — your contacts cannot see where you are. Allow location for this site.'
+                                : '📍 GPS is slow to respond — sharing your last known position and retrying.', status.code === 1 ? '#e74c3c' : '#e67e22');
+                        } else if (status.type === 'wake-lock') {
+                            const notice = document.getElementById('sosKeepAwakeNotice');
+                            if (notice) notice.textContent = status.active
+                                ? '🔆 Your screen will stay on while SOS is active. Keep this page open — switching apps or locking your phone pauses your live location.'
+                                : 'Keep this page open and your screen on — a locked phone or another app in front pauses your live location.';
+                        }
+                    },
+                    onEnded: () => {
+                        setSosSharingStatus('⛔ Live location sharing has ended.', '#e74c3c');
+                        localStorage.removeItem('hershield_sos_active');
+                        resetSosUI();
+                    },
+                });
+                sosSender.start();
             }
 
             // ── Open SOS modal ──

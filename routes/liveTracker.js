@@ -4,12 +4,14 @@ require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 const express = require('express');
 const { body, param, validationResult } = require('express-validator');
 const router = express.Router();
-const { newShareCode, shareExpiresAt, hashPin, verifyPin, findSharedSession, viewerLocation, endViewers, isLive } = require('../services/trackingSecurity');
+const { newShareCode, shareExpiresAt, hashPin, verifyPin, findSharedSession, latestPoint, viewerLocation, endViewers, isLive } = require('../services/trackingSecurity');
+const hub = require('../services/liveLocationHub');
 router.get('/view/:code', async (req, res, next) => {
     try {
         const session = await findSharedSession(req.params.code);
         if (!session) return res.status(410).json({ success: false, active: false, message: 'This tracking link is invalid, expired, or has ended.' });
-        return res.json(viewerLocation(session));
+        const id = session._id || session.userId;
+        return res.json(viewerLocation(session, hub.snapshot(id, session.trackingCode)));
     } catch (error) { next(error); }
 });
 const {
@@ -57,6 +59,14 @@ const updateLocationValidators = [
     body('lat').isFloat({ min: -90, max: 90 }).withMessage('lat must be a valid latitude'),
     body('lng').isFloat({ min: -180, max: 180 }).withMessage('lng must be a valid longitude'),
     body('accuracy').optional({ nullable: true }).isFloat({ min: 0 }),
+    // How old the GPS fix was when sent, measured on the sender's own clock —
+    // relative, so a wrong device clock can't make an old fix look fresh.
+    body('fixAgeMs').optional({ nullable: true }).isInt({ min: 0, max: 24 * 60 * 60 * 1000 }).toInt(),
+];
+
+const senderStateValidators = [
+    body('userId').trim().notEmpty().withMessage('userId is required').isLength({ max: 100 }),
+    body('state').isIn(['active', 'background']).withMessage('state must be active or background'),
 ];
 
 const pinValidators = [
@@ -193,35 +203,63 @@ router.post('/start', startValidators, checkValidation, async (req, res) => {
 // arbitrary accuracy value, bypassing whatever the browser's own JS decided.
 const MAX_TRUSTED_ACCURACY_M = 2000;
 
+// A fix older than this is not "live" anymore — accepted, but clamped so the
+// stored timestamp can never claim to be older than reality either.
+const MAX_FIX_AGE_MS = 10 * 60 * 1000;
+
 router.post('/update-location', updateLocationValidators, checkValidation, async (req, res) => {
     try {
-        const { userId, lat, lng, accuracy } = req.body;
+        const { userId } = req.body;
+        const lat = Number(req.body.lat), lng = Number(req.body.lng);
+        const accuracy = req.body.accuracy == null ? null : Number(req.body.accuracy);
 
-        if (accuracy != null && Number(accuracy) > MAX_TRUSTED_ACCURACY_M) {
+        if (accuracy != null && accuracy > MAX_TRUSTED_ACCURACY_M) {
             console.warn(`update-location: rejecting low-accuracy fix for ${userId} (±${accuracy}m)`);
             return res.json({ success: true, skipped: true, message: 'Location accuracy too low to trust — not stored.' });
         }
 
         const session = await liveSessionGetByUserId(userId);
         if (!session) {
-            return res.status(404).json({ success: false, message: 'Session not found' });
+            return res.status(404).json({ success: false, ended: true, message: 'Session not found' });
         }
-
         if (!session.isTrackingActive) {
-            return res.status(400).json({ success: false, message: 'Tracking is not active' });
+            return res.status(409).json({ success: false, ended: true, message: 'This tracking session has ended.' });
+        }
+        // Previously only isTrackingActive was checked, so a sender could keep
+        // writing after the share link expired (and grow the document forever).
+        if (!isLive(session)) {
+            return res.status(410).json({ success: false, ended: true, message: 'This tracking share has expired.' });
         }
 
-        await liveSessionPushLocation(userId, lat, lng, accuracy == null ? null : Number(accuracy));
+        const now = Date.now();
+        const fixAgeMs = Math.min(Math.max(req.body.fixAgeMs || 0, 0), MAX_FIX_AGE_MS);
+        const timestamp = new Date(now - fixAgeMs);
+        const point = { lat, lng, accuracy, timestamp: timestamp.toISOString() };
 
-        // ── Broadcast to all viewer sockets in this session room ──────────────
+        // Guardians get every fix in real time; Firestore gets a throttled copy.
+        const { persist, appendToLog } = hub.noteLocation(userId, session.trackingCode, point, now);
         const io = req.app.get('io');
-        if (io && isLive(session)) {
+        if (io) {
             io.to('tracking:' + userId).emit('locationUpdated', {
-                sessionId: userId,
+                sessionId: userId, lat, lng, accuracy, timestamp: point.timestamp,
+                senderState: 'active', senderSeenAt: new Date(now).toISOString(),
+                serverTime: new Date().toISOString(),
             });
         }
 
-        res.json({ success: true, message: 'Location updated' });
+        let persisted = false;
+        if (persist) {
+            try {
+                await liveSessionPushLocation(userId, lat, lng, accuracy, { timestamp, appendToLog });
+                hub.markPersisted(userId, point, { appendedToLog: appendToLog }, now);
+                persisted = true;
+            } catch (persistError) {
+                // Viewers already have this fix live; the next update retries the write.
+                console.error('update-location: persist failed (live delivery unaffected):', persistError.message);
+            }
+        }
+
+        res.json({ success: true, message: 'Location updated', persisted });
     } catch (error) {
         console.error('Error updating location:', error);
         const status = error.statusCode || 500;
@@ -232,8 +270,34 @@ router.post('/update-location', updateLocationValidators, checkValidation, async
     }
 });
 
-// ── GET /location/:userId — viewer polling fallback ────────────────────────────
-// Returns the most recent lat/lng from the Firestore locationLogs array.
+// ── POST /sender-state — the sender's page went to the background / came back ──
+// A web page cannot send GPS while the phone is locked or the browser is
+// backgrounded. Telling guardians explicitly ("paused") is far more useful
+// than letting them infer it from a location that silently stops moving.
+router.post('/sender-state', senderStateValidators, checkValidation, async (req, res) => {
+    try {
+        const { userId, state } = req.body;
+        const session = await liveSessionGetByUserId(userId);
+        if (!session || !session.isTrackingActive || !isLive(session)) {
+            return res.status(409).json({ success: false, ended: true, message: 'This tracking session has ended.' });
+        }
+        const entry = hub.noteSenderState(userId, session.trackingCode, state);
+        const io = req.app.get('io');
+        if (io) {
+            io.to('tracking:' + userId).emit('senderState', {
+                sessionId: userId, senderState: state, // same field name as /view and locationUpdated
+                senderStateAt: new Date(entry.senderStateAt).toISOString(),
+                serverTime: new Date().toISOString(),
+            });
+        }
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error updating sender state:', error);
+        res.status(error.statusCode || 500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// ── GET /location/:userId — owner's own latest position (session restore) ────
 router.get('/location/:userId', [param('userId').trim().notEmpty().isLength({ max: 100 })], checkValidation, async (req, res) => {
     try {
         const userId = req.params.userId;
@@ -241,12 +305,12 @@ router.get('/location/:userId', [param('userId').trim().notEmpty().isLength({ ma
         if (!session) {
             return res.status(404).json({ success: false, message: 'Session not found' });
         }
-        if (!session.isTrackingActive) return res.json({ success: true, active: false });
-        const logs = session.locationLogs || [];
-        if (logs.length === 0) {
+        if (!session.isTrackingActive || !isLive(session)) return res.json({ success: true, active: false });
+        const live = hub.snapshot(userId, session.trackingCode)?.point;
+        const last = live || latestPoint(session);
+        if (!last) {
             return res.json({ success: true, active: true, message: 'No location yet' });
         }
-        const last = logs[logs.length - 1];
         return res.json({
             success: true,
             lat: last.lat,
@@ -297,8 +361,7 @@ router.post('/trigger-alert', userIdOnlyValidators, checkValidation, async (req,
         }
         if (!session.isTrackingActive) return res.status(409).json({ success: false, message: 'This tracking session has ended.' });
 
-        const logs = session.locationLogs || [];
-        const lastLocation = logs.length > 0 ? logs[logs.length - 1] : null;
+        const lastLocation = hub.snapshot(userId, session.trackingCode)?.point || latestPoint(session);
 
         const mapLink = lastLocation
             ? `https://maps.google.com/?q=${lastLocation.lat},${lastLocation.lng}`

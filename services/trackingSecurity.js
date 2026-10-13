@@ -2,6 +2,7 @@
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const repository = require('./firestoreRepository');
+const hub = require('./liveLocationHub');
 const TOKEN_PATTERN = /^[A-F0-9]{64}$/;
 const newShareCode = () => crypto.randomBytes(32).toString('hex').toUpperCase();
 const shareExpiresAt = () => new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
@@ -19,19 +20,35 @@ async function findSharedSession(code) {
     const session = await repository.liveSessionFindByCode(code) || await repository.trackingFindByCode(code);
     return isLive(session) ? session : null;
 }
-function viewerLocation(session) {
-    const p = session.locationLogs?.at(-1) || session.currentLocation;
+/** Newest stored fix, across the current and legacy storage shapes. */
+function latestPoint(session) {
+    return session?.lastLocation || session?.locationLogs?.at(-1) || session?.currentLocation || null;
+}
+const fixTime = p => Date.parse(p?.timestamp) || 0;
+/**
+ * Minimal public payload for a share-link viewer. `live` is the in-process
+ * snapshot from services/liveLocationHub.js (newer than Firestore, which is
+ * only written on a throttle). `serverTime` lets the viewer measure freshness
+ * against the server clock instead of the guardian device's possibly-wrong one.
+ */
+function viewerLocation(session, live = null) {
+    const stored = latestPoint(session);
+    const p = live?.point && fixTime(live.point) >= fixTime(stored) ? live.point : stored;
     return {
         success: true, active: true, sessionId: session._id || session.userId,
         lat: p?.lat ?? p?.latitude ?? null, lng: p?.lng ?? p?.longitude ?? null,
         accuracy: p?.accuracy ?? null, timestamp: p?.timestamp || null,
+        senderState: live?.senderState || null, senderStateAt: live?.senderStateAt || null,
+        senderSeenAt: live?.senderSeenAt || null,
+        serverTime: new Date().toISOString(),
         expiresAt: session.shareExpiresAt,
     };
 }
 function endViewers(io, id) {
+    hub.forget(id);
     if (!io) return;
     const room = 'tracking:' + id;
     io.to(room).emit('sessionEnded', { sessionId: id });
     io.in(room).socketsLeave(room);
 }
-module.exports = { newShareCode, shareExpiresAt, hashPin, verifyPin, isLive, findSharedSession, viewerLocation, endViewers };
+module.exports = { newShareCode, shareExpiresAt, hashPin, verifyPin, isLive, findSharedSession, latestPoint, viewerLocation, endViewers };

@@ -67,8 +67,10 @@
         const onAbort=()=>controller.abort(callerSignal.reason);
         if(callerSignal?.aborted) onAbort(); else callerSignal?.addEventListener('abort',onAbort,{once:true});
         const timeoutMs = method==='GET' ? 15000 : init?.body instanceof FormData ? 45000 : 30000;
+        // hsQuiet: background telemetry (live location pings) whose caller shows its own status.
+        const quiet = init?.hsQuiet === true;
         const timer=setTimeout(()=>controller.abort(new DOMException('Request timed out','TimeoutError')),timeoutMs);
-        const slow=setTimeout(()=>window.hsConnectionNotice('This is taking longer than usual. The server may be waking up; you can still use navigation.'),5000);
+        const slow=setTimeout(()=>{ if(!quiet) window.hsConnectionNotice('This is taking longer than usual. The server may be waking up; you can still use navigation.'); },5000);
         const execute=(async()=>{
             try {
                 if (!headers.has('Authorization') && !publicRead && !url.pathname.startsWith('/api/admin/')) {
@@ -90,7 +92,7 @@
                 return complete;
             } catch(error) {
                 const text=method==='GET'?'Unable to load this information. Check your connection and retry.':'The server did not confirm this action. Check its status before trying again to avoid sending it twice.';
-                if(!callerSignal?.aborted) window.hsConnectionNotice(text);
+                if(!callerSignal?.aborted && !quiet) window.hsConnectionNotice(text);
                 throw new Error(text,{cause:error});
             } finally {
                 clearTimeout(timer);clearTimeout(slow);callerSignal?.removeEventListener('abort',onAbort);inFlight.delete(key);
