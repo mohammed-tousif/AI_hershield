@@ -109,6 +109,9 @@ async function autoExpireSos(userId, sosId) {
     try {
         await sosMarkExpired(sosId);
         await liveSessionStop(userId);
+        // No io handle here; viewers' sockets are ejected by the periodic share
+        // re-check in services/socketAccess.js. Drop the live point now.
+        endViewers(null, userId);
         console.log(`⏰ SOS auto-expired for userId=${userId}`);
     } catch (e) {
         console.error('Auto-expire SOS error:', e.message);
