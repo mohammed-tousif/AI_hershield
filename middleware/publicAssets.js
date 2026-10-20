@@ -6,9 +6,10 @@ const PUBLIC_FILES = new Set([
     'community.html', 'safety-map.html', 'verify-identity.html',
     'admin-login.html', 'admin-dashboard.html', 'config.js', 'firebase-config.js',
     'firebase-auth.js', 'navigation.js', 'styles.css', 'responsive.css', 'responsive.js',
-    'animations.js', 'live-tracker.js', 'live-tracker-viewer.js', 'front.png', 'download (1).jpg',
+    'live-tracker.js', 'live-tracker-viewer.js', 'front.png', 'download (1).jpg',
     'verify-email.html', 'email-verification.js', 'email-verification.css',
     'map-location.js', 'live-location-sender.js',
+    'motion.js', 'motion.css', 'lenis.min.js', 'socket.io.min.js',
 ]);
 function publicAssets(root) {
     const serve = express.static(root, { dotfiles: 'deny', index: false, redirect: false });

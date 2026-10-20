@@ -394,17 +394,19 @@
         }
     </style>
     <link rel="stylesheet" href="/responsive.css">
+    <link rel="stylesheet" href="/motion.css">
     <script src="/responsive.js" defer></script>
     <link rel="stylesheet" href="/email-verification.css">
     <script src="/email-verification.js" defer></script>
 </head>
 
-<body>
+<body data-motion-reveal=".main-content .glass-card">
     <div class="gradient-background"></div>
     <div class="gradient-overlay"></div>
 
     <!-- Firebase SDK and Unified Navigation -->
     <script src="/live-location-sender.js" defer></script>
+    <script src="/motion.js" defer></script>
     <script src="/navigation.js" defer></script>
     <script>import('./firebase-auth.js').catch(() => window.hsConnectionNotice?.('Sign-in services are taking longer to load. Check your connection and retry.'));</script>
 
@@ -628,8 +630,8 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
-    <!-- Socket.IO client (CDN — works on Firebase Hosting + Render) -->
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
+    <!-- Socket.IO client, self-hosted (cdn.socket.io is unreachable on some networks and blocked page load) -->
+    <script src="/socket.io.min.js"></script>
     <script>
     (function initIncidentSocket() {
         const RECONNECT_DELAY = 5000; // ms
