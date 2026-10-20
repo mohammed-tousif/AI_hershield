@@ -7,6 +7,18 @@
     window.HERSHIELD_FRONTEND = local ? location.origin : 'https://hershield-web.web.app';
     window.hsEscapeHTML = value => String(value ?? '').replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
     const originalFetch = window.fetch.bind(window);
+    // The free-tier backend sleeps when idle and takes ~40s to wake. Ping it the
+    // moment any page loads (at most every 4 minutes per tab) so it is already
+    // warm by the time the page's own API calls go out.
+    if (!local) {
+        try {
+            const last = Number(sessionStorage.getItem('hs:wake') || 0);
+            if (Date.now() - last > 240000) {
+                sessionStorage.setItem('hs:wake', String(Date.now()));
+                originalFetch(backend + '/api/health', { cache: 'no-store' }).catch(() => {});
+            }
+        } catch { originalFetch(backend + '/api/health', { cache: 'no-store' }).catch(() => {}); }
+    }
     window.hsWithTimeout = function (promise, ms, message = 'The connection is taking too long. Please retry.') {
         let timer;
         return Promise.race([promise, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(message)), ms); })]).finally(() => clearTimeout(timer));

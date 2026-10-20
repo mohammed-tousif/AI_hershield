@@ -1,0 +1,21 @@
+# Render's free instance sleeps after 15 minutes without traffic, and the first
+# request after that waits ~40s for it to boot. Pinging the health endpoint every
+# 10 minutes keeps it warm. Free: public-repo Actions minutes are unlimited, and
+# one always-on service uses ~744 of Render's 750 free instance hours a month.
+# Scheduled runs only fire from the default branch (main).
+name: Keep backend awake
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Ping /api/health
+        run: curl -fsS --retry 2 --max-time 90 -o /dev/null -w "HTTP %{http_code} in %{time_total}s\n" https://ai-hershield.onrender.com/api/health

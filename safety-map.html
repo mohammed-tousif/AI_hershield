@@ -630,8 +630,8 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
-    <!-- Socket.IO client (CDN — works on Firebase Hosting + Render) -->
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
+    <!-- Socket.IO client, self-hosted (cdn.socket.io is unreachable on some networks and blocked page load) -->
+    <script src="/socket.io.min.js"></script>
     <script>
     (function initIncidentSocket() {
         const RECONNECT_DELAY = 5000; // ms

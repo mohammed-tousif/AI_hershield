@@ -671,7 +671,7 @@
     </button>
 
     <!-- Socket.IO client (CDN — works on Firebase Hosting + Render) -->
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
+    <script src="/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Moving gradient effect
@@ -787,89 +787,112 @@
             }
         }
 
+        // Last good response, shown instantly on the next visit while the fresh
+        // copy loads (the free-tier backend can take ~40s to wake from idle).
+        const ALERTS_CACHE_KEY = 'hs:dashAlerts';
+        let _alertsLoaded = false;
+
         async function loadRecentAlerts() {
-            const previewEl  = document.getElementById('alertHistoryPreview');
-            const extraEl    = document.getElementById('alertHistoryExtra');
-            const badge      = document.getElementById('alertCountBadge');
-            const toggleWrap = document.getElementById('alertToggleWrap');
+            const previewEl = document.getElementById('alertHistoryPreview');
             if (!previewEl) return;
+            let cached = null;
+            if (!_alertsLoaded) {
+                try { cached = JSON.parse(localStorage.getItem(ALERTS_CACHE_KEY)); } catch { cached = null; }
+                if (Array.isArray(cached)) renderRecentAlerts(cached);
+            }
             try {
                 const res = await fetch('/api/community/incident-reports?limit=30');
                 const result = await res.json();
                 if (!res.ok || !result.success) throw new Error(result.message || 'Failed to load reports');
-                _allAlerts = result.reports || [];
-
-                if (badge) badge.textContent = `${_allAlerts.length} report${_allAlerts.length !== 1 ? 's' : ''}`;
-
-                if (!_allAlerts.length) {
-                    previewEl.innerHTML = '<div class="text-muted small">No community reports yet.</div>';
-                    if (extraEl) extraEl.innerHTML = '';
-                    if (toggleWrap) toggleWrap.style.display = 'none';
-                    return;
-                }
-
-                const SEVERITY_COLORS = {
-                    critical: '#dc3545', high: '#fd7e14',
-                    medium:   '#ffc107', low:  '#28a745',
-                };
-                const TYPE_ICONS = {
-                    harassment:          'fa-user-slash',
-                    assault:             'fa-fist-raised',
-                    theft:               'fa-hand-holding-usd',
-                    suspicious_activity: 'fa-eye',
-                    poor_lighting:       'fa-lightbulb',
-                    unsafe_area:         'fa-map-marked-alt',
-                    other:               'fa-exclamation-circle',
-                };
-
-                const renderReport = (r) => {
-                    const color  = SEVERITY_COLORS[r.severity] || '#6c757d';
-                    const icon   = TYPE_ICONS[r.incidentType] || 'fa-exclamation-circle';
-                    const time   = (() => {
-                        try { return new Date(r.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }); }
-                        catch { return new Date(r.createdAt).toLocaleString(); }
-                    })();
-                    return `
-                    <div class="alert-item" style="border-left:3px solid ${color};">
-                        <i class="fas ${icon}" style="color:${color};font-size:1.15rem;flex-shrink:0;"></i>
-                        <div style="flex:1;min-width:0;">
-                            <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
-                                <h6 class="mb-0 fw-semibold" style="font-size:0.88rem;">${r.typeLabel}</h6>
-                                <span class="badge rounded-pill" style="background:${color};font-size:0.68rem;padding:2px 8px;">${r.severityLabel}</span>
-                            </div>
-                            ${r.location ? `<small class="text-muted d-block"><i class="fas fa-map-pin me-1"></i>${r.location}</small>` : ''}
-                            ${r.description ? `<p class="mb-1 small" style="color:#555;line-height:1.4;">${r.description}</p>` : ''}
-                            <small class="text-muted">
-                                <i class="fas fa-user me-1"></i>${r.reporterName}
-                                &nbsp;&bull;&nbsp;
-                                <i class="fas fa-clock me-1"></i>${time}
-                            </small>
-                        </div>
-                    </div>`;
-                };
-
-                const preview = _allAlerts.slice(0, PREVIEW_COUNT);
-                const extra   = _allAlerts.slice(PREVIEW_COUNT);
-
-                previewEl.innerHTML = preview.map(renderReport).join('');
-                if (extraEl) extraEl.innerHTML = extra.map(renderReport).join('');
-                if (toggleWrap) toggleWrap.style.display = extra.length ? '' : 'none';
-                if (_alertsExpanded && extraEl) extraEl.style.display = '';
-
+                const reports = result.reports || [];
+                _alertsLoaded = true;
+                renderRecentAlerts(reports);
+                try { localStorage.setItem(ALERTS_CACHE_KEY, JSON.stringify(reports)); } catch { /* storage full or blocked */ }
             } catch (error) {
                 console.error('Failed to load recent reports:', error);
-                previewEl.innerHTML = '<div class="text-danger small">Failed to load reports.</div>';
+                // Keep whatever is already on screen (cache or an earlier refresh).
+                if (!_alertsLoaded && !Array.isArray(cached)) previewEl.innerHTML = '<div class="text-danger small">Failed to load reports.</div>';
             }
+        }
+
+        function renderRecentAlerts(reports) {
+            const previewEl  = document.getElementById('alertHistoryPreview');
+            const extraEl    = document.getElementById('alertHistoryExtra');
+            const badge      = document.getElementById('alertCountBadge');
+            const toggleWrap = document.getElementById('alertToggleWrap');
+            _allAlerts = reports;
+
+            if (badge) badge.textContent = `${_allAlerts.length} report${_allAlerts.length !== 1 ? 's' : ''}`;
+
+            if (!_allAlerts.length) {
+                previewEl.innerHTML = '<div class="text-muted small">No community reports yet.</div>';
+                if (extraEl) extraEl.innerHTML = '';
+                if (toggleWrap) toggleWrap.style.display = 'none';
+                return;
+            }
+
+            const SEVERITY_COLORS = {
+                critical: '#dc3545', high: '#fd7e14',
+                medium:   '#ffc107', low:  '#28a745',
+            };
+            const TYPE_ICONS = {
+                harassment:          'fa-user-slash',
+                assault:             'fa-fist-raised',
+                theft:               'fa-hand-holding-usd',
+                suspicious_activity: 'fa-eye',
+                poor_lighting:       'fa-lightbulb',
+                unsafe_area:         'fa-map-marked-alt',
+                other:               'fa-exclamation-circle',
+            };
+
+            const renderReport = (r) => {
+                const color  = SEVERITY_COLORS[r.severity] || '#6c757d';
+                const icon   = TYPE_ICONS[r.incidentType] || 'fa-exclamation-circle';
+                const time   = (() => {
+                    try { return new Date(r.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }); }
+                    catch { return new Date(r.createdAt).toLocaleString(); }
+                })();
+                return `
+                <div class="alert-item" style="border-left:3px solid ${color};">
+                    <i class="fas ${icon}" style="color:${color};font-size:1.15rem;flex-shrink:0;"></i>
+                    <div style="flex:1;min-width:0;">
+                        <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                            <h6 class="mb-0 fw-semibold" style="font-size:0.88rem;">${r.typeLabel}</h6>
+                            <span class="badge rounded-pill" style="background:${color};font-size:0.68rem;padding:2px 8px;">${r.severityLabel}</span>
+                        </div>
+                        ${r.location ? `<small class="text-muted d-block"><i class="fas fa-map-pin me-1"></i>${r.location}</small>` : ''}
+                        ${r.description ? `<p class="mb-1 small" style="color:#555;line-height:1.4;">${r.description}</p>` : ''}
+                        <small class="text-muted">
+                            <i class="fas fa-user me-1"></i>${r.reporterName}
+                            &nbsp;&bull;&nbsp;
+                            <i class="fas fa-clock me-1"></i>${time}
+                        </small>
+                    </div>
+                </div>`;
+            };
+
+            const preview = _allAlerts.slice(0, PREVIEW_COUNT);
+            const extra   = _allAlerts.slice(PREVIEW_COUNT);
+
+            previewEl.innerHTML = preview.map(renderReport).join('');
+            if (extraEl) extraEl.innerHTML = extra.map(renderReport).join('');
+            if (toggleWrap) toggleWrap.style.display = extra.length ? '' : 'none';
+            if (_alertsExpanded && extraEl) extraEl.style.display = '';
         }
 
         window.addEventListener('hershield:retry', () => { loadDashboardStats(); loadRecentAlerts(); });
         const STAT_IDS = ['statSafeTrips', 'statSafeZones', 'statCommunity', 'statSosAlerts'];
         const STAT_FALLBACK = { safeTrips: 0, safeZones: 0, communityMembers: 0, totalSosAlerts: 0 };
 
-        function setStatValues(s) {
+        const STATS_CACHE_KEY = 'hs:dashStats';
+
+        // instant: set the numbers without the count-up (cached values, or a
+        // refresh replacing numbers that are already on screen).
+        function setStatValues(s, instant) {
             function animateTo(el, target) {
                 if (!el) return;
-                if (target === 0) { el.textContent = '0'; return; }
+                target = Number(target) || 0;
+                if (instant || target === 0) { el.textContent = String(target); return; }
                 const dur = 1200, steps = 40;
                 const inc = target / steps;
                 let cur = 0, step = 0;
@@ -893,6 +916,10 @@
         }
 
         async function loadDashboardStats() {
+            // Show the last known numbers immediately; the fetch below refreshes them.
+            let cached = null;
+            try { cached = JSON.parse(localStorage.getItem(STATS_CACHE_KEY)); } catch { cached = null; }
+            if (cached) setStatValues(cached, true);
             // Race the fetch against a 15-second timeout so spinners never freeze
             const controller = new AbortController();
             const timer = setTimeout(() => controller.abort(), 15000);
@@ -902,19 +929,20 @@
                 if (!res.ok) {
                     // Non-2xx (e.g. 404 if server not restarted yet)
                     console.warn('Dashboard stats: HTTP', res.status, '— using fallback data');
-                    clearStatSpinners('—');
+                    if (!cached) clearStatSpinners('—');
                     return;
                 }
                 const data = await res.json();
                 if (data.success && data.stats) {
-                    setStatValues(data.stats);
-                } else {
+                    setStatValues(data.stats, !!cached);
+                    try { localStorage.setItem(STATS_CACHE_KEY, JSON.stringify(data.stats)); } catch { /* storage full or blocked */ }
+                } else if (!cached) {
                     clearStatSpinners('—');
                 }
             } catch (e) {
                 clearTimeout(timer);
                 console.warn('Dashboard stats unavailable:', e.message);
-                clearStatSpinners('—');
+                if (!cached) clearStatSpinners('—');
             }
         }
 

@@ -9,7 +9,7 @@ const PUBLIC_FILES = new Set([
     'live-tracker.js', 'live-tracker-viewer.js', 'front.png', 'download (1).jpg',
     'verify-email.html', 'email-verification.js', 'email-verification.css',
     'map-location.js', 'live-location-sender.js',
-    'motion.js', 'motion.css', 'lenis.min.js',
+    'motion.js', 'motion.css', 'lenis.min.js', 'socket.io.min.js',
 ]);
 function publicAssets(root) {
     const serve = express.static(root, { dotfiles: 'deny', index: false, redirect: false });
