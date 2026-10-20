@@ -58,7 +58,15 @@ The Safety Map recenter button now uses the actual lexical map instance instead 
 
 `motion.js` + `motion.css` are a shared, dependency-free interaction layer modelled on the CraftWare site: reveal-on-scroll (`data-reveal`), kinetic split headings (`data-split`), count-up numbers (`data-count`), 3D tilt with glare (`data-tilt`), magnetic buttons (`data-magnetic`), layered pointer depth (`data-depth-scene` / `data-depth`), a scroll-progress bar and a glossy CSS 3D shield (`data-emblem`, stacked SVG layers for real thickness). Lenis v1.3.26 (MIT, vendored as `lenis.min.js`, no CDN) gives desktop smooth scrolling only where the page opts in with `<html data-smooth-scroll>`. All scroll-linked work runs in one rAF pass (`HSMotion.onFrame`), with a timer fallback because some webviews starve animation frames.
 
-Scope: the landing page and sign-in get the full layer; dashboard, community and safety map get a light layer declared on `<body data-motion-reveal="…" data-motion-tilt="…">`, scoped to `.main-content`. SOS/emergency controls, the quick-actions panel and the guardian tracking view are deliberately excluded. Nothing animates under `prefers-reduced-motion`; touch devices keep native scrolling and get reveals plus press feedback only.
+Scope: the landing page and sign-in get the full layer; dashboard, community and safety map get a light layer declared on `<body data-motion-reveal="…" data-motion-tilt="…">`, scoped to `.main-content`. SOS/emergency controls, the quick-actions panel and the guardian tracking view are deliberately excluded. Nothing animates under `prefers-reduced-motion`.
+
+Touch devices keep native scrolling (no Lenis), and pointer tilt and magnetic effects stay desktop-only. Phones still get 3D:
+- the depth scene is driven by scroll position: `--hs-px`/`--hs-py` come from the scene's place in the viewport, and the depth is scaled with `--hs-k`;
+- `data-reveal="rise3d"` gives a flip-up entrance in perspective;
+- the shield emblem is visible on mobile;
+- tilt cards dip under a finger.
+
+Mobile tap targets are at least 40px and chip text is at least 12px.
 
 Rules that prevent invisible content: entrance-hiding styles apply only while `html.hs-motion` is set. Marketing pages set it in an inline head snippet that removes it again (and sets `data-hs-late`) if `motion.js` has not arrived within 4 s; a late script then never re-hides anything. App pages have no snippet, so cards already on screen when the script runs appear instantly and only later cards rise in — an app page behind slow CDN scripts must never show missing cards. Counters always end on their true value even if frames stall.
 

@@ -247,8 +247,22 @@
     }
 
     function setupDepthScene(scene) {
+        if (scene.dataset.hsDepthDone) return;
+        scene.dataset.hsDepthDone = '1';
         scene.querySelectorAll('[data-depth]').forEach(layer => layer.style.setProperty('--hs-d', layer.dataset.depth));
-        if (!FINE || !MOTION) return;
+        if (!MOTION) return;
+        if (!FINE) {
+            // No pointer on touch screens: the scene turns with scroll instead, so the
+            // depth planes visibly separate as the stage passes through the screen.
+            frameHooks.push(({ vh }) => {
+                const r = scene.getBoundingClientRect();
+                if (r.bottom < -100 || r.top > vh + 100) return;
+                const p = clamp(((r.top + r.height / 2) - vh / 2) / (vh / 2 + r.height / 2), -1, 1);
+                scene.style.setProperty('--hs-py', (p * 0.9).toFixed(3));
+                scene.style.setProperty('--hs-px', (p * -0.45).toFixed(3));
+            });
+            return;
+        }
         const area = scene.closest('[data-depth-area], section') || scene;
         let tx = 0, ty = 0, cx = 0, cy = 0, frame = null;
         const loop = () => {

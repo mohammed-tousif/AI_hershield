@@ -502,7 +502,7 @@
             .hero-actions { justify-content: center; }
             .hero-stage { height: 400px; margin-top: 3rem; }
             .hero-frame { inset: 26px 12px 34px 12px; }
-            .hero-emblem { display: none; }
+            .hero-emblem { --size: 96px; left: -4px; bottom: -14px; }
             .chip-live { left: 0; top: 0; }
             .chip-pin { right: 4px; }
             .chip-guardian { right: 6px; bottom: 6px; }
@@ -526,7 +526,15 @@
                 transform: none;
             }
 
-            .hs-chip { font-size: .78rem; padding: .5rem .8rem; }
+            .hs-chip { font-size: .8rem; padding: .5rem .8rem; }
+            .hs-chip small { font-size: .78rem; }
+
+            /* Comfortable touch targets (~44px). */
+            .navbar-toggler { min-width: 44px; min-height: 44px; }
+            .btn-get-started { padding: 12px 24px; }
+            footer .list-unstyled a { padding: .55rem 0; margin-bottom: 0 !important; }
+            footer a[href^="mailto:"] { display: inline-block; padding: .6rem 0; }
+            .social-links a { width: 44px; height: 44px; }
         }
 
         .alert-item {
@@ -618,7 +626,7 @@
                 <h2 class="text-center mb-3 section-title" data-split>Your Safety, Redefined</h2>
                 <p class="text-center mb-5" style="color:var(--text-secondary);max-width:540px;margin:0 auto 3rem;" data-reveal data-reveal-delay="200">Plan safer routes, share where you are with the people you trust, and raise an alert in seconds.</p>
                 <div class="row g-4">
-                    <div class="col-md-4" data-reveal data-reveal-delay="100">
+                    <div class="col-md-4" data-reveal="rise3d" data-reveal-delay="100">
                         <div class="feature-card" data-tilt="9">
                             <div class="zoom-wrapper">
                                 <div class="zoom-content text-center">
@@ -632,7 +640,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4" data-reveal data-reveal-delay="220">
+                    <div class="col-md-4" data-reveal="rise3d" data-reveal-delay="220">
                         <div class="feature-card" data-tilt="9">
                             <div class="zoom-wrapper">
                                 <div class="zoom-content text-center">
@@ -646,7 +654,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4" data-reveal data-reveal-delay="340">
+                    <div class="col-md-4" data-reveal="rise3d" data-reveal-delay="340">
                         <div class="feature-card" data-tilt="9">
                             <div class="zoom-wrapper">
                                 <div class="zoom-content text-center">
@@ -751,7 +759,7 @@
         <section class="section-padding facts-band">
             <div class="container">
                 <div class="row g-4">
-                    <div class="col-md-4" data-reveal="zoom" data-reveal-delay="80">
+                    <div class="col-md-4" data-reveal="rise3d" data-reveal-delay="80">
                         <div class="stat-tile" data-tilt="10">
                             <div class="stat-icon"><i class="fas fa-location-arrow"></i></div>
                             <span class="stat-num" data-count="2" data-suffix="s">2s</span>
@@ -759,7 +767,7 @@
                             <span class="stat-note">while you're on the move</span>
                         </div>
                     </div>
-                    <div class="col-md-4" data-reveal="zoom" data-reveal-delay="200">
+                    <div class="col-md-4" data-reveal="rise3d" data-reveal-delay="200">
                         <div class="stat-tile" data-tilt="10">
                             <div class="stat-icon"><i class="fas fa-hourglass-half"></i></div>
                             <span class="stat-num" data-count="24" data-suffix="h">24h</span>
@@ -767,7 +775,7 @@
                             <span class="stat-note">or the moment you stop sharing</span>
                         </div>
                     </div>
-                    <div class="col-md-4" data-reveal="zoom" data-reveal-delay="320">
+                    <div class="col-md-4" data-reveal="rise3d" data-reveal-delay="320">
                         <div class="stat-tile" data-tilt="10">
                             <div class="stat-icon"><i class="fas fa-shield-alt"></i></div>
                             <span class="stat-num" data-count="6">6</span>

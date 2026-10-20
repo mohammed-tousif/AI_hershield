@@ -34,6 +34,7 @@ html.hs-motion [data-reveal="left"].is-in:not(.hs-revealed) { animation-name: hs
 html.hs-motion [data-reveal="right"].is-in:not(.hs-revealed) { animation-name: hs-reveal-right; }
 html.hs-motion [data-reveal="zoom"].is-in:not(.hs-revealed) { animation-name: hs-reveal-zoom; }
 html.hs-motion [data-reveal="fade"].is-in:not(.hs-revealed) { animation-name: hs-reveal-fade; }
+/* (the "rise3d" variant is defined with the depth styles below) */
 @media (max-width: 767px) {
     /* Sideways entrances can widen the layout viewport on phones. */
     html.hs-motion [data-reveal="left"].is-in:not(.hs-revealed),
@@ -67,18 +68,35 @@ html.hs-fine [data-tilt].is-tilting {
 }
 [data-tilt].is-tilting > .hs-glare { opacity: 1; }
 
-/* ── Layered depth scene (pointer parallax, real Z planes) ───────────── */
+/* ── Layered depth scene (real Z planes) ─────────────────────────────
+   --hs-px/--hs-py (-1..1) come from the pointer on desktop and from scroll
+   position on touch devices; --hs-k scales the depth down on small screens. */
 [data-depth-scene] {
+    --hs-rot-x: 6deg; --hs-rot-y: 8deg; --hs-k: 1;
     transform-style: preserve-3d;
-    transform: perspective(1300px) rotateX(calc(var(--hs-py, 0) * -6deg)) rotateY(calc(var(--hs-px, 0) * 8deg));
+    transform: perspective(1300px) rotateX(calc(var(--hs-py, 0) * -1 * var(--hs-rot-x))) rotateY(calc(var(--hs-px, 0) * var(--hs-rot-y)));
 }
 [data-depth] {
-    translate: calc(var(--hs-px, 0) * var(--hs-d, 0) * 7px) calc(var(--hs-py, 0) * var(--hs-d, 0) * 7px) calc(var(--hs-d, 0) * 14px);
+    translate:
+        calc(var(--hs-px, 0) * var(--hs-d, 0) * 7px * var(--hs-k))
+        calc(var(--hs-py, 0) * var(--hs-d, 0) * 7px * var(--hs-k))
+        calc(var(--hs-d, 0) * 14px * var(--hs-k));
 }
 @media (max-width: 991px) {
-    [data-depth-scene] { transform: none; }
-    [data-depth] { translate: none; }
+    [data-depth-scene] { --hs-rot-x: 10deg; --hs-rot-y: 6deg; --hs-k: .6; }
 }
+
+/* ── 3D entrance: cards flip up into place in perspective ────────────── */
+@keyframes hs-reveal-rise3d {
+    from { opacity: 0; translate: 0 46px; rotate: x 24deg; }
+    to { opacity: 1; translate: 0 0; rotate: x 0deg; }
+}
+html.hs-motion [data-reveal="rise3d"] { transform-origin: 50% 0; }
+html.hs-motion [data-reveal="rise3d"].is-in:not(.hs-revealed) { animation-name: hs-reveal-rise3d; animation-duration: 1.1s; }
+:has(> [data-reveal="rise3d"]) { perspective: 1200px; }
+
+/* ── Touch: tilt cards dip slightly under a finger ───────────────────── */
+html.hs-motion:not(.hs-fine) [data-tilt]:active { scale: .985; transition: scale .15s ease; }
 
 /* ── Glossy 3D shield emblem ─────────────────────────────────────────── */
 /* Defaults via :where() (zero specificity) so a page's own size/position wins. */
@@ -108,7 +126,7 @@ html.hs-fine [data-tilt].is-tilting {
     color: var(--hs-ink); font-weight: 600; font-size: .86rem; line-height: 1.2; white-space: nowrap;
 }
 .hs-chip i { color: var(--hs-coral-deep); }
-.hs-chip small { display: block; font-weight: 500; font-size: .74rem; color: #8a6a5c; }
+.hs-chip small { display: block; font-weight: 500; font-size: max(.74rem, 12px); color: #8a6a5c; }
 .hs-live-dot { flex: 0 0 auto; width: 9px; height: 9px; border-radius: 50%; background: #2fb36b; animation: hs-pulse 1.9s ease-out infinite; }
 @keyframes hs-pulse { 0% { box-shadow: 0 0 0 0 rgba(47, 179, 107, .55); } 70%, 100% { box-shadow: 0 0 0 10px rgba(47, 179, 107, 0); } }
 .hs-bob { animation: hs-bob 5.5s ease-in-out infinite; animation-delay: var(--bob-delay, 0s); }
