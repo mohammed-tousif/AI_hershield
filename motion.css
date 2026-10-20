@@ -1,0 +1,126 @@
+/* HerShield signature motion layer — hooks are documented in motion.js.
+   Reveal/split hide content only while html.hs-motion is set, so content is
+   always visible without JavaScript and under reduced motion. Reveals use the
+   individual translate/scale properties (not transform) so they compose with
+   each element's own hover transforms instead of fighting them. */
+
+:root {
+    --hs-ease: cubic-bezier(.2, .8, .2, 1);
+    --hs-ease-out: cubic-bezier(.16, 1, .3, 1);
+    --hs-coral: #ff9a86;
+    --hs-coral-deep: #e2604c;
+    --hs-ink: #3b2620;
+}
+
+/* ── Lenis smooth scroll ─────────────────────────────────────────────── */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-stopped { overflow: clip; }
+.lenis.lenis-smooth iframe { pointer-events: none; }
+
+/* ── Reveal ──────────────────────────────────────────────────────────── */
+@keyframes hs-reveal-up { from { opacity: 0; translate: 0 34px; } to { opacity: 1; translate: 0 0; } }
+@keyframes hs-reveal-left { from { opacity: 0; translate: -46px 0; } to { opacity: 1; translate: 0 0; } }
+@keyframes hs-reveal-right { from { opacity: 0; translate: 46px 0; } to { opacity: 1; translate: 0 0; } }
+@keyframes hs-reveal-zoom { from { opacity: 0; scale: .9; } to { opacity: 1; scale: 1; } }
+@keyframes hs-reveal-fade { from { opacity: 0; } to { opacity: 1; } }
+
+html.hs-motion [data-reveal]:not(.is-in) { opacity: 0; }
+html.hs-motion [data-reveal].is-in:not(.hs-revealed) {
+    animation: hs-reveal-up .95s var(--hs-ease-out) var(--hs-delay, 0ms) both;
+}
+html.hs-motion [data-reveal="left"].is-in:not(.hs-revealed) { animation-name: hs-reveal-left; }
+html.hs-motion [data-reveal="right"].is-in:not(.hs-revealed) { animation-name: hs-reveal-right; }
+html.hs-motion [data-reveal="zoom"].is-in:not(.hs-revealed) { animation-name: hs-reveal-zoom; }
+html.hs-motion [data-reveal="fade"].is-in:not(.hs-revealed) { animation-name: hs-reveal-fade; }
+@media (max-width: 767px) {
+    /* Sideways entrances can widen the layout viewport on phones. */
+    html.hs-motion [data-reveal="left"].is-in:not(.hs-revealed),
+    html.hs-motion [data-reveal="right"].is-in:not(.hs-revealed) { animation-name: hs-reveal-up; }
+}
+
+/* ── Kinetic split headings ──────────────────────────────────────────── */
+.hs-w { display: inline-block; overflow: hidden; vertical-align: top; padding: 0 .05em .18em; margin: 0 -.05em -.18em; }
+.hs-wi { display: inline-block; transform-origin: 0 100%; }
+html.hs-motion [data-split] .hs-wi {
+    transition: translate 1.05s var(--hs-ease), rotate 1.05s var(--hs-ease), opacity .6s ease;
+    transition-delay: calc(var(--hs-i, 0) * 60ms);
+}
+html.hs-motion [data-split]:not(.split-in) .hs-wi { translate: 0 112%; rotate: 5deg; opacity: 0; }
+.hs-gradient-host { background: none !important; animation: none !important; }
+
+/* ── 3D tilt + glare (fine pointers only; html.hs-fine) ─────────────── */
+:where(html.hs-fine) :where([data-tilt]) { transition: transform .75s var(--hs-ease-out); }
+html.hs-fine [data-tilt] {
+    transform: perspective(1000px) translateY(var(--hs-lift, 0px)) rotateX(var(--hs-rx, 0deg)) rotateY(var(--hs-ry, 0deg));
+    transform-style: preserve-3d;
+}
+html.hs-fine [data-tilt]:hover { --hs-lift: -6px; }
+html.hs-fine [data-tilt].is-tilting {
+    transition: transform .14s ease-out, box-shadow .45s ease, background-color .45s ease, border-color .45s ease, color .45s ease;
+}
+.hs-glare {
+    position: absolute; inset: 0; z-index: 3; border-radius: inherit; pointer-events: none;
+    opacity: 0; transition: opacity .5s ease; transform: translateZ(2px);
+    background: radial-gradient(480px circle at var(--hs-gx, 50%) var(--hs-gy, 0%), var(--hs-glare, rgba(255, 255, 255, .42)), transparent 46%);
+}
+[data-tilt].is-tilting > .hs-glare { opacity: 1; }
+
+/* ── Layered depth scene (pointer parallax, real Z planes) ───────────── */
+[data-depth-scene] {
+    transform-style: preserve-3d;
+    transform: perspective(1300px) rotateX(calc(var(--hs-py, 0) * -6deg)) rotateY(calc(var(--hs-px, 0) * 8deg));
+}
+[data-depth] {
+    translate: calc(var(--hs-px, 0) * var(--hs-d, 0) * 7px) calc(var(--hs-py, 0) * var(--hs-d, 0) * 7px) calc(var(--hs-d, 0) * 14px);
+}
+@media (max-width: 991px) {
+    [data-depth-scene] { transform: none; }
+    [data-depth] { translate: none; }
+}
+
+/* ── Glossy 3D shield emblem ─────────────────────────────────────────── */
+/* Defaults via :where() (zero specificity) so a page's own size/position wins. */
+:where(.hs-emblem) { --size: 200px; position: relative; }
+.hs-emblem { width: var(--size); height: calc(var(--size) * 1.32); perspective: 900px; pointer-events: none; }
+.hs-em-float { position: absolute; inset: 0 0 auto 0; height: calc(var(--size) * 140 / 120); transform-style: preserve-3d; animation: hs-em-bob 6.5s ease-in-out infinite; }
+.hs-em-body { position: absolute; inset: 0; transform-style: preserve-3d; animation: hs-em-sway 9s ease-in-out infinite alternate; }
+.hs-em-layer, .hs-em-face { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.hs-em-layer { fill: #cf6450; transform: translateZ(calc(var(--l) * -2.6px)); }
+.hs-em-layer:first-child { fill: #9f4431; }
+.hs-em-face { transform: translateZ(1px); filter: drop-shadow(0 14px 22px rgba(170, 70, 50, .32)); }
+.hs-em-floor {
+    position: absolute; left: 14%; right: 14%; bottom: 0; height: 11%; border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(110, 45, 30, .3), transparent); filter: blur(5px);
+    animation: hs-em-floor 6.5s ease-in-out infinite;
+}
+@keyframes hs-em-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+@keyframes hs-em-sway { from { transform: rotateY(-22deg) rotateX(7deg); } to { transform: rotateY(22deg) rotateX(-3deg); } }
+@keyframes hs-em-floor { 0%, 100% { transform: scale(1); opacity: .9; } 50% { transform: scale(.82); opacity: .55; } }
+
+/* ── Glass chips ─────────────────────────────────────────────────────── */
+.hs-chip {
+    display: inline-flex; align-items: center; gap: .55rem; padding: .62rem 1rem; border-radius: 999px;
+    background: rgba(255, 255, 255, .78); border: 1px solid rgba(255, 255, 255, .9);
+    box-shadow: 0 14px 34px rgba(120, 52, 36, .16), inset 0 1px 0 rgba(255, 255, 255, .95);
+    -webkit-backdrop-filter: blur(12px) saturate(1.3); backdrop-filter: blur(12px) saturate(1.3);
+    color: var(--hs-ink); font-weight: 600; font-size: .86rem; line-height: 1.2; white-space: nowrap;
+}
+.hs-chip i { color: var(--hs-coral-deep); }
+.hs-chip small { display: block; font-weight: 500; font-size: .74rem; color: #8a6a5c; }
+.hs-live-dot { flex: 0 0 auto; width: 9px; height: 9px; border-radius: 50%; background: #2fb36b; animation: hs-pulse 1.9s ease-out infinite; }
+@keyframes hs-pulse { 0% { box-shadow: 0 0 0 0 rgba(47, 179, 107, .55); } 70%, 100% { box-shadow: 0 0 0 10px rgba(47, 179, 107, 0); } }
+.hs-bob { animation: hs-bob 5.5s ease-in-out infinite; animation-delay: var(--bob-delay, 0s); }
+@keyframes hs-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+
+/* ── Press feedback (individual scale composes with hover transforms) ── */
+html.hs-motion :is(.btn, .btn-get-started, .btn-modern, .action-button, .social-btn):active:not(:disabled) { scale: .97; }
+
+/* ── Reduced motion: nothing moves ───────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    .hs-em-float, .hs-em-body, .hs-em-floor, .hs-bob, .hs-live-dot { animation: none !important; }
+    .hs-em-body { transform: rotateY(-14deg) rotateX(4deg); }
+    [data-depth-scene], [data-tilt] { transform: none !important; }
+    [data-depth] { translate: none !important; }
+}

@@ -285,17 +285,19 @@
         }
     </style>
     <link rel="stylesheet" href="/responsive.css">
+    <link rel="stylesheet" href="/motion.css">
     <script src="/responsive.js" defer></script>
     <link rel="stylesheet" href="/email-verification.css">
     <script src="/email-verification.js" defer></script>
 </head>
 
-<body>
+<body data-motion-reveal=".main-content .stat-card, .main-content .glass-card:not(.action-button), .main-content .safety-tip-card" data-motion-tilt=".main-content .stat-card">
     <div class="gradient-background"></div>
     <div class="gradient-overlay"></div>
 
     <!-- Firebase SDK and Unified Navigation -->
     <script src="/live-location-sender.js" defer></script>
+    <script src="/motion.js" defer></script>
     <script src="/navigation.js" defer></script>
     <script>import('./firebase-auth.js').catch(() => window.hsConnectionNotice?.('Sign-in services are taking longer to load. Check your connection and retry.'));</script>
 

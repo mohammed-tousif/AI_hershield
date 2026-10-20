@@ -6,6 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Her Shield - Authentication</title>
+    <script>(function(d){if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)return;d.classList.add('hs-motion');setTimeout(function(){if(!window.HSMotion){d.classList.remove('hs-motion');d.dataset.hsLate='1';}},4000);})(document.documentElement);</script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
@@ -278,6 +279,68 @@
             transform: translateY(0);
         }
 
+        /* ── Ambient background: slow-drifting warm light ─────────────── */
+        .gradient-background { overflow: hidden; }
+        .gradient-background::before,
+        .gradient-background::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: .55;
+            animation: auth-drift 22s ease-in-out infinite alternate;
+        }
+        .gradient-background::before { width: 46vw; height: 46vw; left: -10vw; top: -12vw; background: #ffc4b3; }
+        .gradient-background::after { width: 40vw; height: 40vw; right: -12vw; bottom: -14vw; background: #ffe0c2; animation-delay: -9s; }
+        @keyframes auth-drift { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(6vw, 4vw, 0) scale(1.12); } }
+
+        /* ── Brand stage beside the form (desktop) ──────────────────────── */
+        .auth-stage { display: none; }
+        .auth-badge { --size: 64px; margin: 0 auto .6rem; }
+
+        @media (min-width: 992px) {
+            .auth-container {
+                display: grid;
+                grid-template-columns: minmax(0, 1.05fr) minmax(380px, 480px);
+                gap: clamp(2rem, 5vw, 5rem);
+                align-items: center;
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+            .auth-stage { display: block; position: relative; }
+            .auth-badge { display: none; }
+        }
+
+        .auth-stage-title {
+            font-weight: 800;
+            font-size: clamp(2.3rem, 3.6vw, 3.3rem);
+            line-height: 1.08;
+            letter-spacing: -0.035em;
+            color: #1F1209;
+            margin: 1.2rem 0 1rem;
+        }
+        .auth-stage-title .gradient-text {
+            background: linear-gradient(45deg, #e2604c, #ff9a86, #f0a46e, #e2604c);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            background-size: 220% 220%;
+        }
+        .auth-stage-lead { color: #7A5C4F; font-size: 1.05rem; max-width: 460px; line-height: 1.75; }
+
+        .auth-scene { position: relative; height: 330px; margin-top: 1.5rem; }
+        .auth-ring { position: absolute; border-radius: 50%; border: 1px dashed rgba(226, 96, 76, .28); }
+        .auth-ring--a { width: 300px; height: 300px; left: 50%; top: 50%; margin: -150px 0 0 -150px; animation: auth-spin 50s linear infinite; }
+        .auth-ring--b { width: 200px; height: 200px; left: 50%; top: 50%; margin: -100px 0 0 -100px; border-style: solid; border-color: rgba(255, 154, 134, .22); }
+        @keyframes auth-spin { to { rotate: 360deg; } }
+        .auth-emblem { --size: 150px; position: absolute; left: 50%; top: 50%; margin: -104px 0 0 -75px; }
+        .auth-scene .chip-a { position: absolute; left: 0; top: 30px; }
+        .auth-scene .chip-b { position: absolute; right: 0; top: 120px; --bob-delay: -2s; }
+        .auth-scene .chip-c { position: absolute; left: 30px; bottom: 10px; --bob-delay: -3.5s; }
+
+        /* The card catches the light as the pointer moves over it. */
+        .auth-card { --hs-glare: rgba(255, 180, 160, .22); }
+
         @media (max-width: 576px) {
             /* .auth-container's own 2rem padding + .auth-tabs' 1rem gap + each
                tab's 1rem padding left almost no room for 3 tabs side by side on
@@ -307,7 +370,9 @@
         }
     </style>
     <link rel="stylesheet" href="/responsive.css">
+    <link rel="stylesheet" href="/motion.css">
     <script src="/responsive.js" defer></script>
+    <script src="/motion.js" defer></script>
     <script>
         for (const handler of ['handleLogin','handleSignup','handleRecovery']) window[handler] = event => { event.preventDefault(); window.hsConnectionNotice('Sign-in is still loading. Please wait a moment and try again.'); return false; };
         fetch('/api/health').catch(() => {});
@@ -318,9 +383,23 @@
     <div class="gradient-background"></div>
     <div class="gradient-overlay"></div>
 
-    <div class="auth-container">
-        <div class="auth-card">
+    <div class="auth-container" data-depth-area>
+        <aside class="auth-stage">
+            <span class="hs-chip" data-reveal="fade"><i class="fas fa-shield-alt"></i>HerShield</span>
+            <h1 class="auth-stage-title" data-split>Walk with someone <span class="gradient-text">watching over you.</span></h1>
+            <p class="auth-stage-lead" data-reveal data-reveal-delay="350">SOS alerts, a live location your guardians can follow, and a verified women-only community, all in one place.</p>
+            <div class="auth-scene" data-depth-scene data-reveal="zoom" data-reveal-delay="200" aria-hidden="true">
+                <div class="auth-ring auth-ring--a" data-depth="-2"></div>
+                <div class="auth-ring auth-ring--b" data-depth="-1"></div>
+                <div class="auth-emblem" data-emblem data-depth="3"></div>
+                <div class="hs-chip hs-bob chip-a" data-depth="5"><span class="hs-live-dot"></span><span>Live location<small>followed by your guardians</small></span></div>
+                <div class="hs-chip hs-bob chip-b" data-depth="6"><i class="fas fa-bell"></i><span>SOS alert sent<small>by SMS and email</small></span></div>
+                <div class="hs-chip hs-bob chip-c" data-depth="4"><i class="fas fa-user-check"></i><span>Verified member<small>women-only community</small></span></div>
+            </div>
+        </aside>
+        <div class="auth-card" data-reveal="zoom" data-tilt="2">
             <div class="auth-header">
+                <div class="auth-badge" data-emblem></div>
                 <h2>Her Shield</h2>
                 <p>Your Safety Companion</p>
             </div>

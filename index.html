@@ -1,20 +1,18 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-smooth-scroll>
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HerShield - Women Safety & Security Network</title>
+    <!-- Motion is opt-out safe: content is hidden for entrance animations only while
+         html.hs-motion is set, and this drops it again if motion.js never arrives. -->
+    <script>(function(d){if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)return;d.classList.add('hs-motion');setTimeout(function(){if(!window.HSMotion){d.classList.remove('hs-motion');d.dataset.hsLate='1';}},4000);})(document.documentElement);</script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollToPlugin.min.js"></script>
-    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" defer></script>
     <style>
         :root {
             --primary-color:   #FF9A86;
@@ -22,6 +20,7 @@
             --accent-color:    #FFD6A6;
             --peach-light:     #FFF0BE;
             --peach-dark:      #FF7A6A;
+            --coral-deep:      #E2604C;
             --text-dark:       #1F1209;
             --text-secondary:  #7A5C4F;
             --text-light:      #ffffff;
@@ -33,7 +32,7 @@
             --gradient-2: linear-gradient(135deg, #FFD6A6 0%, #FFB399 100%);
             --radius-pill:  50px;
             --shadow-card:  0 6px 24px rgba(255,154,134,0.12);
-            --shadow-hover: 0 16px 40px rgba(255,154,134,0.22);
+            --shadow-hover: 0 22px 48px rgba(186,90,64,0.20);
         }
 
         body {
@@ -50,26 +49,10 @@
             left: 0;
             width: 100%;
             height: 3px;
-            background: linear-gradient(to right, var(--accent-color), var(--primary-color));
+            background: linear-gradient(to right, var(--accent-color), var(--primary-color), var(--coral-deep));
             transform-origin: 0 50%;
             transform: scaleX(0);
             z-index: 10000;
-        }
-
-        .background-gradient {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
-                    rgba(255, 154, 134, 0.12) 0%,
-                    rgba(255, 214, 166, 0.06) 50%,
-                    transparent 100%);
-            pointer-events: none;
-            z-index: 0;
-            opacity: 0.5;
-            transition: opacity 0.3s ease;
         }
 
         .content-wrapper {
@@ -77,27 +60,139 @@
             z-index: 1;
         }
 
-        .parallax-section {
-            transform: translateZ(0);
-            will-change: transform;
+        section[id] { scroll-margin-top: 90px; }
+
+        /* ── Navigation ─────────────────────────────────────────────── */
+        .navbar {
+            padding: 18px 0;
+            transition: padding .35s ease, top .35s ease, border-radius .35s ease, box-shadow .35s ease, background-color .35s ease;
+            -webkit-backdrop-filter: blur(16px);
+            backdrop-filter: blur(16px);
+            border-radius: 0 0 32px 32px;
+            background: rgba(253,249,245,0.9) !important;
+            box-shadow: 0 2px 16px rgba(255,154,134,0.10);
         }
 
-        .scroll-section {
-            opacity: 0;
-            transform: translateY(50px);
-            transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        .navbar .nav-link,
+        .navbar .btn { white-space: nowrap; }
+
+        .navbar.scrolled {
+            background: rgba(253,249,245,0.92) !important;
+            padding: 10px 22px;
+            box-shadow: 0 10px 34px rgba(150,70,48,0.16);
+            width: fit-content;
+            max-width: calc(100% - 32px);
+            position: fixed;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 50px;
+            top: 14px;
         }
 
-        .scroll-section.visible {
-            opacity: 1;
-            transform: translateY(0);
+        .navbar.scrolled .navbar-brand { font-size: 1.45rem; }
+        .navbar.scrolled .nav-link { padding: 8px 14px; font-size: 0.9rem; }
+
+        @media (min-width: 992px) and (max-width: 1199px) {
+            .navbar.scrolled .navbar-nav { margin: 0 .75rem !important; }
+            .navbar.scrolled .nav-link { padding: 8px 10px; margin: 0; }
+            .navbar.scrolled .btn { padding: 8px 16px; }
         }
 
+        .navbar-brand {
+            font-size: 1.8rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            color: var(--text-dark) !important;
+        }
+
+        .nav-link {
+            font-weight: 500;
+            position: relative;
+            padding: 8px 18px;
+            margin: 0 3px;
+            transition: background-color .3s ease, color .3s ease;
+            border-radius: 24px;
+            color: var(--text-dark) !important;
+        }
+
+        .nav-link:hover {
+            background: rgba(255,154,134,0.12);
+            color: var(--coral-deep) !important;
+        }
+
+        .nav-link.active-nav {
+            color: var(--coral-deep) !important;
+            font-weight: 600;
+            background: rgba(255,154,134,0.14);
+        }
+
+        /* ── Buttons ────────────────────────────────────────────────── */
+        .btn {
+            font-weight: 600;
+            letter-spacing: 0.4px;
+            padding: 12px 30px;
+            border-radius: var(--radius-pill);
+            transition: transform .3s ease, box-shadow .3s ease, background-color .3s ease, color .3s ease;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary,
+        .btn-get-started {
+            background: var(--gradient-1);
+            color: #fff;
+            border: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-get-started { padding: 9px 24px; }
+
+        .btn-primary:hover,
+        .btn-get-started:hover {
+            color: #fff;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 26px rgba(226,96,76,0.32);
+        }
+
+        /* A light sweep across primary buttons on hover. */
+        .btn-primary::after,
+        .btn-get-started::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.45) 50%, transparent 70%);
+            translate: -120% 0;
+            transition: translate .7s ease;
+            pointer-events: none;
+        }
+        .btn-primary:hover::after,
+        .btn-get-started:hover::after { translate: 120% 0; }
+
+        .btn-ghost {
+            border: 2px solid var(--primary-color);
+            color: var(--coral-deep);
+            background: rgba(255,255,255,.55);
+        }
+        .btn-ghost:hover { background: #fff; color: var(--coral-deep); transform: translateY(-2px); box-shadow: 0 10px 22px rgba(226,96,76,0.16); }
+
+        .navbar .btn-login {
+            color: var(--text-dark) !important;
+            font-weight: 500;
+            background: transparent;
+            border: none;
+        }
+
+        /* ── Hero ───────────────────────────────────────────────────── */
         .hero-section {
             position: relative;
             overflow: hidden;
-            border-radius: 65px;
-            background: linear-gradient(135deg, rgba(255, 154, 134, 0.15) 0%, rgba(255, 179, 153, 0.15) 100%);
+            padding: 150px 0 110px;
+            border-radius: 0 0 64px 64px;
+            background:
+                radial-gradient(circle at 10% 20%, rgba(255,154,134,.30), transparent 42%),
+                radial-gradient(circle at 92% 8%, rgba(255,214,166,.45), transparent 40%),
+                radial-gradient(circle at 70% 95%, rgba(255,179,153,.28), transparent 45%),
+                #fff3ea;
         }
 
         .hero-section::before {
@@ -107,256 +202,266 @@
             height: 200%;
             top: -50%;
             left: -50%;
-            background: radial-gradient(circle at center, rgba(255, 154, 134, 0.1) 0%, transparent 70%);
-            animation: rotate 20s linear infinite;
+            background: radial-gradient(circle at center, rgba(255, 154, 134, 0.10) 0%, transparent 70%);
+            animation: rotate 24s linear infinite;
+            pointer-events: none;
         }
 
-        @keyframes rotate {
-            0% {
-                transform: rotate(0deg);
-            }
+        @keyframes rotate { to { transform: rotate(360deg); } }
 
-            100% {
-                transform: rotate(360deg);
-            }
+        .hero-eyebrow { margin-bottom: 1.4rem; }
+
+        .hero-title {
+            font-size: clamp(2.5rem, 5.2vw, 4.1rem);
+            line-height: 1.06;
+            letter-spacing: -0.035em;
+            font-weight: 800;
+            margin-bottom: 1.4rem;
         }
 
+        .hero-lead {
+            font-size: 1.12rem;
+            line-height: 1.8;
+            color: var(--text-secondary);
+            max-width: 520px;
+            margin-bottom: 2rem;
+        }
+
+        .hero-stage { position: relative; height: 540px; }
+
+        .hero-orb { position: absolute; border-radius: 50%; filter: blur(34px); opacity: .75; pointer-events: none; }
+        .hero-orb--a { width: 280px; height: 280px; background: #ffb399; top: -30px; right: -20px; }
+        .hero-orb--b { width: 220px; height: 220px; background: #ffd6a6; bottom: 10px; left: 0; }
+
+        .hero-frame {
+            position: absolute;
+            inset: 34px 30px 46px 74px;
+            margin: 0;
+            border-radius: 34px;
+            overflow: hidden;
+            background: #fff;
+            box-shadow: 0 40px 80px rgba(120,52,36,.24), 0 0 0 10px rgba(255,255,255,.7);
+        }
+        .hero-frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .hero-frame::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,.35), transparent 38%);
+            pointer-events: none;
+        }
+
+        .hero-emblem { position: absolute; left: -12px; bottom: 0; --size: 150px; }
+        .chip-live { position: absolute; top: 4px; left: 6px; }
+        .chip-pin { position: absolute; right: -12px; top: 44%; --bob-delay: -2s; }
+        .chip-guardian { position: absolute; bottom: 26px; right: 44px; --bob-delay: -3.5s; }
+
+        /* ── Section headings ───────────────────────────────────────── */
+        .section-padding { padding: 120px 0; }
+
+        .eyebrow {
+            color: var(--coral-deep);
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            font-size: .8rem;
+        }
+
+        .section-title {
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            font-size: clamp(2rem, 3.6vw, 2.8rem);
+            color: var(--text-dark);
+        }
+
+        .gradient-text {
+            background: linear-gradient(45deg, var(--coral-deep), var(--primary-color), #f0a46e, var(--coral-deep));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            background-size: 220% 220%;
+            animation: gradient-animation 6s ease infinite;
+            font-weight: 800;
+        }
+
+        @keyframes gradient-animation {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        /* ── Feature cards ──────────────────────────────────────────── */
         .feature-card {
             position: relative;
+            height: 100%;
             transform-style: preserve-3d;
-            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 24px;
-            padding: 2rem;
-            box-shadow: 0 10px 30px rgba(255, 154, 134, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 154, 134, 0.1);
-            will-change: transform;
+            transition: transform .6s cubic-bezier(0.4, 0, 0.2, 1), box-shadow .6s ease;
+            background: #fff;
+            border-radius: 26px;
+            padding: 2.4rem 2rem;
+            box-shadow: 0 10px 30px rgba(255, 154, 134, 0.12);
+            border: 1px solid rgba(255, 154, 134, 0.14);
+            --hs-glare: rgba(255, 170, 150, .32);
         }
 
         .feature-card:hover {
             transform: translateY(-8px);
-            box-shadow: 0 20px 40px rgba(255, 154, 134, 0.2);
+            box-shadow: var(--shadow-hover);
         }
 
-        .feature-card:hover .feature-icon {
-            transform: translateZ(50px) scale(1.1);
-        }
+        .feature-card .zoom-wrapper,
+        .feature-card .zoom-content { transform-style: preserve-3d; position: relative; height: 100%; }
+        /* Buttons line up across cards whatever the text length. */
+        .feature-card .zoom-content { display: flex; flex-direction: column; align-items: center; }
+        .feature-card .zoom-content > .btn { margin-top: auto !important; }
+        .feature-card .card-text { margin-bottom: 1.4rem; }
 
-        .feature-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(45deg, rgba(255, 154, 134, 0.08), rgba(255, 179, 153, 0.08));
-            border-radius: 24px;
-            transform: translateZ(-10px);
-            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .feature-card .zoom-wrapper {
-            transform-style: preserve-3d;
-            position: relative;
-        }
-
-        .feature-card .zoom-content {
-            transform-style: preserve-3d;
-            position: relative;
+        /* Icon badge sits on its own depth plane, so it lifts off the card in 3D. */
+        .feature-badge {
+            width: 84px;
+            height: 84px;
+            margin: 0 auto 1.6rem;
+            border-radius: 26px;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(145deg, #fff4ee, #ffe0d5);
+            box-shadow: inset 0 1px 0 #fff, inset 0 -6px 14px rgba(226,96,76,.10), 0 14px 26px rgba(226,96,76,.20);
+            transform: translateZ(46px);
         }
 
         .feature-icon {
-            font-size: 3.5rem;
-            background: var(--gradient-1);
+            font-size: 2.2rem;
+            background: linear-gradient(135deg, var(--coral-deep), var(--primary-color));
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
-            margin-bottom: 1.5rem;
-            transform: translateZ(50px);
-            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-            text-shadow: 2px 2px 4px rgba(255, 154, 134, 0.2);
-            will-change: transform;
         }
 
-        .floating-element {
-            animation: float 6s ease-in-out infinite;
-            transform-style: preserve-3d;
+        .feature-card .card-title,
+        .feature-card .card-text { transform: translateZ(22px); }
+        .feature-card .btn { transform: translateZ(30px); }
+
+        .card-title {
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            color: var(--text-dark);
         }
 
-        @keyframes float {
-            0% {
-                transform: translateY(0px) translateZ(0) rotateX(0) rotateY(0);
-            }
-
-            50% {
-                transform: translateY(-20px) translateZ(50px) rotateX(5deg) rotateY(5deg);
-            }
-
-            100% {
-                transform: translateY(0px) translateZ(0) rotateX(0) rotateY(0);
-            }
+        .card-text {
+            color: var(--text-secondary);
+            font-size: 0.93rem;
+            line-height: 1.7;
         }
 
-        .btn {
-            font-weight: 600;
-            letter-spacing: 0.4px;
-            padding: 12px 30px;
-            border-radius: var(--radius-pill);
-            transition: all 0.3s ease;
-            font-size: 0.9rem;
-        }
-
-        .btn-primary {
-            background: var(--gradient-1);
-            border: none;
+        .info-card {
             position: relative;
-            overflow: hidden;
-            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 26px !important;
+            --hs-glare: rgba(255, 170, 150, .22);
+            transition: box-shadow .5s ease;
         }
+        .info-row { transform: translateZ(18px); }
 
-        .btn-primary:hover {
-            transform: translateY(-5px) translateZ(20px);
-            box-shadow: 0 10px 20px rgba(255, 154, 134, 0.4);
-        }
+        /* ── Facts band (true numbers only) ─────────────────────────── */
+        .facts-band { background: linear-gradient(180deg, #fff5ec, #ffeedd); }
 
-        .btn-outline-light {
-            border: 2px solid var(--text-light);
-            background: transparent;
-            color: var(--text-light);
-        }
-
-        .btn-outline-light:hover {
-            background: var(--text-light);
-            color: var(--primary-color);
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-        }
-
-        .section-padding {
-            padding: 120px 0;
-        }
-
-        .stats-box {
-            background: var(--gradient-2);
-            padding: 40px;
-            border-radius: 24px;
-            color: var(--text-light);
+        .stat-tile {
+            position: relative;
+            height: 100%;
+            background: #fff;
+            border-radius: 26px;
+            padding: 36px 26px 30px;
             text-align: center;
+            box-shadow: var(--shadow-card);
+            border: 1px solid rgba(255,154,134,.16);
             transform-style: preserve-3d;
-            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-            will-change: transform;
+            transition: box-shadow .45s ease;
+            --hs-glare: rgba(255,170,150,.3);
+        }
+        .stat-tile:hover { box-shadow: var(--shadow-hover); }
+
+        .stat-icon {
+            width: 56px;
+            height: 56px;
+            margin: 0 auto 18px;
+            border-radius: 18px;
+            display: grid;
+            place-items: center;
+            font-size: 1.3rem;
+            color: var(--coral-deep);
+            background: linear-gradient(145deg, #ffe7de, #fff4ee);
+            box-shadow: inset 0 1px 0 #fff, 0 10px 20px rgba(226,96,76,.16);
+            transform: translateZ(34px);
         }
 
-        .stats-box::before {
+        .stat-num {
+            display: block;
+            font-size: clamp(2.8rem, 5vw, 3.8rem);
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            line-height: 1;
+            background: linear-gradient(135deg, var(--coral-deep), var(--primary-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            transform: translateZ(44px);
+        }
+
+        .stat-label { display: block; color: var(--text-dark); font-weight: 600; margin: .8rem 0 .25rem; transform: translateZ(20px); }
+        .stat-note { display: block; color: var(--text-secondary); font-size: .88rem; transform: translateZ(14px); }
+
+        /* ── Media frames ───────────────────────────────────────────── */
+        .media-frame {
+            position: relative;
+            border-radius: 28px;
+            overflow: hidden;
+            box-shadow: 0 30px 60px rgba(120,52,36,.20);
+            --hs-glare: rgba(255,255,255,.35);
+        }
+        .media-frame img { display: block; width: 100%; }
+
+        /* ── Dark call to action ────────────────────────────────────── */
+        .cta-section {
+            position: relative;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at 85% 20%, rgba(255,154,134,.20), transparent 45%),
+                radial-gradient(circle at 10% 90%, rgba(255,214,166,.10), transparent 40%),
+                var(--bg-dark);
+            padding: 100px 0;
+        }
+
+        .cta-emblem-wrap {
+            position: relative;
+            display: inline-grid;
+            place-items: center;
+            width: 280px;
+            height: 280px;
+        }
+        .cta-emblem-wrap::before {
             content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-            transform: translateX(-100%);
-            transition: 0.5s;
+            inset: 18px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,154,134,.32), rgba(255,154,134,0) 68%);
         }
-
-        .stats-box:hover::before {
-            transform: translateX(100%);
+        .cta-ring {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 1px dashed rgba(255,214,166,.35);
+            animation: rotate 40s linear infinite;
         }
+        .cta-emblem { --size: 170px; }
 
-        .stats-box:hover {
-            transform: translateY(-10px) translateZ(30px) rotateX(5deg);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-        }
+        .cta-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; max-width: 420px; margin: 1.4rem auto 0; }
+        .cta-fact strong { display: block; font-size: 1.15rem; font-weight: 800; color: var(--accent-color); letter-spacing: -0.02em; white-space: nowrap; }
+        .cta-fact span { color: rgba(253,249,245,0.7); font-size: .85rem; }
 
-        .navbar {
-            padding: 18px 0;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(16px);
-            border-radius: 0 0 32px 32px;
-            background: rgba(253,249,245,0.96) !important;
-            box-shadow: 0 2px 16px rgba(255,154,134,0.10);
-        }
-
-        .navbar.scrolled {
-            background: rgba(253,249,245,0.98) !important;
-            padding: 12px 28px;
-            box-shadow: 0 4px 24px rgba(255,154,134,0.18);
-            width: fit-content;
-            position: fixed;
-            left: 50%;
-            transform: translateX(-50%);
-            border-radius: 50px;
-            top: 16px;
-        }
-
-        .navbar.scrolled .navbar-brand {
-            font-size: 1.5rem;
-        }
-
-        .navbar.scrolled .nav-link {
-            padding: 8px 15px;
-            font-size: 0.9rem;
-        }
-
-        .navbar-brand {
-            font-size: 1.8rem;
-            font-weight: 700;
-            letter-spacing: 1px;
-            color: var(--text-dark) !important;
-        }
-
-        .nav-link {
-            font-weight: 500;
-            position: relative;
-            padding: 8px 18px;
-            margin: 0 3px;
-            transition: all 0.3s ease;
-            border-radius: 24px;
-            color: var(--text-dark) !important;
-        }
-
-        .nav-link:hover {
-            background: rgba(255,154,134,0.12);
-            color: var(--primary-color) !important;
-        }
-
-        .nav-link.active-nav {
-            color: var(--primary-color) !important;
-            font-weight: 600;
-            border-bottom: 2px solid var(--primary-color);
-        }
-
-        .btn-get-started {
-            background: var(--gradient-1);
-            color: #fff;
-            border: none;
-            border-radius: var(--radius-pill);
-            padding: 9px 24px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .btn-get-started:hover {
-            color: #fff;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(255,154,134,0.35);
-        }
-
-        .navbar .btn-login {
-            color: var(--text-dark) !important;
-            font-weight: 500;
-            background: transparent;
-            border: none;
-        }
-
+        /* ── Forms (report dialog) ──────────────────────────────────── */
         .form-control {
             border-radius: 16px;
             padding: 15px 20px;
             border: 2px solid rgba(255, 154, 134, 0.15);
-            transition: all 0.3s ease;
+            transition: border-color .3s ease, box-shadow .3s ease;
             font-size: 1rem;
             font-weight: 400;
         }
@@ -373,197 +478,55 @@
             align-items: center;
             justify-content: center;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.1);
-            transition: all 0.3s ease;
-            margin: 0 10px;
+            background: rgba(255, 154, 134, 0.08);
+            transition: transform .3s ease, background-color .3s ease, color .3s ease;
+            margin: 0 6px 0 0;
         }
 
         .social-links a:hover {
             transform: translateY(-3px);
-            background: var(--gradient-1);
+            background: var(--primary-color);
             color: var(--text-light) !important;
-        }
-
-        .gradient-text {
-            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color), var(--accent-color));
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            background-size: 200% 200%;
-            animation: gradient-animation 5s ease infinite;
-            font-weight: 700;
-        }
-
-        .card-title {
-            font-weight: 700;
-            margin-bottom: 0.75rem;
-            color: var(--text-dark);
-        }
-
-        .card-text {
-            color: var(--text-secondary);
-            font-size: 0.93rem;
-            line-height: 1.7;
-        }
-
-        .display-4 {
-            font-weight: 700;
-            letter-spacing: -1px;
         }
 
         .lead {
             font-weight: 400;
-            font-size: 1.2rem;
+            font-size: 1.15rem;
             line-height: 1.8;
         }
 
-        @keyframes gradient-animation {
-            0% {
-                background-position: 0% 50%;
-            }
-
-            50% {
-                background-position: 100% 50%;
-            }
-
-            100% {
-                background-position: 0% 50%;
-            }
+        /* ── Mobile ─────────────────────────────────────────────────── */
+        @media (max-width: 991px) {
+            .hero-section { padding: 120px 0 70px; text-align: center; border-radius: 0 0 40px 40px; }
+            .hero-lead { margin-left: auto; margin-right: auto; }
+            .hero-actions { justify-content: center; }
+            .hero-stage { height: 400px; margin-top: 3rem; }
+            .hero-frame { inset: 26px 12px 34px 12px; }
+            .hero-emblem { display: none; }
+            .chip-live { left: 0; top: 0; }
+            .chip-pin { right: 4px; }
+            .chip-guardian { right: 6px; bottom: 6px; }
+            .section-padding { padding: 90px 0; }
         }
 
-        .floating-image-container {
-            perspective: 1000px;
-            transform-style: preserve-3d;
-            position: relative;
-            overflow: visible;
-        }
-
-        .floating-image {
-            transform-style: preserve-3d;
-            position: relative;
-            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-            will-change: transform;
-            animation: float 6s ease-in-out infinite;
-            filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.2));
-        }
-
-        .depth-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 0;
-            opacity: 0.7;
-            background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
-                    rgba(255, 154, 134, 0.15) 0%,
-                    rgba(255, 179, 153, 0.1) 30%,
-                    transparent 70%);
-            transform: translateZ(-100px);
-            will-change: transform;
-            mix-blend-mode: soft-light;
-        }
-
-        .perspective-container {
-            perspective: 1000px;
-            transform-style: preserve-3d;
-            position: relative;
-            overflow: visible;
-        }
-
-        .parallax-wrapper {
-            position: relative;
-            height: 100vh;
-            overflow-x: hidden;
-            overflow-y: auto;
-            perspective: 1000px;
-        }
-
-        .parallax-group {
-            position: relative;
-            height: 100vh;
-            transform-style: preserve-3d;
-        }
-
-        .parallax-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-        }
-
-        .parallax-base {
-            transform: translateZ(0);
-            z-index: 4;
-        }
-
-        .parallax-back {
-            transform: translateZ(-300px) scale(2);
-            z-index: 3;
-        }
-
-        .transform-3d {
-            transform-style: preserve-3d;
-            perspective: 1000px;
-            backface-visibility: hidden;
-        }
-
-        /* Mobile Responsiveness */
         @media (max-width: 768px) {
-            .navbar {
-                padding: 15px 0;
-            }
+            .navbar { padding: 15px 0; }
 
-            .hero-section {
-                text-align: center;
-                padding: 100px 0;
-            }
-
-            .btn {
-                width: 100%;
-                margin: 10px 0;
-            }
+            .btn { width: 100%; margin: 6px 0; }
 
             /* #reportButton is a fixed floating action button (bottom-right corner),
                not a regular in-flow button — the blanket .btn width:100% rule above
                was stretching it across the full viewport width, which combined with
                its `right: 20px` pushed its left edge to -20px, hanging off-screen. */
-            #reportButton {
-                width: auto;
-                margin: 0;
-            }
-
-            .feature-card {
-                margin-bottom: 20px;
-            }
-
-            .stats-box {
-                margin-bottom: 20px;
-            }
-
-            .perspective-container {
-                perspective: none;
-            }
-
-            .feature-card,
-            .stats-box,
-            .floating-image {
-                transform: none !important;
-                transition: transform 0.3s ease;
-            }
-
-            .feature-card:hover,
-            .stats-box:hover {
-                transform: translateY(-5px) !important;
-            }
+            #reportButton { width: auto; margin: 0; }
 
             .navbar.scrolled {
                 width: calc(100% - 40px);
                 left: 20px;
                 transform: none;
             }
+
+            .hs-chip { font-size: .78rem; padding: .5rem .8rem; }
         }
 
         .alert-item {
@@ -574,44 +537,36 @@
             border: 1px solid rgba(255, 154, 134, 0.2);
             transition: all 0.3s ease;
         }
-
-        .alert-item:hover {
-            transform: translateX(5px);
-            border-color: #FF9A86;
-            background: linear-gradient(135deg, #FF9A86, #FFB399);
-            color: white;
-        }
-
-        .alert-item:hover .text-muted {
-            color: rgba(255, 255, 255, 0.8) !important;
-        }
     </style>
     <link rel="stylesheet" href="/responsive.css">
+    <link rel="stylesheet" href="/motion.css">
     <script src="/responsive.js" defer></script>
+    <script src="/lenis.min.js" defer></script>
+    <script src="/motion.js" defer></script>
 </head>
 
 <body>
-    <div class="scroll-progress"></div>
-    <div class="background-gradient"></div>
+    <div class="scroll-progress" data-scroll-progress aria-hidden="true"></div>
     <div class="content-wrapper">
         <!-- Navigation -->
-        <nav class="navbar navbar-expand-lg fixed-top" style="">
+        <nav class="navbar navbar-expand-lg fixed-top">
             <div class="container">
-                <a class="navbar-brand" href="index.html" style="color:var(--text-dark);font-weight:800;font-size:1.6rem;">Her<span style="color:var(--primary-color)">Shield</span></a>
+                <a class="navbar-brand" href="index.html" style="color:var(--text-dark);">Her<span style="color:var(--primary-color)">Shield</span></a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation"
                     style="border-color:rgba(255,154,134,0.3);">
                     <span style="color:var(--primary-color);"><i class="fas fa-bars"></i></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav mx-auto gap-1">
-                        <li class="nav-item"><a class="nav-link active-nav" href="#features">Features</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#features">Features</a></li>
                         <li class="nav-item"><a class="nav-link" href="#" onclick="guardedNav('community.html'); return false;">Community</a></li>
                         <li class="nav-item"><a class="nav-link" href="#" onclick="guardedNav('safety-map.html'); return false;">Safety Map</a></li>
                         <li class="nav-item"><a class="nav-link" href="#about">About Us</a></li>
                     </ul>
                     <div class="d-flex align-items-center gap-2">
-                        <a href="auth.html" class="btn btn-login" style="color:var(--text-dark);font-weight:500;">Log In</a>
-                        <a href="auth.html" class="btn btn-get-started">Get Started</a>
+                        <a href="auth.html" class="btn btn-login">Log In</a>
+                        <a href="auth.html" class="btn btn-get-started" data-magnetic>Get Started</a>
                     </div>
                 </div>
             </div>
@@ -620,27 +575,37 @@
         <!-- Hero Section -->
         <section id="home" class="hero-section">
             <div class="container">
-                <div class="row align-items-center">
-                    <div class="col-lg-6" data-aos="fade-right" data-aos-duration="1000">
-                        <h1 class="display-4 fw-bold mb-4">Predictive <span class="gradient-text">Safety
-                                Analytics</span> for Public Spaces</h1>
-                        <p class="lead mb-4">Using data on crowd density, lighting, crime reports, and user inputs to
+                <div class="row align-items-center gy-4">
+                    <div class="col-lg-6">
+                        <div class="hero-eyebrow" data-reveal="fade">
+                            <span class="hs-chip"><i class="fas fa-shield-alt"></i>A verified, women-only safety network</span>
+                        </div>
+                        <h1 class="hero-title" data-split>Predictive <span class="gradient-text">Safety Analytics</span> for Public Spaces</h1>
+                        <p class="hero-lead" data-reveal data-reveal-delay="350">Using data on crowd density, lighting, crime reports, and user inputs to
                             assess safety in public spaces, providing safety alerts and suggesting safer routes.</p>
-                        <div class="d-flex gap-3 flex-wrap">
-                            <button class="btn btn-get-started" data-aos="fade-up" data-aos-delay="200"
-                                onclick="guardedNav('safety-map.html')">
+                        <div class="d-flex gap-3 flex-wrap hero-actions" data-reveal data-reveal-delay="500">
+                            <button class="btn btn-get-started" data-magnetic onclick="guardedNav('safety-map.html')">
                                 <i class="fas fa-shield-alt me-2"></i>Get Safer Routes
                             </button>
-                            <button class="btn" data-aos="fade-up" data-aos-delay="400"
-                                style="border:2px solid var(--primary-color);color:var(--primary-color);border-radius:var(--radius-pill);font-weight:600;background:transparent;"
-                                onclick="guardedNav('community.html')">
+                            <button class="btn btn-ghost" data-magnetic onclick="guardedNav('community.html')">
                                 <i class="fas fa-info-circle me-2"></i>Report Incidents
                             </button>
                         </div>
                     </div>
-                    <div class="col-lg-6" data-aos="fade-left" data-aos-duration="1000">
-                        <img src="download (1).jpg" alt="Safety Network Illustration"
-                            class="img-fluid rounded-3 floating-image">
+                    <div class="col-lg-6">
+                        <!-- Real 3D depth: every layer sits on its own Z plane and the
+                             whole stage turns toward the pointer (desktop only). -->
+                        <div class="hero-stage" data-depth-scene data-reveal="zoom" data-reveal-delay="150">
+                            <div class="hero-orb hero-orb--a" data-depth="-3" aria-hidden="true"></div>
+                            <div class="hero-orb hero-orb--b" data-depth="-2" aria-hidden="true"></div>
+                            <figure class="hero-frame" data-depth="0">
+                                <img src="download (1).jpg" alt="Illustration of a circle of women looking out for one another">
+                            </figure>
+                            <div class="hero-emblem" data-emblem data-depth="4"></div>
+                            <div class="hs-chip chip-live hs-bob" data-depth="5"><span class="hs-live-dot"></span><span>Live location<small>updated every 2s</small></span></div>
+                            <div class="hs-chip chip-pin hs-bob" data-depth="6"><i class="fas fa-lock"></i>SOS stops only with your PIN</div>
+                            <div class="hs-chip chip-guardian hs-bob" data-depth="3"><i class="fas fa-check-circle"></i><span>Guardians alerted<small>by SMS and email</small></span></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -649,47 +614,47 @@
         <!-- Features Section -->
         <section id="features" class="section-padding" style="background:var(--bg-alt);">
             <div class="container">
-                <p class="text-center mb-2" style="color:var(--primary-color);font-weight:600;letter-spacing:1px;text-transform:uppercase;font-size:.85rem;">Powered by Real Data</p>
-                <h2 class="text-center mb-2 fw-bold" style="color:var(--text-dark);" data-aos="fade-up">Your Safety, Redefined</h2>
-                <p class="text-center mb-5" style="color:var(--text-secondary);max-width:520px;margin:0 auto 2.5rem;" data-aos="fade-up">Our technology leverages real-time data to provide actionable safety intelligence for your daily routine.</p>
+                <p class="text-center mb-2 eyebrow" data-reveal="fade">Built for every journey</p>
+                <h2 class="text-center mb-3 section-title" data-split>Your Safety, Redefined</h2>
+                <p class="text-center mb-5" style="color:var(--text-secondary);max-width:540px;margin:0 auto 3rem;" data-reveal data-reveal-delay="200">Plan safer routes, share where you are with the people you trust, and raise an alert in seconds.</p>
                 <div class="row g-4">
-                    <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
-                        <div class="feature-card perspective-container">
+                    <div class="col-md-4" data-reveal data-reveal-delay="100">
+                        <div class="feature-card" data-tilt="9">
                             <div class="zoom-wrapper">
                                 <div class="zoom-content text-center">
-                                    <i class="fas fa-map-marked-alt feature-icon"></i>
+                                    <div class="feature-badge"><i class="fas fa-map-marked-alt feature-icon"></i></div>
                                     <h3 class="card-title">Predictive Analytics</h3>
                                     <p class="card-text">Advanced AI algorithms analyze crowd density, lighting
                                         conditions, and historical crime data to predict potential safety risks in
                                         real-time.</p>
-                                    <button class="btn btn-get-started mt-3">View Safety Map</button>
+                                    <button class="btn btn-get-started mt-3" onclick="guardedNav('safety-map.html')">View Safety Map</button>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
-                        <div class="feature-card perspective-container">
+                    <div class="col-md-4" data-reveal data-reveal-delay="220">
+                        <div class="feature-card" data-tilt="9">
                             <div class="zoom-wrapper">
                                 <div class="zoom-content text-center">
-                                    <i class="fas fa-route feature-icon"></i>
+                                    <div class="feature-badge"><i class="fas fa-route feature-icon"></i></div>
                                     <h3 class="card-title">Safer Routes</h3>
                                     <p class="card-text">Get personalized route suggestions that prioritize well-lit
                                         areas, avoid high-crime zones, and consider current crowd density levels for
                                         optimal safety.</p>
-                                    <button class="btn btn-get-started mt-3">Plan Safe Journey</button>
+                                    <button class="btn btn-get-started mt-3" onclick="guardedNav('live-tracker.html')">Plan Safe Journey</button>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4" data-aos="fade-up" data-aos-delay="300">
-                        <div class="feature-card perspective-container">
+                    <div class="col-md-4" data-reveal data-reveal-delay="340">
+                        <div class="feature-card" data-tilt="9">
                             <div class="zoom-wrapper">
                                 <div class="zoom-content text-center">
-                                    <i class="fas fa-bell feature-icon"></i>
+                                    <div class="feature-badge"><i class="fas fa-bell feature-icon"></i></div>
                                     <h3 class="card-title">Real-time Alerts</h3>
                                     <p class="card-text">Receive instant safety notifications about changing conditions
                                         in your vicinity, with actionable recommendations to enhance your security.</p>
-                                    <button class="btn btn-get-started mt-3">Enable Alerts</button>
+                                    <button class="btn btn-get-started mt-3" onclick="guardedNav('dashboard.html')">Enable Alerts</button>
                                 </div>
                             </div>
                         </div>
@@ -702,12 +667,12 @@
         <section class="section-padding"
             style="background: linear-gradient(135deg, rgba(255, 154, 134, 0.08) 0%, rgba(255, 214, 166, 0.08) 100%);">
             <div class="container">
-                <h2 class="text-center mb-5 fw-bold" style="color:var(--text-dark);" data-aos="fade-up">Smart Data Integration</h2>
+                <h2 class="text-center mb-5 section-title" data-split>Smart Data Integration</h2>
                 <div class="row g-4">
-                    <div class="col-lg-6" data-aos="fade-up">
-                        <div class="card border-0 shadow-lg rounded-4 p-4 h-100">
-                            <h3 class="mb-4">Data Sources</h3>
-                            <div class="d-flex align-items-center mb-3">
+                    <div class="col-lg-6" data-reveal="left">
+                        <div class="card border-0 shadow-lg rounded-4 p-4 h-100 info-card" data-tilt="3">
+                            <h3 class="mb-4 info-row">Data Sources</h3>
+                            <div class="d-flex align-items-center mb-3 info-row">
                                 <i class="fas fa-video text-primary me-3 fa-2x"></i>
                                 <div>
                                     <h5 class="mb-1">Crowd Density Monitoring</h5>
@@ -715,7 +680,7 @@
                                         computer vision</p>
                                 </div>
                             </div>
-                            <div class="d-flex align-items-center mb-3">
+                            <div class="d-flex align-items-center mb-3 info-row">
                                 <i class="fas fa-lightbulb text-warning me-3 fa-2x"></i>
                                 <div>
                                     <h5 class="mb-1">Lighting Assessment</h5>
@@ -723,7 +688,7 @@
                                         visibility</p>
                                 </div>
                             </div>
-                            <div class="d-flex align-items-center mb-3">
+                            <div class="d-flex align-items-center mb-3 info-row">
                                 <i class="fas fa-exclamation-triangle text-danger me-3 fa-2x"></i>
                                 <div>
                                     <h5 class="mb-1">Crime Reports</h5>
@@ -731,7 +696,7 @@
                                         community reports</p>
                                 </div>
                             </div>
-                            <div class="d-flex align-items-center">
+                            <div class="d-flex align-items-center info-row">
                                 <i class="fas fa-users text-success me-3 fa-2x"></i>
                                 <div>
                                     <h5 class="mb-1">User Feedback</h5>
@@ -741,34 +706,34 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-6" data-aos="fade-up" data-aos-delay="200">
-                        <div class="card border-0 shadow-lg rounded-4 p-4 h-100">
-                            <h3 class="mb-4">Inclusivity Features</h3>
-                            <div class="d-flex align-items-center mb-3">
+                    <div class="col-lg-6" data-reveal="right" data-reveal-delay="150">
+                        <div class="card border-0 shadow-lg rounded-4 p-4 h-100 info-card" data-tilt="3">
+                            <h3 class="mb-4 info-row">Inclusivity Features</h3>
+                            <div class="d-flex align-items-center mb-3 info-row">
                                 <i class="fas fa-universal-access text-primary me-3 fa-2x"></i>
                                 <div>
-                                    <h5 class="mb-1">Accessible Interface</h5>
-                                    <p class="mb-0 text-muted">WCAG-compliant design with screen reader support and
-                                        voice commands</p>
+                                    <h5 class="mb-1">Accessible by Design</h5>
+                                    <p class="mb-0 text-muted">Visible keyboard focus, and calmer motion whenever your
+                                        device asks for reduced motion</p>
                                 </div>
                             </div>
-                            <div class="d-flex align-items-center mb-3">
-                                <i class="fas fa-globe text-warning me-3 fa-2x"></i>
+                            <div class="d-flex align-items-center mb-3 info-row">
+                                <i class="fas fa-mobile-alt text-warning me-3 fa-2x"></i>
                                 <div>
-                                    <h5 class="mb-1">Multi-language Support</h5>
-                                    <p class="mb-0 text-muted">Interface available in 12+ languages to serve diverse
-                                        communities</p>
+                                    <h5 class="mb-1">No App to Install</h5>
+                                    <p class="mb-0 text-muted">Works in the browser on any phone or laptop — open it and
+                                        you're protected</p>
                                 </div>
                             </div>
-                            <div class="d-flex align-items-center mb-3">
-                                <i class="fas fa-megaphone text-danger me-3 fa-2x"></i>
+                            <div class="d-flex align-items-center mb-3 info-row">
+                                <i class="fas fa-bullhorn text-danger me-3 fa-2x"></i>
                                 <div>
                                     <h5 class="mb-1">Community Reporting</h5>
                                     <p class="mb-0 text-muted">Easy-to-use system for reporting safety concerns with
                                         minimal friction</p>
                                 </div>
                             </div>
-                            <div class="d-flex align-items-center">
+                            <div class="d-flex align-items-center info-row">
                                 <i class="fas fa-hands-helping text-success me-3 fa-2x"></i>
                                 <div>
                                     <h5 class="mb-1">Resource Optimization</h5>
@@ -782,29 +747,32 @@
             </div>
         </section>
 
-        <!-- Stats Section -->
-        <section class="section-padding" style="background: #FFF0BE;">
+        <!-- Facts band: every number here is literally true of the product today. -->
+        <section class="section-padding facts-band">
             <div class="container">
                 <div class="row g-4">
-                    <div class="col-md-4" data-aos="zoom-in" data-aos-delay="100">
-                        <div class="stats-box">
-                            <h3 class="display-4 fw-bold counter">85%</h3>
-                            <p class="mb-0">Accuracy in Risk Prediction</p>
-                            <i class="fas fa-chart-line fa-2x mt-3 opacity-50"></i>
+                    <div class="col-md-4" data-reveal="zoom" data-reveal-delay="80">
+                        <div class="stat-tile" data-tilt="10">
+                            <div class="stat-icon"><i class="fas fa-location-arrow"></i></div>
+                            <span class="stat-num" data-count="2" data-suffix="s">2s</span>
+                            <span class="stat-label">Live location refresh</span>
+                            <span class="stat-note">while you're on the move</span>
                         </div>
                     </div>
-                    <div class="col-md-4" data-aos="zoom-in" data-aos-delay="200">
-                        <div class="stats-box">
-                            <h3 class="display-4 fw-bold counter">30K+</h3>
-                            <p class="mb-0">Daily Safety Reports</p>
-                            <i class="fas fa-file-alt fa-2x mt-3 opacity-50"></i>
+                    <div class="col-md-4" data-reveal="zoom" data-reveal-delay="200">
+                        <div class="stat-tile" data-tilt="10">
+                            <div class="stat-icon"><i class="fas fa-hourglass-half"></i></div>
+                            <span class="stat-num" data-count="24" data-suffix="h">24h</span>
+                            <span class="stat-label">Share links expire</span>
+                            <span class="stat-note">or the moment you stop sharing</span>
                         </div>
                     </div>
-                    <div class="col-md-4" data-aos="zoom-in" data-aos-delay="300">
-                        <div class="stats-box">
-                            <h3 class="display-4 fw-bold counter">45%</h3>
-                            <p class="mb-0">Reduction in Incidents</p>
-                            <i class="fas fa-shield-alt fa-2x mt-3 opacity-50"></i>
+                    <div class="col-md-4" data-reveal="zoom" data-reveal-delay="320">
+                        <div class="stat-tile" data-tilt="10">
+                            <div class="stat-icon"><i class="fas fa-shield-alt"></i></div>
+                            <span class="stat-num" data-count="6">6</span>
+                            <span class="stat-label">Safety tools in one app</span>
+                            <span class="stat-note">SOS, live tracking, safety map, community, legal help, verification</span>
                         </div>
                     </div>
                 </div>
@@ -814,30 +782,32 @@
         <!-- About Section -->
         <section id="about" class="section-padding">
             <div class="container">
-                <div class="row align-items-center">
-                    <div class="col-lg-6" data-aos="fade-right">
-                        <img src="https://images.unsplash.com/photo-1573164574511-73c773193279?q=80&w=600&auto=format&fit=crop"
-                            alt="About Us" class="img-fluid rounded-3 floating-image">
+                <div class="row align-items-center gy-5">
+                    <div class="col-lg-6" data-reveal="left">
+                        <div class="media-frame" data-tilt="6">
+                            <img src="https://images.unsplash.com/photo-1573164574511-73c773193279?q=80&w=600&auto=format&fit=crop"
+                                alt="Women collaborating around a table" loading="lazy">
+                        </div>
                     </div>
-                    <div class="col-lg-6" data-aos="fade-left">
-                        <h2 class="mb-4 gradient-text">About Our Safety Platform</h2>
-                        <p class="lead">We're dedicated to creating safer public spaces by leveraging data analytics,
+                    <div class="col-lg-6 ps-lg-5">
+                        <h2 class="mb-4 section-title" data-split><span class="gradient-text">About Our Safety Platform</span></h2>
+                        <p class="lead" data-reveal>We're dedicated to creating safer public spaces by leveraging data analytics,
                             community reporting, and advanced technology.</p>
-                        <div class="d-flex align-items-center mb-4">
+                        <div class="d-flex align-items-center mb-4" data-reveal data-reveal-delay="120">
                             <i class="fas fa-check-circle text-success me-3 fa-2x"></i>
                             <p class="mb-0">Multi-source data integration for comprehensive safety assessment</p>
                         </div>
-                        <div class="d-flex align-items-center mb-4">
+                        <div class="d-flex align-items-center mb-4" data-reveal data-reveal-delay="220">
                             <i class="fas fa-check-circle text-success me-3 fa-2x"></i>
                             <p class="mb-0">Community-powered incident reporting system</p>
                         </div>
-                        <div class="d-flex align-items-center mb-4">
+                        <div class="d-flex align-items-center mb-4" data-reveal data-reveal-delay="320">
                             <i class="fas fa-check-circle text-success me-3 fa-2x"></i>
                             <p class="mb-0">Resource optimization tools for public authorities</p>
                         </div>
-                        <button class="btn btn-primary mt-3">
+                        <a href="auth.html" class="btn btn-primary mt-3" data-magnetic data-reveal data-reveal-delay="420">
                             <i class="fas fa-rocket me-2"></i>Join Our Safety Network
-                        </button>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -846,47 +816,47 @@
         <!-- Safety Map Visualization -->
         <section class="section-padding" style="background: #1C0F0A;">
             <div class="container">
-                <h2 class="text-center mb-5 gradient-text" data-aos="fade-up">Safety Map Visualization</h2>
-                <div class="row align-items-center">
-                    <div class="col-lg-6" data-aos="fade-right">
-                        <div class="card border-0 shadow-lg rounded-4 p-0 overflow-hidden">
+                <h2 class="text-center mb-5 section-title" data-split><span class="gradient-text">Safety Map Visualization</span></h2>
+                <div class="row align-items-center gy-5">
+                    <div class="col-lg-6" data-reveal="left">
+                        <div class="card border-0 shadow-lg rounded-4 p-0 overflow-hidden media-frame" data-tilt="6">
                             <img src="https://images.unsplash.com/photo-1536599018102-9f803c140fc1?q=80&w=600&auto=format&fit=crop"
-                                alt="Safety Map" class="img-fluid">
+                                alt="City map at night" class="img-fluid" loading="lazy">
                             <div class="position-absolute bottom-0 start-0 end-0 p-4"
-                                style="background: rgba(0,0,0,0.7);">
+                                style="background: linear-gradient(transparent, rgba(0,0,0,0.78));">
                                 <h4 class="text-white mb-2">Live Safety Heatmap</h4>
                                 <p class="text-white-50 mb-0">Visualizing real-time safety metrics across the city</p>
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-6" data-aos="fade-left">
-                        <h3 class="mb-4" style="color:var(--text-on-dark);">Visual Safety Assessment</h3>
-                        <p class="lead mb-4" style="color:rgba(253,249,245,0.85);">Our interactive safety map combines multiple data sources to provide a
+                    <div class="col-lg-6 ps-lg-5">
+                        <h3 class="mb-4" style="color:var(--text-on-dark);" data-reveal>Visual Safety Assessment</h3>
+                        <p class="lead mb-4" style="color:rgba(253,249,245,0.85);" data-reveal data-reveal-delay="100">Our interactive safety map combines multiple data sources to provide a
                             comprehensive view of safety conditions in your area.</p>
 
-                        <div class="d-flex align-items-center mb-3">
+                        <div class="d-flex align-items-center mb-3" data-reveal data-reveal-delay="160">
                             <div class="me-3"
                                 style="width: 30px; height: 30px; background: linear-gradient(to right, green, yellow, red); border-radius: 4px;">
                             </div>
                             <p class="mb-0" style="color:rgba(253,249,245,0.75);">Color-coded safety indicators based on real-time analysis</p>
                         </div>
 
-                        <div class="d-flex align-items-center mb-3">
+                        <div class="d-flex align-items-center mb-3" data-reveal data-reveal-delay="220">
                             <div class="me-3"><i class="fas fa-map-marker-alt text-danger fa-2x"></i></div>
                             <p class="mb-0" style="color:rgba(253,249,245,0.75);">Location-specific safety insights and recommendations</p>
                         </div>
 
-                        <div class="d-flex align-items-center mb-3">
+                        <div class="d-flex align-items-center mb-3" data-reveal data-reveal-delay="280">
                             <div class="me-3"><i class="fas fa-clock text-primary fa-2x"></i></div>
                             <p class="mb-0" style="color:rgba(253,249,245,0.75);">Time-based safety forecasting for journey planning</p>
                         </div>
 
-                        <div class="d-flex align-items-center mb-4">
+                        <div class="d-flex align-items-center mb-4" data-reveal data-reveal-delay="340">
                             <div class="me-3"><i class="fas fa-sliders-h text-success fa-2x"></i></div>
                             <p class="mb-0" style="color:rgba(253,249,245,0.75);">Customizable filters to adjust map visualization to your needs</p>
                         </div>
 
-                        <button class="btn btn-primary">
+                        <button class="btn btn-primary" data-magnetic data-reveal data-reveal-delay="400" onclick="guardedNav('safety-map.html')">
                             <i class="fas fa-map-marked-alt me-2"></i>Explore Safety Map
                         </button>
                     </div>
@@ -895,35 +865,27 @@
         </section>
 
         <!-- Dark CTA Section -->
-        <section id="contact" style="background:var(--bg-dark);padding:90px 0;">
+        <section id="contact" class="cta-section">
             <div class="container">
                 <div class="row align-items-center gy-5">
-                    <div class="col-lg-7" data-aos="fade-right">
-                        <p style="color:var(--accent-color);font-weight:600;letter-spacing:1px;text-transform:uppercase;font-size:.85rem;margin-bottom:.75rem;">Join 50,000+ Women</p>
-                        <h2 style="color:var(--text-on-dark);font-weight:800;font-size:2.4rem;margin-bottom:1rem;">Join the Movement for<br>Public Safety</h2>
-                        <p style="color:rgba(253,249,245,0.75);font-size:1.05rem;margin-bottom:2rem;max-width:480px;">Be part of the community that watches out for one another. HerShield is more than an app — it's a collective promise of safety.</p>
-                        <div class="d-flex gap-3 flex-wrap">
-                            <a href="auth.html" class="btn" style="background:var(--primary-color);color:#fff;border-radius:var(--radius-pill);padding:12px 30px;font-weight:600;border:none;">Get Started Free</a>
+                    <div class="col-lg-7">
+                        <p class="eyebrow" style="color:var(--accent-color);" data-reveal="fade">Free for every woman</p>
+                        <h2 data-split style="color:var(--text-on-dark);font-weight:800;font-size:clamp(2rem,4vw,2.7rem);letter-spacing:-0.03em;margin-bottom:1rem;">Join the Movement for<br>Public Safety</h2>
+                        <p style="color:rgba(253,249,245,0.75);font-size:1.05rem;margin-bottom:2rem;max-width:480px;" data-reveal data-reveal-delay="200">Be part of the community that watches out for one another. HerShield is more than an app — it's a collective promise of safety.</p>
+                        <div class="d-flex gap-3 flex-wrap" data-reveal data-reveal-delay="320">
+                            <a href="auth.html" class="btn btn-primary" data-magnetic style="padding:13px 32px;">Get Started Free</a>
                             <a href="#features" class="btn" style="border:2px solid rgba(253,249,245,0.4);color:var(--text-on-dark);border-radius:var(--radius-pill);padding:12px 28px;font-weight:600;background:transparent;">Learn More</a>
                         </div>
                     </div>
-                    <div class="col-lg-5 text-center" data-aos="fade-left">
-                        <div style="width:220px;height:220px;border-radius:50%;background:rgba(255,154,134,0.15);display:inline-flex;align-items:center;justify-content:center;">
-                            <i class="fas fa-shield-alt" style="font-size:6rem;color:var(--primary-color);"></i>
+                    <div class="col-lg-5 text-center" data-reveal="zoom" data-reveal-delay="150">
+                        <div class="cta-emblem-wrap">
+                            <div class="cta-ring" aria-hidden="true"></div>
+                            <div class="cta-emblem" data-emblem></div>
                         </div>
-                        <div class="d-flex justify-content-center gap-4 mt-4">
-                            <div class="text-center">
-                                <div style="font-size:1.8rem;font-weight:800;color:var(--accent-color);">50K+</div>
-                                <div style="color:rgba(253,249,245,0.65);font-size:.85rem;">Active Users</div>
-                            </div>
-                            <div class="text-center">
-                                <div style="font-size:1.8rem;font-weight:800;color:var(--accent-color);">43</div>
-                                <div style="color:rgba(253,249,245,0.65);font-size:.85rem;">Cities</div>
-                            </div>
-                            <div class="text-center">
-                                <div style="font-size:1.8rem;font-weight:800;color:var(--accent-color);">98%</div>
-                                <div style="color:rgba(253,249,245,0.65);font-size:.85rem;">Safety Rating</div>
-                            </div>
+                        <div class="cta-facts">
+                            <div class="cta-fact"><strong>₹0</strong><span>Free to use</span></div>
+                            <div class="cta-fact"><strong>SMS + Email</strong><span>SOS alert channels</span></div>
+                            <div class="cta-fact"><strong>Women-only</strong><span>Verified community</span></div>
                         </div>
                     </div>
                 </div>
@@ -936,12 +898,12 @@
                 <div class="row gy-4">
                     <div class="col-md-4 mb-2">
                         <h5 style="color:var(--text-dark);font-weight:800;font-size:1.4rem;margin-bottom:1rem;">Her<span style="color:var(--primary-color)">Shield</span></h5>
-                        <p style="color:var(--text-secondary);font-size:.93rem;max-width:260px;">© 2024 HerShield. Your safety, our priority.</p>
+                        <p style="color:var(--text-secondary);font-size:.93rem;max-width:260px;">© <span data-year>2026</span> HerShield. Your safety, our priority.</p>
                         <div class="social-links mt-3">
-                            <a href="#" style="color:var(--text-secondary);"><i class="fab fa-facebook"></i></a>
-                            <a href="#" style="color:var(--text-secondary);"><i class="fab fa-twitter"></i></a>
-                            <a href="#" style="color:var(--text-secondary);"><i class="fab fa-instagram"></i></a>
-                            <a href="#" style="color:var(--text-secondary);"><i class="fab fa-linkedin"></i></a>
+                            <a href="#" style="color:var(--text-secondary);" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
+                            <a href="#" style="color:var(--text-secondary);" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                            <a href="#" style="color:var(--text-secondary);" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                            <a href="#" style="color:var(--text-secondary);" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a>
                         </div>
                     </div>
                     <div class="col-md-2 mb-2">
@@ -950,19 +912,18 @@
                             <li><a href="#features" style="color:var(--text-secondary);text-decoration:none;display:block;margin-bottom:.5rem;">Features</a></li>
                             <li><a href="community.html" style="color:var(--text-secondary);text-decoration:none;display:block;margin-bottom:.5rem;">Community</a></li>
                             <li><a href="safety-map.html" style="color:var(--text-secondary);text-decoration:none;display:block;margin-bottom:.5rem;">Safety Map</a></li>
-                            <li><a href="auth.html" style="color:var(--primary-color);text-decoration:none;display:block;font-weight:600;">Get Started</a></li>
+                            <li><a href="auth.html" style="color:var(--coral-deep);text-decoration:none;display:block;font-weight:600;">Get Started</a></li>
                         </ul>
                     </div>
                     <div class="col-md-3 mb-2">
                         <h6 style="color:var(--text-dark);font-weight:700;margin-bottom:1rem;">Contact Info</h6>
-                        <p style="color:var(--text-secondary);font-size:.9rem;margin-bottom:.5rem;"><i class="fas fa-envelope me-2" style="color:var(--primary-color);"></i>info@hershield.app</p>
-                        <p style="color:var(--text-secondary);font-size:.9rem;margin-bottom:.5rem;"><i class="fas fa-phone me-2" style="color:var(--primary-color);"></i>+91 1800-HER-SHIELD</p>
-                        <p style="color:var(--text-secondary);font-size:.9rem;"><i class="fas fa-map-marker-alt me-2" style="color:var(--primary-color);"></i>India — Your Guardian</p>
+                        <p style="color:var(--text-secondary);font-size:.9rem;margin-bottom:.5rem;"><i class="fas fa-envelope me-2" style="color:var(--primary-color);"></i><a href="mailto:hershieldsupport@gmail.com" style="color:inherit;text-decoration:none;">hershieldsupport@gmail.com</a></p>
+                        <p style="color:var(--text-secondary);font-size:.9rem;"><i class="fas fa-map-marker-alt me-2" style="color:var(--primary-color);"></i>India</p>
                     </div>
                     <div class="col-md-3 mb-2">
                         <h6 style="color:var(--text-dark);font-weight:700;margin-bottom:1rem;">Stay Safe</h6>
                         <div class="input-group">
-                            <input type="email" class="form-control" placeholder="Your email"
+                            <input type="email" class="form-control" placeholder="Your email" aria-label="Your email"
                                 style="border-radius:50px 0 0 50px;border:2px solid rgba(255,154,134,0.25);">
                             <button class="btn btn-get-started" style="border-radius:0 50px 50px 0;">Subscribe</button>
                         </div>
@@ -970,16 +931,12 @@
                 </div>
                 <hr style="border-color:rgba(255,154,134,0.15);margin:2rem 0 1.5rem;">
                 <div class="d-flex flex-wrap justify-content-between align-items-center">
-                    <p style="color:var(--text-secondary);font-size:.85rem;margin:0;">© 2024 HerShield. All rights reserved.</p>
+                    <p style="color:var(--text-secondary);font-size:.85rem;margin:0;">© <span data-year>2026</span> HerShield. All rights reserved.</p>
                     <div class="d-flex gap-3">
-                        <a href="#" style="color:var(--primary-color);text-decoration:none;font-size:.85rem;">Privacy Policy</a>
-                        <a href="#" style="color:var(--primary-color);text-decoration:none;font-size:.85rem;">Terms of Service</a>
-                        <a href="#" style="color:var(--primary-color);text-decoration:none;font-size:.85rem;">Emergency Protocol</a>
+                        <a href="#" style="color:var(--coral-deep);text-decoration:none;font-size:.85rem;">Privacy Policy</a>
+                        <a href="#" style="color:var(--coral-deep);text-decoration:none;font-size:.85rem;">Terms of Service</a>
+                        <a href="#" style="color:var(--coral-deep);text-decoration:none;font-size:.85rem;">Emergency Protocol</a>
                     </div>
-                </div>
-            </div>
-        </footer>
-
                 </div>
             </div>
         </footer>
@@ -1061,142 +1018,32 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
-
-            const depthBg = document.querySelector('.depth-bg');
-            const scrollProgress = document.querySelector('.scroll-progress');
-
-            // Mouse movement tracking for background depth effect
-            document.addEventListener('mousemove', (e) => {
-                // Update background gradient position
-                if (depthBg) {
-                    depthBg.style.setProperty('--mouse-x', `${e.clientX}px`);
-                    depthBg.style.setProperty('--mouse-y', `${e.clientY}px`);
-                }
-
-                document.documentElement.style.setProperty('--mouse-x', `${e.clientX}px`);
-                document.documentElement.style.setProperty('--mouse-y', `${e.clientY}px`);
-            });
-
-            // Scroll progress indicator
-            window.addEventListener('scroll', () => {
-                const scrollPercentage = (window.scrollY / (document.body.scrollHeight - window.innerHeight));
-                gsap.to(scrollProgress, {
-                    scaleX: scrollPercentage,
-                    duration: 0.1,
-                    ease: 'none'
-                });
-            });
-
-            // Initialize AOS with enhanced settings
-            // Disabled on mobile/tablet: fade-left/fade-right animations use a
-            // ±100px translateX offset before triggering, and while an element is
-            // still in that pre-animation state (e.g. a section further down the
-            // page that hasn't scrolled into view yet), it widens the browser's
-            // layout viewport for the WHOLE page — causing page-wide horizontal
-            // scroll and pushing the fixed navbar's toggler button off-screen,
-            // since fixed-position elements size against that widened viewport.
-            AOS.init({
-                duration: 1200,
-                once: false,
-                mirror: true,
-                offset: 100,
-                easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
-                // Width-based (not just device/UA-based) so it also protects anyone
-                // who resizes a desktop browser window down to a narrow width.
-                disable: function () { return window.innerWidth < 768; }
-            });
-
-            // Navbar scroll state
+            // Navbar shape + scroll-spy ride motion.js's single scroll pass
+            // (smooth scrolling, reveals and in-page links live there too).
             const navbar = document.querySelector('.navbar');
-            window.addEventListener('scroll', () => {
-                if (window.scrollY > 50) {
-                    navbar.classList.add('scrolled');
-                } else {
-                    navbar.classList.remove('scrolled');
-                }
-            });
+            const spyLinks = Array.from(document.querySelectorAll('.navbar .nav-link[href^="#"]'))
+                .filter(a => a.getAttribute('href').length > 1);
+            const spyTargets = spyLinks.map(a => document.querySelector(a.getAttribute('href')));
+            const updateNav = ({ y, vh }) => {
+                navbar.classList.toggle('scrolled', y > 50);
+                let active = -1;
+                spyTargets.forEach((section, i) => { if (section && section.getBoundingClientRect().top < vh * 0.45) active = i; });
+                spyLinks.forEach((a, i) => a.classList.toggle('active-nav', i === active));
+            };
+            if (window.HSMotion) window.HSMotion.onFrame(updateNav);
+            else {
+                const onScroll = () => updateNav({ y: window.scrollY, vh: window.innerHeight });
+                window.addEventListener('scroll', onScroll, { passive: true });
+                onScroll();
+            }
 
-            // Enhanced parallax effect
-            gsap.utils.toArray('.parallax-section').forEach((section, i) => {
-                const heightRatio = i % 2 ? 1.2 : 0.8;
+            document.querySelectorAll('[data-year]').forEach(el => { el.textContent = String(new Date().getFullYear()); });
 
-                gsap.to(section, {
-                    scrollTrigger: {
-                        trigger: section,
-                        start: 'top bottom',
-                        end: 'bottom top',
-                        scrub: true,
-                        onUpdate: self => {
-                            const progress = self.progress;
-                            const y = progress * 100;
-                            const scale = 1 + (progress * 0.1);
-                            const rotation = progress * 5;
-
-                            section.style.transform = `
-                                perspective(1000px)
-                                translateY(${y}px)
-                                scale(${scale})
-                                rotateX(${rotation}deg)
-                            `;
-                        }
-                    }
-                });
-            });
-
-            // Animate counters
-            const counters = document.querySelectorAll('.counter');
-            counters.forEach(counter => {
-                const target = parseInt(counter.textContent.replace(/[^\d]/g, ''));
-                const prefix = counter.textContent.replace(/[\d]/g, '').split('+')[0] || '';
-                const suffix = counter.textContent.includes('+') ? '+' : '';
-
-                gsap.fromTo(
-                    counter,
-                    { innerText: 0 },
-                    {
-                        innerText: target,
-                        duration: 2,
-                        ease: 'power2.out',
-                        onUpdate: function () {
-                            counter.textContent = prefix + Math.floor(this.targets()[0].innerText) + suffix;
-                        }
-                    }
-                );
-            });
-
-            // Floating animation for images
-            gsap.utils.toArray('.floating-image').forEach(img => {
-                gsap.to(img, {
-                    y: -20,
-                    rotationZ: 5,
-                    rotationX: 10,
-                    rotationY: 10,
-                    duration: 2,
-                    repeat: -1,
-                    yoyo: true,
-                    ease: 'power1.inOut'
-                });
-            });
-
-            // Smooth scroll with enhanced 3D effect
-            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-                anchor.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    const target = document.querySelector(this.getAttribute('href'));
-                    if (target) {
-                        gsap.to(window, {
-                            duration: 1.5,
-                            scrollTo: {
-                                y: target,
-                                offsetY: 70,
-                                autoKill: false
-                            },
-                            ease: 'power4.inOut'
-                        });
-                    }
-                });
-            });
+            // Collapse the mobile menu after choosing an in-page section.
+            document.querySelectorAll('#navbarNav .nav-link').forEach(link => link.addEventListener('click', () => {
+                const menu = document.getElementById('navbarNav');
+                if (menu.classList.contains('show') && window.bootstrap) bootstrap.Collapse.getOrCreateInstance(menu).hide();
+            }));
 
             // Show the modal when the report button is clicked
             document.getElementById('reportButton').addEventListener('click', function () {
