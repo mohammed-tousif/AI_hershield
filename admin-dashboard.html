@@ -1802,7 +1802,7 @@ function downloadCSV(rows, filename) {
 //  SOCKET.IO
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 try {
-    const socket = io(window.HERSHIELD_BACKEND || location.origin, { transports: ['websocket','polling'] });
+    const socket = io(window.HERSHIELD_BACKEND || location.origin, { transports: ['polling'] });
     socket.on('admin:broadcast', data => toast('📢 Broadcast sent: ' + data.title));
     socket.on('community:postDeleted', () => { if (currentSection === 'posts') loadPosts(); });
     socket.on('community:newPost',     () => { if (currentSection === 'posts') loadPosts(); });

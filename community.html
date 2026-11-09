@@ -876,7 +876,7 @@
     //  Socket.IO — real-time updates
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     try {
-        const socket = io(window.HERSHIELD_BACKEND || location.origin, { transports:['websocket','polling'] });
+        const socket = io(window.HERSHIELD_BACKEND || location.origin, { transports:['polling'] });
 
         socket.on('community:newPost', (post) => {
             // Only show toast + prepend if it's from someone else
