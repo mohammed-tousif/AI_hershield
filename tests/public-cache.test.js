@@ -13,6 +13,7 @@ const snapOf = name => {
 };
 let autoId = 0;
 const fakeDb = {
+    getAll: async (...refs) => { calls.get++; return refs.map(r => ({ exists: col(r.name).has(r.id), data: () => ({ ...col(r.name).get(r.id) }) })); },
     batch: () => {
         const ops = [];
         return {
@@ -26,7 +27,12 @@ const fakeDb = {
         limit: () => ({ get: async () => { calls.get++; return snapOf(name); } }),
         doc: (id = `auto${++autoId}`) => ({ name, id, set: async data => { col(name).set(id, data); } }),
         count: () => ({ get: async () => { calls.count++; return { data: () => ({ count: col(name).size }) }; } }),
-        where: (field, _op, value) => ({ count: () => ({ get: async () => {
+        where: (field, op, value) => ({ get: async () => {
+            calls.get++;
+            const match = op === 'in' ? d => value.includes(d[field]) : d => d[field] === value;
+            const rows = [...col(name)].filter(([, d]) => match(d));
+            return { empty: !rows.length, docs: rows.map(([id, d]) => ({ id, data: () => ({ ...d }) })) };
+        }, count: () => ({ get: async () => {
             calls.count++;
             return { data: () => ({ count: [...col(name).values()].filter(d => d[field] === value).length }) };
         } }) }),
@@ -117,4 +123,26 @@ test('Dashboard stats: one round of counts per minute, then stale-while-revalida
     } finally {
         Date.now = realNow;
     }
+});
+
+test('Community author pictures: one batched read, cached, refreshed when the author saves a new one', async () => {
+    const USERS = repo.COL.USERS;
+    col(USERS).set('amy', { email: 'amy@example.test', profilePicture: 'https://res.cloudinary.com/demo/amy.jpg' });
+    col(USERS).set('old', { email: 'Old@Example.test', profilePicture: 'https://res.cloudinary.com/demo/old.jpg' });
+    col(USERS).set('bad', { email: 'bad@example.test', profilePicture: 'javascript:alert(1)' });
+
+    const before = calls.get;
+    const first = await repo.usersPublicAvatars({ uids: ['amy', 'amy', 'bad', 'ghost'], emails: ['Old@Example.test'] });
+    assert.equal(calls.get - before, 2, 'one getAll for the uids + one email query, however many posts');
+    assert.equal(first.get('uid:amy'), 'https://res.cloudinary.com/demo/amy.jpg');
+    assert.equal(first.get('email:old@example.test'), 'https://res.cloudinary.com/demo/old.jpg', 'older posts match by email, any case');
+    assert.equal(first.get('uid:bad'), null, 'non-https values are never exposed');
+    assert.equal(first.get('uid:ghost'), null);
+
+    const again = calls.get;
+    await repo.usersPublicAvatars({ uids: ['amy', 'bad', 'ghost'], emails: ['old@example.test'] });
+    assert.equal(calls.get, again, 'served from cache');
+
+    await repo.usersSave({ _id: 'amy', email: 'amy@example.test', profilePicture: 'https://res.cloudinary.com/demo/amy-new.jpg' });
+    assert.equal((await repo.usersPublicAvatars({ uids: ['amy'] })).get('uid:amy'), 'https://res.cloudinary.com/demo/amy-new.jpg');
 });

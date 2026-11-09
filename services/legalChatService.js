@@ -4,15 +4,34 @@
  * legalChatService.js
  * -------------------
  * Powers LexaShield — the HerShield AI legal guidance chatbot.
- * Uses Groq (Llama 3.3 70B Versatile) to provide context-aware Indian
- * criminal law guidance: BNS 2023, DV Act, POCSO, IT Act, POSH Act.
+ * Uses Groq-hosted open models to provide context-aware Indian criminal law
+ * guidance: BNS 2023, DV Act, POCSO, IT Act, POSH Act.
  */
 
 const Groq = require('groq-sdk');
 
 // ── Configuration ─────────────────────────────────────────────────────────────
-const GROQ_MODEL     = process.env.GROQ_MODEL     || 'llama-3.3-70b-versatile';
+// Groq retires models without notice to callers: llama-3.3-70b-versatile (the
+// old default, still set as GROQ_MODEL on Render) started returning
+// model_not_found in November 2026 and the chatbot answered every message with
+// a 500. The configured model is tried first; on model_not_found or
+// model_decommissioned the known-good fallbacks are tried in order, and the
+// first model that answers is reused for later requests.
+const DEFAULT_MODEL   = 'openai/gpt-oss-120b';
+const FALLBACK_MODELS = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.8-27b'];
 const MAX_TOKENS     = parseInt(process.env.GROQ_LEGAL_MAX_TOKENS, 10) || 700;
+let workingModel = null;
+
+function isRetiredModelError(err) {
+    const code = err?.error?.error?.code || err?.error?.code || err?.code;
+    return code === 'model_not_found' || code === 'model_decommissioned';
+}
+
+// gpt-oss models reason before answering and those tokens count against
+// max_tokens; low effort keeps replies fast and leaves room for the answer.
+function modelParams(model) {
+    return model.startsWith('openai/gpt-oss') ? { reasoning_effort: 'low', include_reasoning: false } : {};
+}
 const MAX_HISTORY    = 10; // max past exchanges to keep for context (10 user + 10 bot)
 
 /** Singleton Groq client — initialised lazily */
@@ -324,15 +343,30 @@ async function chat(userMessage, history = [], incidentContext = null, nearbyLoc
     const client   = getClient();
     const messages = buildMessages(userMessage, history, incidentContext, nearbyLocations);
 
-    const completion = await client.chat.completions.create({
-        model:       GROQ_MODEL,
-        messages,
-        max_tokens:  MAX_TOKENS,
-        temperature: 0.25,   // low temperature for legal accuracy & consistency
-        top_p:       0.9,
-        stream:      false,
-        stop:        null,
-    });
+    const candidates = [...new Set([workingModel, process.env.GROQ_MODEL || DEFAULT_MODEL, ...FALLBACK_MODELS].filter(Boolean))];
+    let completion;
+    for (const model of candidates) {
+        try {
+            completion = await client.chat.completions.create({
+                model,
+                messages,
+                max_tokens:  MAX_TOKENS,
+                temperature: 0.25,   // low temperature for legal accuracy & consistency
+                top_p:       0.9,
+                stream:      false,
+                stop:        null,
+                ...modelParams(model),
+            });
+            if (workingModel !== model) console.log(`[LegalChat] Using Groq model ${model}`);
+            workingModel = model;
+            break;
+        } catch (err) {
+            if (!isRetiredModelError(err)) throw err;
+            console.warn(`[LegalChat] Groq model ${model} is unavailable (retired); trying the next one`);
+            if (workingModel === model) workingModel = null;
+        }
+    }
+    if (!completion) throw new Error('No Groq chat model is available for this API key.');
 
     const choice = completion.choices?.[0];
     if (!choice || !choice.message?.content) {

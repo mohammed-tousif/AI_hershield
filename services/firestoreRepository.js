@@ -220,6 +220,7 @@ async function usersCreate(user) {
     const db = firestoreOrThrow();
     const payload = writeUser(user);
     await db.collection(COL.USERS).doc(user._id).set(payload);
+    authorAvatarDrop(user);
     return user._id;
 }
 
@@ -227,11 +228,68 @@ async function usersSave(user) {
     const db = firestoreOrThrow();
     const payload = writeUser(user);
     await db.collection(COL.USERS).doc(user._id).set(payload, { merge: true });
+    authorAvatarDrop(user);
 }
 
 async function usersDelete(userId) {
     const db = firestoreOrThrow();
     await db.collection(COL.USERS).doc(userId).delete();
+    authorAvatarDrop({ _id: userId });
+}
+
+// Community posts show each author's current profile picture. Pictures are
+// looked up in one batched read per request (getAll by uid; `in` queries by
+// email for older posts that never stored a uid) and cached for 5 minutes;
+// saving a user drops their entries so a new picture shows up immediately.
+const AUTHOR_AVATAR_TTL_MS = 5 * 60 * 1000;
+const authorAvatarCache = new Map(); // 'uid:<id>' | 'email:<lowercase>' -> { url, at }
+
+function authorAvatarDrop(user) {
+    if (user?._id) authorAvatarCache.delete(`uid:${user._id}`);
+    if (user?.email) authorAvatarCache.delete(`email:${String(user.email).toLowerCase()}`);
+}
+
+function publicAvatarOf(data) {
+    const url = data?.profilePicture;
+    return typeof url === 'string' && /^https:\/\//i.test(url) ? url : null;
+}
+
+/** Returns Map('uid:<id>' | 'email:<lowercase>' -> https URL or null). */
+async function usersPublicAvatars({ uids = [], emails = [] } = {}) {
+    const db = firestoreOrThrow();
+    const now = Date.now();
+    const result = new Map();
+    const fresh = (key) => {
+        const hit = authorAvatarCache.get(key);
+        if (!hit || now - hit.at >= AUTHOR_AVATAR_TTL_MS) return false;
+        result.set(key, hit.url);
+        return true;
+    };
+    const remember = (key, url) => {
+        authorAvatarCache.set(key, { url, at: now });
+        result.set(key, url);
+    };
+
+    const missingUids = [...new Set(uids.filter(Boolean))].filter((id) => !fresh(`uid:${id}`));
+    const emailByKey = new Map(); // lowercase -> first spelling seen (queries are exact-match)
+    for (const e of emails) if (e && !emailByKey.has(String(e).toLowerCase())) emailByKey.set(String(e).toLowerCase(), String(e));
+    const missingEmails = [...emailByKey.keys()].filter((k) => !fresh(`email:${k}`));
+
+    const reads = [];
+    if (missingUids.length) {
+        reads.push(db.getAll(...missingUids.map((id) => db.collection(COL.USERS).doc(id))).then((snaps) => {
+            snaps.forEach((s, i) => remember(`uid:${missingUids[i]}`, s.exists ? publicAvatarOf(s.data()) : null));
+        }));
+    }
+    for (let i = 0; i < missingEmails.length; i += 30) {
+        const chunk = missingEmails.slice(i, i + 30);
+        reads.push(db.collection(COL.USERS).where('email', 'in', chunk.map((k) => emailByKey.get(k))).get().then((q) => {
+            const found = new Map(q.docs.map((d) => [String(d.data().email || '').toLowerCase(), publicAvatarOf(d.data())]));
+            chunk.forEach((k) => remember(`email:${k}`, found.get(k) ?? null));
+        }));
+    }
+    await Promise.all(reads);
+    return result;
 }
 
 async function trackingCodeExists(code) {
@@ -849,6 +907,7 @@ module.exports = {
     usersCreate,
     usersSave,
     usersDelete,
+    usersPublicAvatars,
     usersListAll,
     trackingCodeExists,
     trackingCreate,

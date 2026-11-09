@@ -8,6 +8,13 @@
     window.HERSHIELD_BACKEND = backend;
     window.HERSHIELD_FRONTEND = local ? location.origin : 'https://hershield-web.web.app';
     window.hsEscapeHTML = value => String(value ?? '').replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
+    // For user text stored by the API: services/sanitize.js strips tags but also
+    // turns & < > into entities, so plain escaping showed "&amp;" to readers.
+    // Decode those once, then escape all five characters: the result shows the
+    // text as typed and is safe in element content AND quoted attributes.
+    const storedEntities = { amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'" };
+    window.hsEscapeStoredText = value =>
+        window.hsEscapeHTML(String(value ?? '').replace(/&(amp|lt|gt|quot|#39);/g, (_, e) => storedEntities[e]));
     const originalFetch = window.fetch.bind(window);
     // Ping the backend the moment any page loads (at most every 4 minutes per
     // tab). On EC2 this just opens the connection early; if the Render fallback

@@ -25,6 +25,10 @@ function saveScopedAvatar(url) {
         localStorage.removeItem(AVATAR_OWNER_KEY);
     }
 }
+// The signed-in user's picture for any page (community composer etc.):
+// this account's cached upload, then the Firebase account photo.
+window.hsCurrentAvatar = () =>
+    loadScopedAvatar() || window.authService?.getCurrentUser?.()?.photoURL || null;
 
 class NavigationManager {
     constructor(options = {}) {
@@ -437,7 +441,7 @@ class NavigationManager {
                                             <img id="profilePhotoPreview" src="" alt="Preview" class="rounded-circle border" style="width: 120px; height: 120px; object-fit: cover; background: #F2EAE0;">
                                         </div>
                                         <input type="file" class="form-control form-control-sm" id="profilePhotoFile" accept="image/jpeg,image/png,image/webp,image/gif">
-                                        <div class="form-text">JPG, PNG, WebP or GIF (max ~600KB recommended)</div>
+                                        <div class="form-text">JPG, PNG, WebP or GIF. Large photos are resized automatically.</div>
                                     </div>
                                     <div class="col-md-8">
                                         <div class="mb-3">
@@ -1649,8 +1653,10 @@ class NavigationManager {
 
         const PROFILE_STORAGE_KEY = 'hershield_user_profile';
 
-        // We no longer cap at 750KB because photos go to Firebase Storage, not localStorage
-        const MAX_AVATAR_BYTES = 5 * 1024 * 1024; // 5 MB hard cap for upload
+        // Photos are resized in the browser before upload (see shrinkAvatar), so
+        // this only guards against absurd files; the server caps uploads at 5 MB.
+        const MAX_AVATAR_BYTES = 20 * 1024 * 1024;
+        const AVATAR_MAX_SIDE = 512;
 
         // This cache is tagged with the account it belongs to (_ownerUserId). Without
         // this check, signing into (or up for) a DIFFERENT account in the same browser
@@ -1780,13 +1786,39 @@ class NavigationManager {
          * off it after its billing account went delinquent; routing through
          * the backend also keeps the Cloudinary API secret out of the browser.
          */
+        /**
+         * Phone photos are often 3–10 MB. Downscale to at most 512px on the long
+         * side as JPEG so the upload is ~50–150 KB: fast on mobile data and well
+         * under the server's 5 MB limit. Falls back to the original file if the
+         * browser can't decode it (it is then validated server-side as usual).
+         */
+        async function shrinkAvatar(file) {
+            if (file.type === 'image/gif' || typeof createImageBitmap !== 'function') return file;
+            try {
+                const bitmap = await createImageBitmap(file);
+                const scale = Math.min(1, AVATAR_MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+                canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#fff'; // transparent PNG areas would turn black in JPEG
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+                bitmap.close?.();
+                const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.86));
+                return blob ? new File([blob], 'avatar.jpg', { type: 'image/jpeg' }) : file;
+            } catch (_) {
+                return file;
+            }
+        }
+
         async function uploadAvatarToStorage(file) {
             const user = window.authService?.getCurrentUser?.();
             if (!user) throw new Error('Not signed in');
             const token = await user.getIdToken();
 
             const formData = new FormData();
-            formData.append('avatar', file);
+            formData.append('avatar', await shrinkAvatar(file));
 
             const resp = await fetch('/api/users/avatar', {
                 method: 'POST',
@@ -1805,7 +1837,7 @@ class NavigationManager {
                 const f = profilePhotoFile.files && profilePhotoFile.files[0];
                 if (!f) return;
                 if (f.size > MAX_AVATAR_BYTES) {
-                    alert('Image is too large. Please choose a file under 5 MB.');
+                    alert('Image is too large. Please choose a file under 20 MB.');
                     profilePhotoFile.value = '';
                     return;
                 }
@@ -1827,7 +1859,7 @@ class NavigationManager {
                 window.authService?.getCurrentUser?.()?.uid;
             if (!userId) {
                 console.warn('Profile sync skipped: no userId available');
-                return;
+                return false;
             }
             try {
                 const body = {
@@ -1845,13 +1877,11 @@ class NavigationManager {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body),
                 });
-                if (resp.ok) {
-                    console.log('✅ Profile synced to Firestore');
-                } else {
-                    console.warn('⚠️ Profile sync returned', resp.status, await resp.text());
-                }
+                if (!resp.ok) console.warn('⚠️ Profile sync returned', resp.status, await resp.text());
+                return resp.ok;
             } catch (e) {
-                console.warn('Profile server sync skipped:', e);
+                console.warn('Profile server sync failed:', e);
+                return false;
             }
         };
 
@@ -1898,17 +1928,27 @@ class NavigationManager {
                 const selectedFile = profilePhotoFile && profilePhotoFile.files && profilePhotoFile.files[0];
                 if (selectedFile) {
                     try {
-                        fb.textContent = 'Uploading photo to cloud…';
+                        fb.textContent = 'Uploading photo…';
                         resolvedAvatarUrl = await uploadAvatarToStorage(selectedFile);
-                        console.log('✅ Avatar uploaded to Cloudinary:', resolvedAvatarUrl);
                     } catch (uploadErr) {
-                        console.warn('Avatar upload failed, falling back to base64:', uploadErr.message);
-                        // Fallback: keep base64 in localStorage for this session
-                        resolvedAvatarUrl = pendingAvatarDataUrl;
+                        // Never fall back to a browser-only copy: it showed "saved" and then
+                        // vanished on the next page load or device. Stop and let the user retry.
+                        console.warn('Avatar upload failed:', uploadErr.message);
+                        fb.textContent = `Photo upload failed (${uploadErr.message}). Nothing was saved — please try again.`;
+                        fb.className = 'alert alert-danger mt-3 mb-0';
+                        fb.classList.remove('d-none');
+                        return;
                     }
                 }
-                // Priority 2: manually entered HTTP URL
-                else if (photoUrlInput && /^https?:\/\//i.test(photoUrlInput)) {
+                // Priority 2: manually entered link (https only: the site is served over
+                // https, so an http image would be blocked, and the server rejects it)
+                else if (photoUrlInput) {
+                    if (!/^https:\/\/\S+$/i.test(photoUrlInput)) {
+                        fb.textContent = 'The photo link must start with https://';
+                        fb.className = 'alert alert-warning mt-3 mb-0';
+                        fb.classList.remove('d-none');
+                        return;
+                    }
                     resolvedAvatarUrl = photoUrlInput;
                 }
                 // Priority 3: keep existing avatar URL
@@ -1948,7 +1988,7 @@ class NavigationManager {
                 }
 
                 // Sync all fields to Firestore (including the resolved photo URL)
-                await syncProfileToBackend({
+                const synced = await syncProfileToBackend({
                     displayName,
                     personalPhone: ext.personalPhone,
                     age: ext.age,
@@ -1962,6 +2002,12 @@ class NavigationManager {
                             : undefined,
                 });
 
+                if (!synced) {
+                    fb.textContent = 'Saved on this device, but the server could not be reached, so other devices won\'t see it yet. Please save again in a moment.';
+                    fb.className = 'alert alert-warning mt-3 mb-0';
+                    fb.classList.remove('d-none');
+                    return;
+                }
                 fb.textContent = 'Profile saved ✅';
                 fb.className = 'alert alert-success mt-3 mb-0';
                 fb.classList.remove('d-none');

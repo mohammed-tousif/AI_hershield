@@ -967,7 +967,9 @@ const api = async (path, opts = {}) => {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  HELPERS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-const esc = s => { const d = document.createElement('div'); d.innerText = s||''; return d.innerHTML; };
+// Escapes quotes too (the innerText trick did not), so user-supplied text is
+// safe inside attributes such as title="…"; also shows "&" instead of "&amp;".
+const esc = s => window.hsEscapeStoredText(s || '');
 const timeAgo = d => {
     if (!d) return '—';
     const m = Math.floor((Date.now() - new Date(d)) / 60000);
@@ -1332,7 +1334,7 @@ function renderUsersTable(users) {
         const id = esc(u._id);
         const isActive = u.isActive !== false;
         return `<tr>
-            <td><div class="avatar-cell"><div class="avatar">${initials}</div><span class="td-main">${esc(name)}</span></div></td>
+            <td><div class="avatar-cell"><div class="avatar">${esc(initials)}</div><span class="td-main">${esc(name)}</span></div></td>
             <td>${esc(u.email||'—')}</td>
             <td>${esc(u.phone||u.phoneNumber||'—')}</td>
             <td><span class="badge ${guardians>0?'badge-green':'badge-gray'}">${guardians} guardian${guardians!==1?'s':''}</span></td>
@@ -1343,7 +1345,7 @@ function renderUsersTable(users) {
                 <button class="btn btn-ghost btn-sm btn-icon" onclick="toggleUserActive('${id}', ${isActive})" title="${isActive ? 'Deactivate' : 'Reactivate'}">
                     <i class="fas fa-${isActive ? 'user-slash' : 'user-check'}"></i>
                 </button>
-                <button class="btn btn-danger btn-sm btn-icon" onclick="deleteUserAccount('${id}', '${esc(u.email || '')}')" title="Delete"><i class="fas fa-trash"></i></button>
+                <button class="btn btn-danger btn-sm btn-icon" data-email="${esc(u.email || '')}" onclick="deleteUserAccount('${id}', this.dataset.email)" title="Delete"><i class="fas fa-trash"></i></button>
             </td>
         </tr>`;
     }).join('');
@@ -1800,7 +1802,7 @@ function downloadCSV(rows, filename) {
 //  SOCKET.IO
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 try {
-    const socket = io(window.HERSHIELD_BACKEND || location.origin, { transports: ['websocket','polling'] });
+    const socket = io(window.HERSHIELD_BACKEND || location.origin, { transports: ['polling'] });
     socket.on('admin:broadcast', data => toast('📢 Broadcast sent: ' + data.title));
     socket.on('community:postDeleted', () => { if (currentSection === 'posts') loadPosts(); });
     socket.on('community:newPost',     () => { if (currentSection === 'posts') loadPosts(); });

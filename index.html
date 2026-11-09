@@ -551,6 +551,7 @@
     </style>
     <link rel="stylesheet" href="/responsive.css">
     <link rel="stylesheet" href="/motion.css">
+    <script src="/config.js" defer></script>
     <script src="/responsive.js" defer></script>
     <script src="/lenis.min.js" defer></script>
     <script src="/motion.js" defer></script>
@@ -1013,7 +1014,8 @@
                             <textarea class="form-control" id="reportDescription" rows="3"
                                 placeholder="Describe the incident..." required></textarea>
                         </div>
-                        <button type="submit" class="btn btn-danger w-100">
+                        <div id="reportStatus" class="alert d-none" role="status" aria-live="polite"></div>
+                        <button type="submit" class="btn btn-danger w-100" id="reportSubmit">
                             <i class="fas fa-paper-plane me-2"></i>Submit Report
                         </button>
                     </form>
@@ -1174,37 +1176,112 @@
                 });
             })();
 
-            // Handle form submission
-            document.getElementById('reportForm').addEventListener('submit', function (event) {
-                event.preventDefault(); // Prevent the default form submission
+            // Handle form submission: POST /api/safety/report (same payload as the dashboard).
+            // config.js attaches the Firebase ID token; the server fills in reporter identity.
+            const reportForm = document.getElementById('reportForm');
+            const reportStatus = document.getElementById('reportStatus');
+            const reportSubmit = document.getElementById('reportSubmit');
+            const reportSubmitLabel = reportSubmit.innerHTML;
+            let reportCloseTimer = null;
 
-                // Get form data
-                const type = document.getElementById('reportType').value;
-                const location = document.getElementById('reportLocation').value;
-                const description = document.getElementById('reportDescription').value;
+            // Text only (never innerHTML) so user input cannot inject markup.
+            function setReportStatus(kind, message, loginLink) {
+                reportStatus.className = `alert alert-${kind} mb-3`;
+                reportStatus.textContent = message;
+                if (loginLink) {
+                    const link = document.createElement('a');
+                    link.href = 'auth.html';
+                    link.className = 'alert-link ms-1';
+                    link.textContent = 'Log in';
+                    reportStatus.append(link);
+                }
+            }
+            function clearReportStatus() {
+                reportStatus.className = 'alert d-none';
+                reportStatus.textContent = '';
+            }
+            function setReportBusy(busy) {
+                reportSubmit.disabled = busy;
+                reportSubmit.innerHTML = busy
+                    ? '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Submitting…'
+                    : reportSubmitLabel;
+            }
+            const askToLogIn = () => setReportStatus('warning', 'Please log in to submit a report.', true);
 
-                // Create a new alert item
-                const alertHistory = document.querySelector('.alert-history');
-                const newAlert = document.createElement('div');
-                newAlert.classList.add('alert-item');
-                newAlert.innerHTML = `
-                    <i class="fas fa-exclamation-circle text-warning"></i>
-                    <div>
-                        <h6 class="mb-1">${type}</h6>
-                        <small class="text-muted">Location: ${location}</small>
-                        <p>${description}</p>
-                    </div>
-                `;
+            document.getElementById('reportModal').addEventListener('show.bs.modal', () => {
+                clearTimeout(reportCloseTimer);
+                clearReportStatus();
+            });
 
-                // Add the new alert to the top of the Recent Alerts section
-                alertHistory.prepend(newAlert);
+            reportForm.addEventListener('submit', async function (event) {
+                event.preventDefault();
+                if (reportSubmit.disabled) return;
+                clearTimeout(reportCloseTimer);
+                clearReportStatus();
 
-                // Close the modal
-                const reportModal = bootstrap.Modal.getInstance(document.getElementById('reportModal'));
-                reportModal.hide();
+                const type = document.getElementById('reportType').value.trim();
+                const severity = document.getElementById('reportSeverity').value;
+                const address = document.getElementById('reportLocation').value.trim();
+                const description = document.getElementById('reportDescription').value.trim();
+                const lat = parseFloat(document.getElementById('idx-reportLat').value);
+                const lng = parseFloat(document.getElementById('idx-reportLng').value);
+                const hasCoords = Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
 
-                // Reset the form
-                document.getElementById('reportForm').reset();
+                if (!type || !severity || !description || (!address && !hasCoords)) {
+                    setReportStatus('warning', 'Please fill in the issue type, severity, location and description.');
+                    return;
+                }
+                if (typeof window.getHerShieldUser !== 'function') {
+                    setReportStatus('danger', 'Reporting is unavailable right now. Please reload the page and try again.');
+                    return;
+                }
+
+                setReportBusy(true);
+                try {
+                    let user;
+                    try {
+                        user = await window.getHerShieldUser();
+                    } catch (_) {
+                        setReportStatus('danger', 'Could not check your sign-in. Check your connection and try again.');
+                        return;
+                    }
+                    if (!user) { askToLogIn(); return; }
+
+                    const response = await fetch('/api/safety/report', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            type,
+                            severity,
+                            location: { address, coordinates: hasCoords ? { lat, lng } : null },
+                            description,
+                            timestamp: new Date().toISOString()
+                        })
+                    });
+                    let result = {};
+                    try { result = await response.json(); } catch (_) { /* non-JSON error page */ }
+
+                    if (response.status === 401) { askToLogIn(); return; }
+                    if (!response.ok || result.success !== true) {
+                        setReportStatus('danger', result.message || `The report was not submitted (HTTP ${response.status}). Please try again.`);
+                        return;
+                    }
+
+                    reportForm.reset();
+                    document.getElementById('idx-reportLat').value = '';
+                    document.getElementById('idx-reportLng').value = '';
+                    const locationStatus = document.getElementById('idx-locationStatus');
+                    locationStatus.textContent = 'Type a location or tap the GPS icon';
+                    locationStatus.className = '';
+                    setReportStatus('success', 'Report submitted. Thank you for helping keep others safe.');
+                    reportCloseTimer = setTimeout(() => {
+                        bootstrap.Modal.getInstance(document.getElementById('reportModal'))?.hide();
+                    }, 2500);
+                } catch (error) {
+                    setReportStatus('danger', error.message || 'Network error. Your report was not submitted; please try again.');
+                } finally {
+                    setReportBusy(false);
+                }
             });
         });
 

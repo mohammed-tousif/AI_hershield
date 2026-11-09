@@ -845,6 +845,8 @@
                 other:               'fa-exclamation-circle',
             };
 
+            // Report text is user-submitted: always escape it (it was inserted raw).
+            const txt = window.hsEscapeStoredText;
             const renderReport = (r) => {
                 const color  = SEVERITY_COLORS[r.severity] || '#6c757d';
                 const icon   = TYPE_ICONS[r.incidentType] || 'fa-exclamation-circle';
@@ -857,13 +859,13 @@
                     <i class="fas ${icon}" style="color:${color};font-size:1.15rem;flex-shrink:0;"></i>
                     <div style="flex:1;min-width:0;">
                         <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
-                            <h6 class="mb-0 fw-semibold" style="font-size:0.88rem;">${r.typeLabel}</h6>
-                            <span class="badge rounded-pill" style="background:${color};font-size:0.68rem;padding:2px 8px;">${r.severityLabel}</span>
+                            <h6 class="mb-0 fw-semibold" style="font-size:0.88rem;">${txt(r.typeLabel)}</h6>
+                            <span class="badge rounded-pill" style="background:${color};font-size:0.68rem;padding:2px 8px;">${txt(r.severityLabel)}</span>
                         </div>
-                        ${r.location ? `<small class="text-muted d-block"><i class="fas fa-map-pin me-1"></i>${r.location}</small>` : ''}
-                        ${r.description ? `<p class="mb-1 small" style="color:#555;line-height:1.4;">${r.description}</p>` : ''}
+                        ${r.location ? `<small class="text-muted d-block"><i class="fas fa-map-pin me-1"></i>${txt(r.location)}</small>` : ''}
+                        ${r.description ? `<p class="mb-1 small" style="color:#555;line-height:1.4;">${txt(r.description)}</p>` : ''}
                         <small class="text-muted">
-                            <i class="fas fa-user me-1"></i>${r.reporterName}
+                            <i class="fas fa-user me-1"></i>${txt(r.reporterName)}
                             &nbsp;&bull;&nbsp;
                             <i class="fas fa-clock me-1"></i>${time}
                         </small>
@@ -1110,10 +1112,10 @@
                 const infoWindow = new google.maps.InfoWindow({
                     content: `
                         <div style="padding:8px;">
-                            <h6 style="margin:0 0 8px 0;font-weight:bold;">${location.location}</h6>
+                            <h6 style="margin:0 0 8px 0;font-weight:bold;">${window.hsEscapeStoredText(location.location)}</h6>
                             <p style="margin:4px 0;"><strong>Risk Level:</strong> ${getRiskLabel(location.risk_level)}</p>
-                            <p style="margin:4px 0;"><strong>Category:</strong> ${location.category}</p>
-                            <p style="margin:4px 0;font-size:12px;color:#666;">Updated: ${location.last_updated}</p>
+                            <p style="margin:4px 0;"><strong>Category:</strong> ${window.hsEscapeStoredText(location.category)}</p>
+                            <p style="margin:4px 0;font-size:12px;color:#666;">Updated: ${window.hsEscapeStoredText(location.last_updated)}</p>
                         </div>`
                 });
                 marker.addListener('click', () => infoWindow.open(map, marker));
@@ -2328,7 +2330,7 @@
                 }
 
             } catch (err) {
-                listEl.innerHTML = `<div class="text-danger small py-2"><i class="fas fa-exclamation-circle me-2"></i>${err.message}</div>`;
+                listEl.innerHTML = `<div class="text-danger small py-2"><i class="fas fa-exclamation-circle me-2"></i>${window.hsEscapeHTML(err.message)}</div>`;
             }
         }
 
