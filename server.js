@@ -304,6 +304,11 @@ listenWithFallback(server, (port) => {
         console.log(
             '⚠️  Without Firestore: set FIREBASE_SERVICE_ACCOUNT_PATH (local .json) or FIREBASE_SERVICE_ACCOUNT_JSON (e.g. Render). See .env.example.'
         );
+    } else {
+        // Fill the public dashboard caches now so the first visitor after a
+        // restart does not wait on the slow cross-region reads.
+        const { getDashboardStats, safetyLocationsList } = require('./services/firestoreRepository');
+        Promise.allSettled([getDashboardStats(), safetyLocationsList()]);
     }
     console.log('');
     console.log('📡 Available API Endpoints:');

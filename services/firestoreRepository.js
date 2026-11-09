@@ -443,21 +443,50 @@ async function liveSessionStop(userId) {
     liveCache.delete(userId);
 }
 
+// Safety locations change only through the functions below, so the list is
+// served from memory and dropped on every write. Firestore is in the US and the
+// API runs in Mumbai, where a full read of this collection takes over a second.
+// The TTL bounds staleness from writes made elsewhere (Firebase console, Render).
+const SAFETY_LIST_TTL_MS = 5 * 60 * 1000;
+let safetyListCache = null;   // { at, rows }
+let safetyListPending = null; // in-flight read, shared by concurrent callers
+let safetyListGeneration = 0; // bumped by every write so an in-flight read can't cache old rows
+
+function invalidateSafetyLocations() {
+    safetyListGeneration++;
+    safetyListCache = null;
+    safetyListPending = null;
+}
+
 async function safetyLocationsList() {
-    const db = firestoreOrThrow();
-    const snap = await db.collection(COL.SAFETY_LOCATIONS).get();
-    return snap.docs.map((d) => {
-        const row = d.data();
-        return {
-            id: d.id,
-            latitude: row.latitude,
-            longitude: row.longitude,
-            risk_level: row.risk_level,
-            location: row.location,
-            category: row.category || 'unknown',
-            last_updated: row.last_updated || '',
-        };
-    });
+    if (safetyListCache && Date.now() - safetyListCache.at < SAFETY_LIST_TTL_MS) {
+        return safetyListCache.rows.map((row) => ({ ...row }));
+    }
+    if (!safetyListPending) {
+        const db = firestoreOrThrow();
+        const generation = safetyListGeneration;
+        const pending = db.collection(COL.SAFETY_LOCATIONS).get().then((snap) => {
+            const rows = snap.docs.map((d) => {
+                const row = d.data();
+                return {
+                    id: d.id,
+                    latitude: row.latitude,
+                    longitude: row.longitude,
+                    risk_level: row.risk_level,
+                    location: row.location,
+                    category: row.category || 'unknown',
+                    last_updated: row.last_updated || '',
+                };
+            });
+            if (generation === safetyListGeneration) safetyListCache = { at: Date.now(), rows };
+            return rows;
+        }).finally(() => {
+            if (safetyListPending === pending) safetyListPending = null;
+        });
+        safetyListPending = pending;
+    }
+    const rows = await safetyListPending;
+    return rows.map((row) => ({ ...row }));
 }
 
 /**
@@ -472,36 +501,40 @@ async function safetyLocationsBulkImport(entries) {
     let batch = db.batch();
     let ops   = 0;
 
-    for (const entry of entries) {
-        const lat = parseFloat(entry.latitude);
-        const lng = parseFloat(entry.longitude);
-        const rsk = parseInt(entry.risk_level, 10);
-        const loc = (entry.location || '').trim();
+    try {
+        for (const entry of entries) {
+            const lat = parseFloat(entry.latitude);
+            const lng = parseFloat(entry.longitude);
+            const rsk = parseInt(entry.risk_level, 10);
+            const loc = (entry.location || '').trim();
 
-        if (isNaN(lat) || isNaN(lng) || isNaN(rsk) || !loc) { skipped++; continue; }
-        if (rsk < 1 || rsk > 3) { skipped++; continue; }
+            if (isNaN(lat) || isNaN(lng) || isNaN(rsk) || !loc) { skipped++; continue; }
+            if (rsk < 1 || rsk > 3) { skipped++; continue; }
 
-        const ref = db.collection(COL.SAFETY_LOCATIONS).doc();
-        batch.set(ref, {
-            latitude:     lat,
-            longitude:    lng,
-            risk_level:   rsk,
-            location:     loc,
-            category:     (entry.category || 'csv_import').trim(),
-            last_updated: (entry.last_updated || new Date().toISOString().split('T')[0]),
-            source:       'admin_csv_upload',
-            createdAt:    admin.firestore.Timestamp.now(),
-        });
-        imported++;
-        ops++;
+            const ref = db.collection(COL.SAFETY_LOCATIONS).doc();
+            batch.set(ref, {
+                latitude:     lat,
+                longitude:    lng,
+                risk_level:   rsk,
+                location:     loc,
+                category:     (entry.category || 'csv_import').trim(),
+                last_updated: (entry.last_updated || new Date().toISOString().split('T')[0]),
+                source:       'admin_csv_upload',
+                createdAt:    admin.firestore.Timestamp.now(),
+            });
+            imported++;
+            ops++;
 
-        if (ops >= 450) {
-            await batch.commit();
-            batch = db.batch();
-            ops   = 0;
+            if (ops >= 450) {
+                await batch.commit();
+                batch = db.batch();
+                ops   = 0;
+            }
         }
+        if (ops > 0) await batch.commit();
+    } finally {
+        invalidateSafetyLocations(); // also after a partial import that failed midway
     }
-    if (ops > 0) await batch.commit();
     return { imported, skipped };
 }
 
@@ -514,14 +547,18 @@ async function safetyLocationsDeleteAll() {
     const db = firestoreOrThrow();
     let deleted = 0;
     let snap;
-    do {
-        snap = await db.collection(COL.SAFETY_LOCATIONS).limit(400).get();
-        if (snap.empty) break;
-        let batch = db.batch();
-        snap.docs.forEach(d => batch.delete(d.ref));
-        await batch.commit();
-        deleted += snap.size;
-    } while (snap.size === 400);
+    try {
+        do {
+            snap = await db.collection(COL.SAFETY_LOCATIONS).limit(400).get();
+            if (snap.empty) break;
+            let batch = db.batch();
+            snap.docs.forEach(d => batch.delete(d.ref));
+            await batch.commit();
+            deleted += snap.size;
+        } while (snap.size === 400);
+    } finally {
+        invalidateSafetyLocations();
+    }
     return { deleted };
 }
 
@@ -537,6 +574,7 @@ async function safetyLocationsAdd(entry) {
         last_updated: entry.last_updated,
         createdAt: admin.firestore.Timestamp.now(),
     });
+    invalidateSafetyLocations();
     return { id, ...entry };
 }
 
@@ -544,6 +582,9 @@ let safetySeedPromise = null;
 
 async function safetyLocationsSeedFromCsvIfEmpty() {
     const db = firestoreOrThrow();
+    // A cached non-empty list already proves the collection is not empty, which
+    // saves a cross-region round trip on every GET /api/safety/locations.
+    if (safetyListCache?.rows.length) return { seeded: false, count: 0 };
     const snap = await db.collection(COL.SAFETY_LOCATIONS).limit(1).get();
     if (!snap.empty) return { seeded: false, count: 0 };
 
@@ -600,7 +641,7 @@ async function safetyLocationsSeedFromCsvIfEmpty() {
     })().catch((err) => {
         console.warn('⚠️  Firestore safety location CSV seed skipped:', err.message);
         return { seeded: false, count: 0, error: err.message };
-    });
+    }).finally(invalidateSafetyLocations);
 
     return safetySeedPromise;
 }
@@ -738,7 +779,35 @@ async function adminLogsList(limitN = 100) {
     return rows;
 }
 
+// Dashboard counts are public, identical for every visitor and only need to be
+// roughly current, so one round of count() queries (~1.3s from Mumbai to the US
+// Firestore) serves everyone: fresh for a minute, then the last value is served
+// at once while a refresh runs. After 10 minutes the caller waits for fresh data.
+const STATS_FRESH_MS = 60 * 1000;
+const STATS_MAX_STALE_MS = 10 * 60 * 1000;
+let statsCache = null;   // { at, value }
+let statsPending = null; // in-flight refresh, shared by concurrent callers
+
+function refreshDashboardStats() {
+    if (!statsPending) {
+        statsPending = computeDashboardStats()
+            .then((value) => { statsCache = { at: Date.now(), value }; return value; })
+            .finally(() => { statsPending = null; });
+    }
+    return statsPending;
+}
+
 async function getDashboardStats() {
+    const age = statsCache ? Date.now() - statsCache.at : Infinity;
+    if (age < STATS_FRESH_MS) return { ...statsCache.value };
+    if (age < STATS_MAX_STALE_MS) {
+        refreshDashboardStats().catch((e) => console.warn('getDashboardStats: background refresh failed:', e.message));
+        return { ...statsCache.value };
+    }
+    return { ...(await refreshDashboardStats()) };
+}
+
+async function computeDashboardStats() {
     const db = firestoreOrThrow();
 
     // Helper: count documents in a collection efficiently.
@@ -756,7 +825,7 @@ async function getDashboardStats() {
             const snap = await colRef.select('__name__').get();
             return snap.size;
         } catch (e) {
-            console.warn(`getDashboardStats: count failed for ${colName}:`, e.message);
+            console.warn(`computeDashboardStats: count failed for ${colName}:`, e.message);
             throw e;
         }
     }

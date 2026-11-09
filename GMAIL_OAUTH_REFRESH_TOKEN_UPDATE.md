@@ -81,7 +81,19 @@ Open `.env` in the project root and replace the value:
 GMAIL_OAUTH_REFRESH_TOKEN=<paste new token here>
 ```
 
-### B. Render (production)
+### B. AWS EC2 (production backend)
+
+The live backend runs on EC2 (see [deploy/ec2/README.md](deploy/ec2/README.md)).
+From the project folder on your PC:
+```bash
+ssh -i ~/.ssh/hershield-ec2 ubuntu@13.235.201.166
+sudo nano /opt/hershield/shared/.env        # replace GMAIL_OAUTH_REFRESH_TOKEN=...
+sudo systemctl restart hershield
+```
+
+### C. Render (backup backend)
+
+Render is kept as a fallback, so update it too:
 
 1. Log into [dashboard.render.com](https://dashboard.render.com).
 2. Open the `hershield-api` service.
@@ -97,7 +109,7 @@ GMAIL_OAUTH_REFRESH_TOKEN=<paste new token here>
 **Production redeploy** — check the health endpoint reports email as
 configured:
 ```bash
-curl -s https://ai-hershield.onrender.com/api/health
+curl -s https://13-235-201-166.sslip.io/api/health
 ```
 Look for `"email": { "configured": true, "user": "..." }` in the response.
 
@@ -115,7 +127,7 @@ emailService.sendMail({
 "
 ```
 A `SEND SUCCESS` with a Gmail message id confirms the full path (local code →
-Gmail API → inbox) works. Since Render uses the same credentials, this is
+Gmail API → inbox) works. Since production uses the same credentials, this is
 strong evidence the production path works too — you can additionally confirm
 by triggering a real SOS test through the app itself if you want full
 end-to-end proof from the deployed server.

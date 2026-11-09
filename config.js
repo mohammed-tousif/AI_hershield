@@ -2,14 +2,16 @@
 (function () {
     'use strict';
     const local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) || /^(192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(location.hostname);
-    const backend = local ? location.origin : 'https://ai-hershield.onrender.com';
+    // Production backend: AWS EC2 in Mumbai (deploy/ec2/README.md). The Render
+    // service (https://ai-hershield.onrender.com) is kept as a fallback.
+    const backend = local ? location.origin : 'https://13-235-201-166.sslip.io';
     window.HERSHIELD_BACKEND = backend;
     window.HERSHIELD_FRONTEND = local ? location.origin : 'https://hershield-web.web.app';
     window.hsEscapeHTML = value => String(value ?? '').replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
     const originalFetch = window.fetch.bind(window);
-    // The free-tier backend sleeps when idle and takes ~40s to wake. Ping it the
-    // moment any page loads (at most every 4 minutes per tab) so it is already
-    // warm by the time the page's own API calls go out.
+    // Ping the backend the moment any page loads (at most every 4 minutes per
+    // tab). On EC2 this just opens the connection early; if the Render fallback
+    // is ever used again, it also wakes that free instance (~40s cold start).
     if (!local) {
         try {
             const last = Number(sessionStorage.getItem('hs:wake') || 0);
