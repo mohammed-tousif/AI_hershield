@@ -8,10 +8,9 @@
     <!-- Motion is opt-out safe: content is hidden for entrance animations only while
          html.hs-motion is set, and this drops it again if motion.js never arrives. -->
     <script>(function(d){if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)return;d.classList.add('hs-motion');setTimeout(function(){if(!window.HSMotion){d.classList.remove('hs-motion');d.dataset.hsLate='1';}},4000);})(document.documentElement);</script>
-    <!-- Wake the free-tier backend (sleeps when idle, ~40s cold start) while the
-         visitor is still on the landing page, so sign-in and the dashboard are fast. -->
-    <link rel="preconnect" href="https://ai-hershield.onrender.com" crossorigin>
-    <script>if(!/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname))fetch('https://ai-hershield.onrender.com/api/health',{mode:'no-cors',cache:'no-store'}).catch(function(){});</script>
+    <!-- Open the connection to the API (AWS EC2, always on) while the visitor is
+         still on the landing page, so sign-in and the dashboard start faster. -->
+    <link rel="preconnect" href="https://13-235-201-166.sslip.io" crossorigin>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"

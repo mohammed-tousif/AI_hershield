@@ -12,6 +12,24 @@ Browser ──► hershield-web.web.app (Firebase Hosting, static files)
                                                                └─► Firestore, Cloudinary, Gmail, Twilio
 ```
 
+## Current deployment (9 November 2026)
+
+| Item | Value |
+|---|---|
+| Region | Asia Pacific (Mumbai) `ap-south-1` |
+| Instance | `hershield-backend` · `i-0029068f5a4844ca2` · t3.micro · Ubuntu 24.04 LTS |
+| Disk | 20 GiB gp3, encrypted (aws/ebs), deleted on termination |
+| Elastic IP | `13.235.201.166` |
+| Backend URL | `https://13-235-201-166.sslip.io` |
+| Security group | `hershield-backend-sg`: 443 + 80 public, 22 only from the admin IP |
+| SSH key | AWS key pair `hershield-backend`; private key `~/.ssh/hershield-ec2` on the admin PC |
+| Protection | Termination protection on; IMDSv2 required |
+
+The account also runs `quba-tours-prod` (a separate production site). Never modify
+it, its Elastic IP `15.206.45.242`, its volume, or the DLM snapshot policy
+`policy-03789128e615a4e80` that backs it up. That default policy snapshots every
+volume in the region daily, so the HerShield disk is included (a few cents a month).
+
 `sslip.io` turns an IP into a hostname (`13-233-45-67.sslip.io` → `13.233.45.67`), so
 the backend gets a real HTTPS certificate with no domain purchase or signup.
 
@@ -95,7 +113,9 @@ Unlike Render, pushing to GitHub does **not** deploy here; run the update comman
 ## Security notes
 
 - SSH is key-only (Ubuntu default) and the security group limits port 22 to your IP.
-  If your IP changes, edit the security group's SSH rule.
+  If your IP changes (common on Jio/Airtel), SSH will time out: edit the SSH rule in
+  `hershield-backend-sg` to your new IPv4 (`curl -4 checkip.amazonaws.com`) with `/32`.
+  Use IPv4, not the IPv6 the console's "My IP" may suggest.
 - Node listens on 3000 but is reachable only through nginx (port 3000 is not open in the
   security group).
 - Ubuntu installs security updates automatically (`unattended-upgrades`).
