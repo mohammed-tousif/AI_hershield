@@ -154,3 +154,20 @@ test('Socket clients cannot register mutation handlers or join with a raw sessio
     for(const event of ['locationUpdate','emergency','checkIn','endSession'])assert.equal(handlers[event],undefined);
     await handlers.joinSession('classic',()=>{});assert.equal(joined.length,0);handlers.disconnect();
 });
+test('Profile pictures: sign-in never overwrites an uploaded picture, and only https links are stored',async()=>{
+    const uploaded='https://res.cloudinary.com/demo/image/upload/v1/avatars/alice/1.jpg';
+    users.get('alice').profilePicture=uploaded;
+    await request('/api/users/upsert',{user:'alice',method:'POST',body:{photoURL:'https://lh3.googleusercontent.com/stale-provider-photo'}});
+    assert.equal(users.get('alice').profilePicture,uploaded,'login keeps the uploaded picture');
+
+    users.get('bob').profilePicture='https://ui-avatars.com/api/?name=Bob';
+    await request('/api/users/upsert',{user:'bob',method:'POST',body:{photoURL:'https://lh3.googleusercontent.com/bob'}});
+    assert.equal(users.get('bob').profilePicture,'https://lh3.googleusercontent.com/bob','a generated initials avatar is replaced by the provider photo');
+
+    for(const bad of ['javascript:alert(1)','data:image/png;base64,AAAA','http://insecure.example/a.png','https://x.example/'+'a'.repeat(2100)])
+        assert.equal((await request('/api/users/profile/alice',{user:'alice',method:'PUT',body:{profilePicture:bad}})).status,400,bad.slice(0,30));
+    assert.equal(users.get('alice').profilePicture,uploaded);
+    const next='https://res.cloudinary.com/demo/image/upload/v2/avatars/alice/2.jpg';
+    assert.equal((await request('/api/users/profile/alice',{user:'alice',method:'PUT',body:{profilePicture:next}})).status,200);
+    assert.equal(users.get('alice').profilePicture,next);
+});

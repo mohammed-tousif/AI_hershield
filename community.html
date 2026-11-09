@@ -418,11 +418,9 @@
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     //  Helpers
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    const esc = (s) => {
-        const d = document.createElement('div');
-        d.innerText = s || '';
-        return d.innerHTML;
-    };
+    // Escapes quotes too: the old innerText/innerHTML trick left " and ' as-is,
+    // so stored text placed in attributes could break out of them (XSS).
+    const esc = (s) => window.hsEscapeStoredText(s || '');
     const timeAgo = (dateStr) => {
         const diff = Date.now() - new Date(dateStr).getTime();
         const m = Math.floor(diff / 60000);
@@ -442,16 +440,26 @@
     const userName  = () => localStorage.getItem('hershield_user_name')  || 'Community Member';
     const userEmail = () => localStorage.getItem('hershield_user_email') || '';
 
-    // ── Update avatar with real user name ──────────────────────────────
-    document.addEventListener('DOMContentLoaded', () => {
+    const initialsAvatar = (name) =>
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'User')}&background=FF9A86&color=fff`;
+
+    // ── Composer shows the signed-in user's own picture (or initials) ───
+    // Repainted when the profile is saved or the picture is restored from the
+    // server after sign-in (both dispatch hershield-profile-updated).
+    function paintComposerIdentity() {
         const name = userName();
+        const own = window.hsCurrentAvatar?.();
         ['composerAvatar','composerAvatarExp'].forEach(id => {
             const el = document.getElementById(id);
-            if (el) el.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=FF9A86&color=fff`;
+            if (!el) return;
+            el.onerror = () => { el.onerror = null; el.src = initialsAvatar(name); };
+            el.src = own && /^https:\/\//i.test(own) ? own : initialsAvatar(name);
         });
         const cn = document.getElementById('composerName');
         if (cn) cn.textContent = name;
-    });
+    }
+    document.addEventListener('DOMContentLoaded', paintComposerIdentity);
+    window.addEventListener('hershield-profile-updated', paintComposerIdentity);
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     //  Composer state
@@ -672,7 +680,7 @@
         const imgHtml = post.imageUrl
             ? `<img src="${esc(post.imageUrl)}" alt="Post image" class="post-img"
                     onerror="this.style.display='none'"
-                    onclick="openLightbox('${esc(post.imageUrl)}')">`
+                    onclick="openLightbox(this.getAttribute('src'))">`
             : '';
 
         const locHtml = post.location
@@ -682,7 +690,9 @@
         return `
             <div class="post-card" data-post-id="${esc(post._id)}">
                 <div class="d-flex align-items-center mb-2">
-                    <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(post.userName||'User')}&background=FF9A86&color=fff"
+                    <img src="${esc(/^https:\/\//i.test(post.authorAvatar || '') ? post.authorAvatar : initialsAvatar(post.userName))}"
+                        data-fallback="${esc(initialsAvatar(post.userName))}"
+                        onerror="if (this.src !== this.dataset.fallback) this.src = this.dataset.fallback"
                         alt="" class="post-avatar me-3">
                     <div class="flex-grow-1">
                         <div class="fw-semibold" style="font-size:.9rem;">${esc(post.userName||'Community Member')}</div>
@@ -702,7 +712,8 @@
                     <button class="btn-action">
                         <i class="far fa-comment"></i> Comment
                     </button>
-                    <button class="btn-action ms-auto" onclick="sharePost('${esc(post._id)}','${esc(post.content).replace(/'/g,"\\'").substring(0,60)}')">
+                    <button class="btn-action ms-auto" data-share-id="${esc(post._id)}" data-share-text="${esc(String(post.content || '').substring(0, 60))}"
+                        onclick="sharePost(this.dataset.shareId, this.dataset.shareText)">
                         <i class="fas fa-share-alt"></i> Share
                     </button>
                 </div>
@@ -826,7 +837,7 @@
                         <div>
                             <div class="fw-semibold" style="font-size:.85rem;">${esc(a.title||'Alert')}</div>
                             ${a.location?`<div class="text-muted" style="font-size:.76rem;"><i class="fas fa-map-marker-alt me-1"></i>${esc(a.location)}</div>`:''}
-                            <div class="text-muted" style="font-size:.76rem;">${esc(a.message||'').substring(0,80)}${(a.message||'').length>80?'…':''}</div>
+                            <div class="text-muted" style="font-size:.76rem;">${esc(String(a.message||'').substring(0,80))}${(a.message||'').length>80?'…':''}</div>
                             <div class="text-muted fst-italic" style="font-size:.73rem;">${timeAgo(a.createdAt)}</div>
                         </div>
                     </div>

@@ -15,10 +15,33 @@ const {
     communityLikePost,
     incidentsFetchAll,
     isFirestoreConfigured,
+    usersPublicAvatars,
 } = require('../services/firestoreRepository');
 const { clean } = require('../middleware/apiAccess');
 const { stripHtml } = require('../services/sanitize');
 const cloudinaryService = require('../services/cloudinaryService');
+
+/**
+ * Adds `authorAvatar` (the author's current https profile picture, or null) to
+ * each post. New posts carry the author's uid; older ones only an email. The
+ * uid/email themselves stay hidden from public responses (see apiAccess clean).
+ * A failed lookup just leaves the initials avatar on the client.
+ */
+async function attachAuthorAvatars(posts) {
+    try {
+        const avatars = await usersPublicAvatars({
+            uids: posts.map((p) => p.userId),
+            emails: posts.filter((p) => !p.userId).map((p) => p.userEmail),
+        });
+        for (const p of posts) {
+            const key = p.userId ? `uid:${p.userId}` : `email:${String(p.userEmail || '').toLowerCase()}`;
+            p.authorAvatar = avatars.get(key) || null;
+        }
+    } catch (err) {
+        console.warn('[Community] author avatars skipped:', err.message);
+    }
+    return posts;
+}
 
 const VALID_CATEGORIES = ['general', 'alert', 'tip', 'experience', 'event', 'question'];
 
@@ -90,7 +113,7 @@ router.get('/posts', async (req, res) => {
             return res.json({ success: true, posts: [], degraded: true,
                 message: 'Firestore not configured. Set FIREBASE_SERVICE_ACCOUNT_PATH.' });
         }
-        const posts = await communityFindByKind('post', limit);
+        const posts = await attachAuthorAvatars(await communityFindByKind('post', limit));
         res.json({ success: true, posts });
     } catch (err) {
         res.status(err.statusCode || 500).json({ success: false, message: err.message });
@@ -108,6 +131,7 @@ router.post('/posts', postValidators, checkValidation, async (req, res) => {
             content:   stripHtml(content.trim()),
             userName:  stripHtml(userName || 'Community Member'),
             userEmail: userEmail || '',
+            userId:    req.authUser.uid, // links the post to the author's profile picture
             location:  stripHtml(location || ''),
             imageUrl:  imageUrl  || '',
             category:  category  || 'general',
@@ -118,6 +142,7 @@ router.post('/posts', postValidators, checkValidation, async (req, res) => {
         };
 
         await communityInsert(post);
+        await attachAuthorAvatars([post]);
 
         // Broadcast to all connected clients
         const io = getIo(req);
@@ -155,6 +180,7 @@ router.post('/posts/upload', upload.single('image'), postValidators, checkValida
             content:   stripHtml(content.trim()),
             userName:  stripHtml(userName || 'Community Member'),
             userEmail: userEmail || '',
+            userId:    req.authUser.uid, // links the post to the author's profile picture
             location:  stripHtml(location || ''),
             imageUrl,
             category:  category  || 'general',
@@ -165,6 +191,7 @@ router.post('/posts/upload', upload.single('image'), postValidators, checkValida
         };
 
         await communityInsert(post);
+        await attachAuthorAvatars([post]);
 
         const io = getIo(req);
         if (io) io.emit('community:newPost', clean(post, true));
@@ -310,11 +337,11 @@ router.get('/incident-reports', async (req, res) => {
             .map((inc) => ({
                 _id:          inc._id,
                 incidentType: inc.incidentType || 'other',
-                typeLabel:    TYPE_LABELS[inc.incidentType] || inc.incidentType || 'Incident',
+                typeLabel:    TYPE_LABELS[inc.incidentType] || stripHtml(String(inc.incidentType || '')) || 'Incident',
                 severity:     (inc.severity || 'medium').toLowerCase(),
                 severityLabel: SEVERITY_LABELS[(inc.severity || 'medium').toLowerCase()] || 'Medium',
-                location:     inc?.location?.address || '',
-                description:  (inc.description || '').slice(0, 200),
+                location:     stripHtml(String(inc?.location?.address || '')), // read-side strip: older rows may be raw
+                description:  stripHtml(String(inc.description || '')).slice(0, 200),
                 // Real reporter name intentionally withheld from this public feed — only
                 // the admin panel (which reads incidentsFetchAll() directly) sees it.
                 reporterName: 'HerShield User',

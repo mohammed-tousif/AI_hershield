@@ -288,11 +288,11 @@ router.get('/incident-points', async (req, res) => {
                 latitude:     Number(inc.location.coordinates.latitude),
                 longitude:    Number(inc.location.coordinates.longitude),
                 risk_level:   SEVERITY_TO_RISK[inc.severity] ?? 2,
-                location:     inc.location.address || `${inc.location.coordinates.latitude}, ${inc.location.coordinates.longitude}`,
+                location:     stripHtml(String(inc.location.address || '')) || `${inc.location.coordinates.latitude}, ${inc.location.coordinates.longitude}`,
                 category:     'user_report',
-                incidentType: inc.incidentType || 'other',
+                incidentType: stripHtml(String(inc.incidentType || 'other')),
                 severity:     inc.severity || 'medium',
-                description:  (inc.description || '').slice(0, 120),
+                description:  stripHtml(String(inc.description || '')).slice(0, 120),
                 reportId:     inc._id,
                 createdAt:    inc.timestamp || inc.createdAt,
             }));
@@ -362,20 +362,33 @@ router.post(
                 return res.status(404).json({ error: 'User not found' });
             }
 
+            // Every free-text field is stripped like POST /report does: this report
+            // feeds the public "Recent Alerts" feed on every user's dashboard, and
+            // used to be stored raw (stored XSS).
+            const cleanLocation = {
+                ...(typeof location.address === 'string' ? { address: stripHtml(location.address).slice(0, 300) } : {}),
+                coordinates: {
+                    latitude: Number(location.coordinates.latitude),
+                    longitude: Number(location.coordinates.longitude),
+                },
+            };
             const report = {
                 _id: `${Date.now()}_${Math.floor(Math.random() * 10000)}`,
                 reportedBy: userId,
-                reporterName: isAnonymous ? 'Anonymous' : reporterName,
+                reporterName: isAnonymous ? 'Anonymous' : stripHtml(String(reporterName)).slice(0, 100),
                 incidentType,
                 severity: severity || 'medium',
-                location,
-                description,
+                location: cleanLocation,
+                description: stripHtml(String(description)).slice(0, 4000),
                 incidentTime: new Date(incidentTime),
-                images: images || [],
+                images: (Array.isArray(images) ? images : [])
+                    .filter((u) => typeof u === 'string' && /^https:\/\/[^\s"'<>]+$/i.test(u) && u.length <= 2000)
+                    .slice(0, 10),
                 policeReportFiled: policeReportFiled || false,
-                policeReportNumber,
+                policeReportNumber: policeReportNumber == null ? policeReportNumber : stripHtml(String(policeReportNumber)).slice(0, 100),
                 isAnonymous: isAnonymous || false,
-                tags: tags || [],
+                tags: (Array.isArray(tags) ? tags : [])
+                    .filter((t) => typeof t === 'string').map((t) => stripHtml(t).slice(0, 50)).filter(Boolean).slice(0, 20),
                 status: 'pending',
                 upvotes: 0,
                 downvotes: 0,

@@ -79,7 +79,14 @@ router.post(
                 let changed = false;
                 if (name && user.name !== name) { user.name = name; changed = true; }
                 if (phone !== undefined && user.phone !== phone) { user.phone = phone; changed = true; }
-                if (photoURL && user.profilePicture !== photoURL) { user.profilePicture = photoURL; changed = true; }
+                // Only fill in the sign-in provider's photo when the user has no picture
+                // of their own yet: this runs on every login, and used to overwrite a
+                // picture uploaded in the app with a stale or provider (Google) photo.
+                const hasOwnPicture = /^https:\/\//i.test(user.profilePicture || '') && !/ui-avatars\.com/i.test(user.profilePicture);
+                if (photoURL && /^https:\/\//i.test(photoURL) && !hasOwnPicture && user.profilePicture !== photoURL) {
+                    user.profilePicture = photoURL;
+                    changed = true;
+                }
                 if (changed) {
                     user.updatedAt = now;
                     await usersSave(user);
@@ -246,7 +253,11 @@ router.put(
     [
         body('name').optional().trim(),
         body('phone').optional().trim(),
-        body('profilePicture').optional(),
+        // Rendered as <img src> on other users' screens (community), so only a
+        // plain https URL is accepted: no javascript:/data: or oversized values.
+        body('profilePicture').optional({ checkFalsy: true }).isLength({ max: 2048 })
+            .isURL({ protocols: ['https'], require_protocol: true })
+            .withMessage('profilePicture must be an https URL'),
         body('age').optional().trim(),
         body('homeAddress').optional().trim(),
         body('bloodGroup').optional().trim(),

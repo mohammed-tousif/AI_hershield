@@ -108,26 +108,25 @@ class FirebaseAuthService {
                     );
                 }
 
-                // ── Restore profile picture on every page load ──────────────
-                // If there's no avatar cached for THIS account, or only a
-                // temporary base64 (which won't survive clearing), fetch from
-                // Firestore.
-                const localAv = getCachedAvatar(user.uid);
-                const isBase64 = localAv && localAv.startsWith('data:');
-                if (!localAv || isBase64) {
-                    try {
-                        const uid = user.uid;
-                        const profileRes = await fetch(`/api/users/profile/${encodeURIComponent(uid)}`);
-                        if (profileRes.ok) {
-                            const profileData = await profileRes.json();
-                            const storedPic = profileData?.user?.profilePicture;
-                            if (storedPic && /^https?:\/\//i.test(storedPic)) {
-                                setCachedAvatar(uid, storedPic);
-                                console.log('✅ Profile picture restored on page load:', storedPic);
-                            }
+                // ── Profile picture: Firestore is the source of truth ───────
+                // The cached copy paints instantly; this check (in the background)
+                // picks up a picture saved on another device or restored after a
+                // logout, and repaints every avatar on the page when it changed.
+                // Previously it only cached the URL, so the sidebar kept showing
+                // initials until the next page load.
+                try {
+                    const uid = user.uid;
+                    const profileRes = await fetch(`/api/users/profile/${encodeURIComponent(uid)}`);
+                    if (profileRes.ok && this.currentUser?.uid === uid) {
+                        const storedPic = (await profileRes.json())?.user?.profilePicture;
+                        if (storedPic && /^https:\/\//i.test(storedPic) && storedPic !== getCachedAvatar(uid)) {
+                            setCachedAvatar(uid, storedPic);
+                            this.updateUserInfo(user);
+                            window.refreshHershieldSidebarProfile?.();
+                            window.dispatchEvent(new CustomEvent('hershield-profile-updated'));
                         }
-                    } catch (_) { /* non-fatal */ }
-                }
+                    }
+                } catch (_) { /* non-fatal: the cached or provider picture stays */ }
             } else {
                 // Clear localStorage on logout
                 localStorage.removeItem('hershield_logged_in');
@@ -531,6 +530,7 @@ class FirebaseAuthService {
             if (Object.keys(updates).length === 0) return { success: true };
             await updateProfile(this.currentUser, updates);
             if (displayName) localStorage.setItem('hershield_user_name', displayName);
+            if (updates.photoURL) setCachedAvatar(this.currentUser.uid, updates.photoURL);
             this.updateUI(this.currentUser);
             if (typeof window.refreshHershieldSidebarProfile === 'function') {
                 window.refreshHershieldSidebarProfile();
